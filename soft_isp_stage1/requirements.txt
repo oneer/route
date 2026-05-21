@@ -1,0 +1,9 @@
+numpy
+opencv-python
+rawpy
+matplotlib
+scikit-image
+colour-science
+pyyaml
+imageio
+

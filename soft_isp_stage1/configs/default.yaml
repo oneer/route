@@ -1,0 +1,18 @@
+raw:
+  bayer_pattern: RGGB
+  black_level: null
+  white_level: null
+
+pipeline:
+  enable_blc: true
+  enable_dpc: false
+  enable_lsc: false
+  enable_demosaic: true
+  enable_awb: true
+  enable_ccm: true
+  enable_tone: true
+
+output:
+  save_intermediate: true
+  bit_depth: 16
+
