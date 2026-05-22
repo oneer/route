@@ -1,0 +1,112 @@
+{
+  "file": "data\\raw\\S01_a0001-jmac_DSC1459.dng",
+  "bayer_pattern": "BGGR",
+  "black_level_per_channel": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "white_level": 4095,
+  "roi_size": 256,
+  "stride": 128,
+  "preview": "reports\\figures\\S01_a0001-jmac_DSC1459_roi_preview.png",
+  "rois": {
+    "dark": {
+      "target_percentile": 5,
+      "target_value": 103.0,
+      "roi": {
+        "x": 256,
+        "y": 1408,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 11.0,
+        "max": 988.0,
+        "mean": 132.07261657714844,
+        "std": 100.4928822757493,
+        "p01": 28.0,
+        "p50": 100.0,
+        "p99": 503.0
+      },
+      "channel_means": {
+        "B": 87.43011474609375,
+        "Gb": 166.07879638671875,
+        "Gr": 167.0958251953125,
+        "R": 107.68572998046875
+      },
+      "near_black": false,
+      "near_white": false
+    },
+    "midtone": {
+      "target_percentile": 50,
+      "target_value": 546.0,
+      "roi": {
+        "x": 2432,
+        "y": 1024,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 28.0,
+        "max": 2385.0,
+        "mean": 547.0501708984375,
+        "std": 225.87510015026163,
+        "p01": 127.0,
+        "p50": 568.0,
+        "p99": 1116.0
+      },
+      "channel_means": {
+        "B": 303.97418212890625,
+        "Gb": 678.741943359375,
+        "Gr": 682.3140258789062,
+        "R": 523.1705322265625
+      },
+      "near_black": false,
+      "near_white": false
+    },
+    "highlight": {
+      "target_percentile": 99,
+      "target_value": 1982.0,
+      "roi": {
+        "x": 2176,
+        "y": 256,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 619.0,
+        "max": 2251.0,
+        "mean": 1525.1983032226562,
+        "std": 471.0790196256844,
+        "p01": 672.0,
+        "p50": 1625.0,
+        "p99": 2163.0
+      },
+      "channel_means": {
+        "B": 1476.4973754882812,
+        "Gb": 1909.1669921875,
+        "Gr": 1918.9088745117188,
+        "R": 796.219970703125
+      },
+      "near_black": false,
+      "near_white": false
+    }
+  }
+}

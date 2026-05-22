@@ -6,11 +6,11 @@
 
 | 编号 | 建议用途 | 本地文件 | 来源链接 | 参考输出 | Bayer | black level | white level | 状态 |
 |---|---|---|---|---|---|---:|---:|---|
-| S01 | 起步样张：先跑通 metadata 和四通道统计 | `data/raw/S01_a0001-jmac_DSC1459.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0001-jmac_DSC1459.dng | 用 rawpy 生成到 `data/references/S01_rawpy_srgb.png` | 待脚本读取 | 待脚本读取 | 待脚本读取 | 已下载 |
-| S02 | 对照样张：观察曝光和通道分布差异 | `data/raw/S02_a0002-dgw_005.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0002-dgw_005.dng | 用 rawpy 生成到 `data/references/S02_rawpy_srgb.png` | 待脚本读取 | 待脚本读取 | 待脚本读取 | 已下载 |
-| S03 | 对照样张：观察不同相机/场景 metadata | `data/raw/S03_a0003-NKIM_MG_8178.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0003-NKIM_MG_8178.dng | 用 rawpy 生成到 `data/references/S03_rawpy_srgb.png` | 待脚本读取 | 待脚本读取 | 待脚本读取 | 已下载 |
-| S04 | 对照样张：用于 histogram 和 clipping 检查 | `data/raw/S04_a0004-jmac_MG_1384.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0004-jmac_MG_1384.dng | 用 rawpy 生成到 `data/references/S04_rawpy_srgb.png` | 待脚本读取 | 待脚本读取 | 待脚本读取 | 已下载 |
-| S05 | 对照样张：用于 demosaic / AWB 初步实验 | `data/raw/S05_a0005-jn_2007_05_10__564.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0005-jn_2007_05_10__564.dng | 用 rawpy 生成到 `data/references/S05_rawpy_srgb.png` | 待脚本读取 | 待脚本读取 | 待脚本读取 | 已下载 |
+| S01 | 起步样张：先跑通 metadata 和四通道统计 | `data/raw/S01_a0001-jmac_DSC1459.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0001-jmac_DSC1459.dng | `data/references/S01_a0001-jmac_DSC1459_rawpy_srgb.png` | BGGR | 0 / 0 / 0 / 0 | 4095 | 已完成 metadata 检查 |
+| S02 | 对照样张：观察曝光和通道分布差异 | `data/raw/S02_a0002-dgw_005.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0002-dgw_005.dng | `data/references/S02_a0002-dgw_005_rawpy_srgb.png` | RGGB | 0 / 0 / 0 / 0 | 15892 | 已完成 metadata 检查 |
+| S03 | 对照样张：观察不同相机/场景 metadata | `data/raw/S03_a0003-NKIM_MG_8178.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0003-NKIM_MG_8178.dng | `data/references/S03_a0003-NKIM_MG_8178_rawpy_srgb.png` | RGGB | 1023 / 1023 / 1023 / 1023 | 13600 | 已完成 metadata 检查 |
+| S04 | 对照样张：用于 histogram 和 clipping 检查 | `data/raw/S04_a0004-jmac_MG_1384.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0004-jmac_MG_1384.dng | `data/references/S04_a0004-jmac_MG_1384_rawpy_srgb.png` | RGGB | 128 / 127 / 128 / 128 | 3692 | 已完成 metadata 检查 |
+| S05 | 对照样张：用于 demosaic / AWB 初步实验 | `data/raw/S05_a0005-jn_2007_05_10__564.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0005-jn_2007_05_10__564.dng | `data/references/S05_a0005-jn_2007_05_10__564_rawpy_srgb.png` | RGGB | 127 / 128 / 127 / 127 | 3398 | 已完成 metadata 检查 |
 
 ## 后续精挑目标
 
@@ -33,4 +33,3 @@ python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
 ```
 
 把输出中的 `raw_pattern`、`black_level_per_channel`、`white_level`、四通道统计写回本表和 `reports/week1_raw_statistics.md`。
-
