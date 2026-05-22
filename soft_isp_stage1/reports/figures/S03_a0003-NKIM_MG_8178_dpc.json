@@ -9,7 +9,7 @@
     1023
   ],
   "white_level": 13600,
-  "min_delta": 256,
+  "min_delta": 1024,
   "mad_k": 12.0,
   "raw_blc": {
     "shape": [
@@ -33,27 +33,27 @@
     "dtype": "uint16",
     "min": 0.0,
     "max": 12577.0,
-    "mean": 2352.128684473875,
-    "std": 4121.190958548046,
+    "mean": 2353.8048150308755,
+    "std": 4121.42136021617,
     "p01": 40.0,
     "p50": 541.0,
     "p99": 12577.0
   },
-  "candidate_count": 142126,
-  "candidate_ratio": 0.013976926653538693,
+  "candidate_count": 14125,
+  "candidate_ratio": 0.0013890779236820428,
   "channel_counts": {
-    "R": 8491,
-    "Gr": 44508,
-    "Gb": 44735,
-    "B": 44392
+    "R": 1374,
+    "Gr": 4257,
+    "Gb": 4171,
+    "B": 4323
   },
   "thresholds": {
-    "R": 256.0,
-    "Gr": 256.0,
-    "Gb": 256.0,
-    "B": 256.0
+    "R": 1024.0,
+    "Gr": 1024.0,
+    "Gb": 1024.0,
+    "B": 1024.0
   },
-  "changed_abs_mean": 576.6551510631411,
+  "changed_abs_mean": 1879.3840707964603,
   "changed_abs_max": 9323.0,
   "mask_overlay": "reports\\figures\\S03_a0003-NKIM_MG_8178_dpc_mask_overlay.png",
   "repair_crop": "reports\\figures\\S03_a0003-NKIM_MG_8178_dpc_repair_crop.png",

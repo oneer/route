@@ -285,10 +285,10 @@ def main() -> None:
     parser.add_argument("raw_paths", type=Path, nargs="+", help="One or more RAW/DNG files.")
     parser.add_argument("--out-dir", type=Path, default=Path("reports/figures"))
     parser.add_argument("--report", type=Path, default=Path("reports/week2_dpc_report.md"))
-    parser.add_argument("--min-delta", type=int, default=256)
+    parser.add_argument("--min-delta", type=int, default=1024)
     parser.add_argument("--mad-k", type=float, default=12.0)
     parser.add_argument("--crop-size", type=int, default=160)
-    args = parser.parse_args()
+    args = parser.parse_intermixed_args()
 
     results = [
         analyze_one(raw_path, args.out_dir, args.min_delta, args.mad_k, args.crop_size)

@@ -9,7 +9,7 @@
     0
   ],
   "white_level": 4095,
-  "min_delta": 256,
+  "min_delta": 1024,
   "mad_k": 12.0,
   "raw_blc": {
     "shape": [
@@ -33,27 +33,27 @@
     "dtype": "uint16",
     "min": 2.0,
     "max": 3821.0,
-    "mean": 669.4987786154811,
-    "std": 489.94400399493713,
+    "mean": 671.7902225539643,
+    "std": 491.7227055480367,
     "p01": 48.0,
     "p50": 546.0,
     "p99": 1982.0
   },
-  "candidate_count": 67447,
-  "candidate_ratio": 0.01101614357392986,
+  "candidate_count": 371,
+  "candidate_ratio": 6.059556786703601e-05,
   "channel_counts": {
-    "B": 8982,
-    "Gb": 25634,
-    "Gr": 25980,
-    "R": 6851
+    "B": 4,
+    "Gb": 176,
+    "Gr": 191,
+    "R": 0
   },
   "thresholds": {
-    "B": 256.0,
-    "Gb": 312.0,
-    "Gr": 312.0,
-    "R": 256.0
+    "B": 1024.0,
+    "Gb": 1024.0,
+    "Gr": 1024.0,
+    "R": 1024.0
   },
-  "changed_abs_mean": 416.9093955253755,
+  "changed_abs_mean": 1177.134770889488,
   "changed_abs_max": 2696.0,
   "mask_overlay": "reports\\figures\\S01_a0001-jmac_DSC1459_dpc_mask_overlay.png",
   "repair_crop": "reports\\figures\\S01_a0001-jmac_DSC1459_dpc_repair_crop.png",
