@@ -1,0 +1,72 @@
+{
+  "file": "data\\raw\\S03_a0003-NKIM_MG_8178.dng",
+  "sample_id": "S03",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    1023,
+    1023,
+    1023,
+    1023
+  ],
+  "white_level": 13600,
+  "min_delta": 256,
+  "mad_k": 12.0,
+  "raw_blc": {
+    "shape": [
+      2602,
+      3908
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 12577.0,
+    "mean": 2355.0041444184735,
+    "std": 4122.395720269306,
+    "p01": 40.0,
+    "p50": 541.0,
+    "p99": 12577.0
+  },
+  "dpc": {
+    "shape": [
+      2602,
+      3908
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 12577.0,
+    "mean": 2352.128684473875,
+    "std": 4121.190958548046,
+    "p01": 40.0,
+    "p50": 541.0,
+    "p99": 12577.0
+  },
+  "candidate_count": 142126,
+  "candidate_ratio": 0.013976926653538693,
+  "channel_counts": {
+    "R": 8491,
+    "Gr": 44508,
+    "Gb": 44735,
+    "B": 44392
+  },
+  "thresholds": {
+    "R": 256.0,
+    "Gr": 256.0,
+    "Gb": 256.0,
+    "B": 256.0
+  },
+  "changed_abs_mean": 576.6551510631411,
+  "changed_abs_max": 9323.0,
+  "mask_overlay": "reports\\figures\\S03_a0003-NKIM_MG_8178_dpc_mask_overlay.png",
+  "repair_crop": "reports\\figures\\S03_a0003-NKIM_MG_8178_dpc_repair_crop.png",
+  "crop_info": {
+    "candidate_y": 457,
+    "candidate_x": 2018,
+    "before": 12577,
+    "after": 3254,
+    "crop": {
+      "x0": 1938,
+      "y0": 377,
+      "x1": 2098,
+      "y1": 537
+    }
+  }
+}
