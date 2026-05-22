@@ -1,0 +1,48 @@
+{
+  "file": "data\\raw\\S01_a0001-jmac_DSC1459.dng",
+  "sample_id": "S01",
+  "bayer_pattern": "BGGR",
+  "black_level_per_channel": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "white_level": 4095,
+  "effective_white_after_blc": 4095.0,
+  "dpc_enabled": true,
+  "dpc_candidate_count": 371,
+  "raw_for_demosaic": {
+    "shape": [
+      2014,
+      3040
+    ],
+    "dtype": "uint16",
+    "min": 2.0,
+    "max": 3821.0,
+    "mean": 671.7902225539643,
+    "std": 491.7227055480367,
+    "p01": 48.0,
+    "p50": 546.0,
+    "p99": 1982.0
+  },
+  "rgb_bilinear": {
+    "shape": [
+      2014,
+      3040,
+      3
+    ],
+    "dtype": "float32",
+    "min": 2.0,
+    "max": 3821.0,
+    "mean": 615.716796875,
+    "std": 457.5081787109375,
+    "p01": 47.0,
+    "p50": 493.0,
+    "p99": 1927.5
+  },
+  "preview": "reports\\figures\\S01_a0001-jmac_DSC1459_bilinear_rgb.png",
+  "opencv_preview": "reports\\figures\\S01_a0001-jmac_DSC1459_opencv_rgb.png",
+  "opencv_diff_mean": 183.44601440429688,
+  "opencv_diff_p99": 724.5
+}

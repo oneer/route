@@ -1,0 +1,48 @@
+{
+  "file": "data\\raw\\S03_a0003-NKIM_MG_8178.dng",
+  "sample_id": "S03",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    1023,
+    1023,
+    1023,
+    1023
+  ],
+  "white_level": 13600,
+  "effective_white_after_blc": 12577.0,
+  "dpc_enabled": true,
+  "dpc_candidate_count": 14125,
+  "raw_for_demosaic": {
+    "shape": [
+      2602,
+      3908
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 12577.0,
+    "mean": 2353.8048150308755,
+    "std": 4121.42136021617,
+    "p01": 40.0,
+    "p50": 541.0,
+    "p99": 12577.0
+  },
+  "rgb_bilinear": {
+    "shape": [
+      2602,
+      3908,
+      3
+    ],
+    "dtype": "float32",
+    "min": 0.0,
+    "max": 12577.0,
+    "mean": 2259.59716796875,
+    "std": 4045.5498046875,
+    "p01": 38.0,
+    "p50": 497.0,
+    "p99": 12577.0
+  },
+  "preview": "reports\\figures\\S03_a0003-NKIM_MG_8178_bilinear_rgb.png",
+  "opencv_preview": "reports\\figures\\S03_a0003-NKIM_MG_8178_opencv_rgb.png",
+  "opencv_diff_mean": 713.4428100585938,
+  "opencv_diff_p99": 8639.0
+}

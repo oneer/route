@@ -1,0 +1,48 @@
+{
+  "file": "data\\raw\\S05_a0005-jn_2007_05_10__564.dng",
+  "sample_id": "S05",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    127,
+    128,
+    127,
+    127
+  ],
+  "white_level": 3398,
+  "effective_white_after_blc": 3270.0,
+  "dpc_enabled": true,
+  "dpc_candidate_count": 580,
+  "raw_for_demosaic": {
+    "shape": [
+      2348,
+      3522
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 3271.0,
+    "mean": 397.08275894426566,
+    "std": 955.1085939914133,
+    "p01": 5.0,
+    "p50": 22.0,
+    "p99": 3271.0
+  },
+  "rgb_bilinear": {
+    "shape": [
+      2348,
+      3522,
+      3
+    ],
+    "dtype": "float32",
+    "min": 0.0,
+    "max": 3271.0,
+    "mean": 376.6514587402344,
+    "std": 915.2169799804688,
+    "p01": 5.0,
+    "p50": 20.0,
+    "p99": 3271.0
+  },
+  "preview": "reports\\figures\\S05_a0005-jn_2007_05_10__564_bilinear_rgb.png",
+  "opencv_preview": "reports\\figures\\S05_a0005-jn_2007_05_10__564_opencv_rgb.png",
+  "opencv_diff_mean": 107.06590270996094,
+  "opencv_diff_p99": 1400.0
+}
