@@ -1,36 +1,198 @@
-# 阶段 1：传统 ISP 与 RAW 基础
+# Soft-ISP Stage 1 — RAW Foundation & Traditional ISP Pipeline
 
-这个文件夹用于阶段 1 学习：从真实 RAW / DNG 输入开始，逐步完成一个可解释的 Python Soft-ISP Pipeline。
+[中文版本](README_CN.md)
 
-## 阶段目标
+A hands-on, explainable Python Soft-ISP Pipeline built from scratch. This project reads real RAW/DNG files and implements the full traditional ISP chain — black level correction, defect pixel correction, lens shading correction, demosaicing, auto white balance, color correction matrix, and gamma/tone mapping — with per-module statistics, visualizations, and comparison against rawpy reference outputs.
 
-- 能读取真实 RAW / DNG，并解释 metadata、black level、white level、Bayer pattern。
-- 能实现并验证基础 ISP 模块：BLC、DPC、LSC、Demosaic、AWB、CCM、Gamma / Tone。
-- 能为至少 5 张不同场景 RAW 生成处理结果、参考输出、统计指标和实验报告。
-- 能说清楚每个模块的输入输出、核心假设、参数影响、失败场景和验证方法。
+## Why This Exists
 
-## 建议顺序
+Most ISP tutorials stop at theory or provide opaque "black box" library calls. This project forces you to:
 
-1. 阅读 `materials/stage1_start_here.md`，明确 6 周路线和今天要做的事。
-2. 按 `materials/raw_sample_manifest.md` 准备 5 张 RAW / DNG 样张。
-3. 安装依赖：`pip install -r requirements.txt`。
-4. 运行 `scripts/01_inspect_raw.py`，先完成 RAW metadata 和统计检查。
-5. 每周把实验结论写入 `reports/`，不要只留下代码。
+- Read real sensor data and understand what every number in a RAW file means.
+- Implement each ISP module yourself so you can explain its math, assumptions, failure modes, and parameter effects.
+- Compare your output against rawpy/LibRaw references and articulate every difference.
+- Build the habit of writing structured reports (not just code) that are interview-ready.
 
-## 当前交付物
+## Project Structure
 
-- `materials/resources.md`：课程、论文、开源项目、数据集入口。
-- `materials/raw_sample_manifest.md`：RAW 样张登记表。
-- `materials/module_study_template.md`：每个 ISP 模块的学习模板。
-- `materials/notes/paper_reading_template.md`：论文阅读模板。
-- `reports/stage1_report.md`：阶段总报告模板。
-- `reports/week1_raw_statistics.md`：第一周报告模板。
+```
+soft_isp_stage1/
+├── configs/
+│   └── default.yaml              # Pipeline module toggles and parameters
+├── data/
+│   ├── raw/                      # Input DNG/RAW files (gitignored)
+│   └── references/               # rawpy-processed sRGB reference PNGs
+├── materials/
+│   ├── stage1_start_here.md      # 6-week roadmap and daily instructions
+│   ├── module_study_template.md  # Template for studying each ISP module
+│   ├── raw_sample_manifest.md    # RAW sample registry with download URLs
+│   ├── resources.md              # Master index of papers, courses, datasets
+│   ├── books/                    # Reference book list
+│   ├── datasets/                 # FiveK index + auto-generated metadata table
+│   ├── notes/                    # Paper reading template
+│   ├── open_source/              # OpenISP / Infinite-ISP study guide
+│   ├── papers/                   # Key papers (Karaimer & Brown, HDR+, SID, +)
+│   └── slides/                   # Stanford EE367, Cornell CS6640 lecture PDFs
+├── notebooks/                    # Jupyter notebooks (reserved)
+├── reports/
+│   ├── stage1_report.md          # Final stage 1 report template
+│   ├── week1_raw_statistics.md   # Week 1: RAW stats observations
+│   ├── week1_roi_analysis.md     # Week 1: ROI analysis report
+│   ├── figures/                  # Generated histogram + ROI preview PNGs
+│   └── raw_stats/                # Per-sample JSON metadata dumps
+├── scripts/
+│   ├── 01_inspect_raw.py         # Dump RAW metadata + per-channel stats as JSON
+│   ├── 02_generate_rawpy_references.py  # Generate rawpy sRGB reference PNGs
+│   ├── 03_dump_raw_metadata_table.py    # Build Markdown metadata summary table
+│   ├── 04_plot_raw_histogram.py  # Plot dual-panel RAW + Bayer-channel histograms
+│   ├── 05_analyze_raw_roi.py     # Auto-select dark/midtone/highlight ROIs
+│   └── download_fivek_starter.ps1  # Download 5 MIT-Adobe FiveK starter DNGs
+├── soft_isp/
+│   ├── __init__.py               # Package init
+│   └── stats.py                  # Core utilities: Bayer inference, stats, splitting
+├── requirements.txt
+└── README.md
+```
 
-## 数据约定
+## Quick Start
 
-大体积 RAW / DNG 和参考图不提交到 Git：
+### 1. Environment Setup
 
-- RAW / DNG 放到 `data/raw/`
-- rawpy / Lightroom / LibRaw 参考输出放到 `data/references/`
-- 报告图片放到 `reports/figures/`
+```bash
+# Clone and enter the project
+cd soft_isp_stage1
 
+# Install dependencies (Python 3.9+)
+pip install -r requirements.txt
+```
+
+### 2. Download RAW Samples
+
+**Option A — PowerShell (Windows):**
+
+```powershell
+.\scripts\download_fivek_starter.ps1
+```
+
+**Option B — Manual:**
+
+Download 5 DNG files from the [MIT-Adobe FiveK dataset](https://data.csail.mit.edu/graphics/fivek/) into `data/raw/`. Refer to `materials/raw_sample_manifest.md` for the exact file list and URLs.
+
+### 3. Generate Reference Outputs
+
+```bash
+# Generate rawpy sRGB reference PNGs for all DNG files
+python scripts/02_generate_rawpy_references.py
+```
+
+### 4. Inspect Your First RAW File
+
+```bash
+# Dump full metadata and channel statistics as JSON
+python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
+```
+
+### 5. Plot Histograms
+
+```bash
+# Generate dual-panel histograms (global + per-channel) for one or more files
+python scripts/04_plot_raw_histogram.py data/raw/*.dng
+```
+
+### 6. Analyze ROIs
+
+```bash
+# Auto-select and analyze dark, midtone, and highlight ROIs
+python scripts/05_analyze_raw_roi.py data/raw/*.dng
+```
+
+## Dependencies
+
+| Package | Purpose |
+|---|---|
+| `numpy` | Array operations, statistics |
+| `opencv-python` | Image I/O, color space conversions |
+| `rawpy` | RAW/DNG file reading (libraw bindings) |
+| `matplotlib` | Histogram and figure plotting |
+| `scikit-image` | SSIM, advanced image metrics |
+| `colour-science` | Color science calculations |
+| `pyyaml` | Pipeline config parsing |
+| `imageio` | Reference image writing |
+
+## Scripts
+
+All scripts are in `scripts/` and numbered in recommended execution order.
+
+| # | Script | Input | Output | Purpose |
+|---|---|---|---|---|
+| 01 | `inspect_raw.py` | DNG path + optional `--pattern` | JSON to stdout | Full metadata dump: black/white levels, Bayer pattern, per-channel statistics |
+| 02 | `generate_rawpy_references.py` | All `*.dng` in `data/raw/` | PNGs in `data/references/` | Generate rawpy sRGB reference images (the "answer key") |
+| 03 | `dump_raw_metadata_table.py` | All `S*.dng` in `data/raw/` | Markdown table | Quick-reference metadata summary for the dataset |
+| 04 | `plot_raw_histogram.py` | One or more DNG paths | PNGs in `reports/figures/` | Dual-panel log-scale histograms with black/white level markers |
+| 05 | `analyze_raw_roi.py` | One or more DNG paths | PNG + JSON + MD report | Auto-select dark/midtone/highlight ROIs, generate annotated previews and statistics |
+
+## Core Library (`soft_isp/`)
+
+The `soft_isp` package provides shared utilities imported by all scripts:
+
+| Function | File | Description |
+|---|---|---|
+| `bayer_pattern_from_rawpy()` | `stats.py` | Infer standard Bayer string (RGGB/BGGR/GRBG/GBRG) from rawpy metadata |
+| `describe_array()` | `stats.py` | Compute shape, dtype, min, max, mean, std, p01, p50, p99 for any array |
+| `split_bayer()` | `stats.py` | Split Bayer mosaic into R, Gr, Gb, B sub-arrays via stride slicing |
+
+## Learning Roadmap (6 Weeks)
+
+See `materials/stage1_start_here.md` for the detailed week-by-week plan.
+
+| Week | Focus | Key Deliverable |
+|---|---|---|
+| 0.5 | Environment + sample download + first RAW read | 5 DNGs in `data/raw/` |
+| 1 | RAW sensor intuition: metadata, histograms, ROIs | `week1_raw_statistics.md`, histogram PNGs |
+| 2 | Front-end corrections: BLC, DPC, LSC | Per-module notes + before/after comparisons |
+| 3 | Demosaic + AWB | Working bilinear/AHD demosaic, gray-world AWB |
+| 4 | CCM + Gamma + Tone Mapping | Complete end-to-end pipeline output |
+| 5 | IQA, ablation, report | PSNR/SSIM/DeltaE table, rawpy comparison, failure analysis |
+| 6 | Polish + interview prep | Final report, per-module interview answers |
+
+Each ISP module must answer 7 questions (from `materials/module_study_template.md`):
+
+1. What is the exact input (data domain, range, shape)?
+2. What is the exact output?
+3. What physical or perceptual problem does this module solve?
+4. What are the core assumptions and when do they break?
+5. How does each parameter affect the output (with visual examples)?
+6. How do you verify this module is correct (independent of downstream modules)?
+7. What are the failure scenarios and how do you detect them?
+
+## Data Conventions
+
+- **Input RAW/DNG files** → `data/raw/` (gitignored — large binaries)
+- **Reference outputs** (rawpy, Lightroom, LibRaw) → `data/references/`
+- **Generated figures** (histograms, ROI previews, comparison images) → `reports/figures/`
+- **Per-sample statistics** → `reports/raw_stats/`
+- **Weekly reports** → `reports/`
+
+## Current Deliverables
+
+| Deliverable | Status | Description |
+|---|---|---|
+| RAW sample download script | Done | PowerShell script for 5 FiveK starter DNGs |
+| RAW metadata inspection | Done | `01_inspect_raw.py` + 5 per-sample JSON dumps |
+| Reference image generation | Done | `02_generate_rawpy_references.py` + 5 reference PNGs |
+| Metadata summary table | Done | `03_dump_raw_metadata_table.py` → Markdown table |
+| Histogram plots | Done | S01, S03, S05 histograms with black/white level annotations |
+| ROI analysis | Done | Dark/midtone/highlight ROIs for S01, S03, S05 with JSON + preview |
+| Week 1 report | Done | `week1_raw_statistics.md` + `week1_roi_analysis.md` |
+| BLC module | Pending | Week 2 |
+| DPC module | Pending | Week 2 |
+| LSC module | Pending | Week 2 |
+| Demosaic module | Pending | Week 3 |
+| AWB module | Pending | Week 3 |
+| CCM module | Pending | Week 4 |
+| Gamma/Tone module | Pending | Week 4 |
+| IQA + final report | Pending | Week 5-6 |
+
+## License
+
+This project is part of a personal learning portfolio. All original code is available for reference and educational use.
