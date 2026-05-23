@@ -1,0 +1,113 @@
+{
+  "file": "C:\\Users\\ICRD\\Desktop\\route\\soft_isp_stage1\\data\\raw\\T03_a0010-jmac_MG_4807.dng",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    128,
+    128,
+    127,
+    128
+  ],
+  "white_level": 4095,
+  "display_flip": 0,
+  "roi_size": 256,
+  "stride": 128,
+  "preview": "reports\\figures\\T03_a0010-jmac_MG_4807_roi_preview.png",
+  "rois": {
+    "dark": {
+      "target_percentile": 5,
+      "target_value": 137.0,
+      "roi": {
+        "x": 0,
+        "y": 2048,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 118.0,
+        "max": 1071.0,
+        "mean": 134.7256317138672,
+        "std": 27.832951350977304,
+        "p01": 125.0,
+        "p50": 132.0,
+        "p99": 208.0
+      },
+      "channel_means": {
+        "R": 132.55560302734375,
+        "Gr": 136.9571533203125,
+        "Gb": 136.7548828125,
+        "B": 132.6348876953125
+      },
+      "near_black": true,
+      "near_white": false
+    },
+    "midtone": {
+      "target_percentile": 50,
+      "target_value": 544.0,
+      "roi": {
+        "x": 2688,
+        "y": 128,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 132.0,
+        "max": 788.0,
+        "mean": 543.4730987548828,
+        "std": 165.87952226963728,
+        "p01": 171.0,
+        "p50": 566.0,
+        "p99": 762.0
+      },
+      "channel_means": {
+        "R": 367.45233154296875,
+        "Gr": 648.6570434570312,
+        "Gb": 645.740966796875,
+        "B": 512.0420532226562
+      },
+      "near_black": false,
+      "near_white": false
+    },
+    "highlight": {
+      "target_percentile": 99,
+      "target_value": 2318.0,
+      "roi": {
+        "x": 2816,
+        "y": 1536,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 626.0,
+        "max": 4095.0,
+        "mean": 2280.552703857422,
+        "std": 970.4497994236008,
+        "p01": 666.0,
+        "p50": 2117.0,
+        "p99": 4095.0
+      },
+      "channel_means": {
+        "R": 1562.960693359375,
+        "Gr": 2848.334228515625,
+        "Gb": 2828.2262573242188,
+        "B": 1882.6896362304688
+      },
+      "near_black": false,
+      "near_white": true
+    }
+  }
+}

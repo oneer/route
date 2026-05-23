@@ -1,0 +1,73 @@
+{
+  "file": "data\\raw\\T03_a0010-jmac_MG_4807.dng",
+  "sample_id": "T03",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    128,
+    128,
+    127,
+    128
+  ],
+  "white_level": 4095,
+  "display_flip": 0,
+  "min_delta": 1024,
+  "mad_k": 12.0,
+  "raw_blc": {
+    "shape": [
+      2348,
+      3522
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 3967.0,
+    "mean": 477.03904914545416,
+    "std": 459.11851184906277,
+    "p01": 2.0,
+    "p50": 417.0,
+    "p99": 2190.0
+  },
+  "dpc": {
+    "shape": [
+      2348,
+      3522
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 3967.0,
+    "mean": 477.03890548772523,
+    "std": 459.1183325700896,
+    "p01": 2.0,
+    "p50": 417.0,
+    "p99": 2190.0
+  },
+  "candidate_count": 1,
+  "candidate_ratio": 1.2092401425162062e-07,
+  "channel_counts": {
+    "R": 0,
+    "Gr": 0,
+    "Gb": 1,
+    "B": 0
+  },
+  "thresholds": {
+    "R": 1024.0,
+    "Gr": 1024.0,
+    "Gb": 1024.0,
+    "B": 1024.0
+  },
+  "changed_abs_mean": 1188.0,
+  "changed_abs_max": 1188.0,
+  "mask_overlay": "reports\\figures\\T03_a0010-jmac_MG_4807_dpc_mask_overlay.png",
+  "repair_crop": "reports\\figures\\T03_a0010-jmac_MG_4807_dpc_repair_crop.png",
+  "crop_info": {
+    "candidate_y": 1871,
+    "candidate_x": 768,
+    "before": 1644,
+    "after": 456,
+    "crop": {
+      "x0": 718,
+      "y0": 1821,
+      "x1": 818,
+      "y1": 1921
+    }
+  }
+}

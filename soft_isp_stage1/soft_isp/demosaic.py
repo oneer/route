@@ -1,26 +1,33 @@
-"""Bilinear demosaic helpers for Bayer RAW arrays."""
+"""Simple bilinear demosaic helpers for Bayer RAW arrays."""
 
 from __future__ import annotations
 
+import cv2
 import numpy as np
 
 
-BAYER_POSITIONS = {
-    "RGGB": {"R": (0, 0), "Gr": (0, 1), "Gb": (1, 0), "B": (1, 1)},
-    "BGGR": {"B": (0, 0), "Gb": (0, 1), "Gr": (1, 0), "R": (1, 1)},
-    "GRBG": {"Gr": (0, 0), "R": (0, 1), "B": (1, 0), "Gb": (1, 1)},
-    "GBRG": {"Gb": (0, 0), "B": (0, 1), "R": (1, 0), "Gr": (1, 1)},
-}
+def bayer_positions(pattern: str) -> dict[str, tuple[int, int]]:
+    pattern = pattern.upper()
+    positions = {
+        "RGGB": {"R": (0, 0), "G1": (0, 1), "G2": (1, 0), "B": (1, 1)},
+        "BGGR": {"B": (0, 0), "G1": (0, 1), "G2": (1, 0), "R": (1, 1)},
+        "GRBG": {"G1": (0, 0), "R": (0, 1), "B": (1, 0), "G2": (1, 1)},
+        "GBRG": {"G1": (0, 0), "B": (0, 1), "R": (1, 0), "G2": (1, 1)},
+    }
+    if pattern not in positions:
+        raise ValueError(f"Unsupported Bayer pattern: {pattern}")
+    return positions[pattern]
 
 
-def _channel_mask(raw_shape: tuple[int, int], y_offset: int, x_offset: int) -> np.ndarray:
-    mask = np.zeros(raw_shape, dtype=bool)
-    mask[y_offset::2, x_offset::2] = True
+def _known_mask(shape: tuple[int, int], offsets: list[tuple[int, int]]) -> np.ndarray:
+    mask = np.zeros(shape, dtype=np.float32)
+    for y_offset, x_offset in offsets:
+        mask[y_offset::2, x_offset::2] = 1.0
     return mask
 
 
-def _weighted_average(known_values: np.ndarray, known_mask: np.ndarray) -> np.ndarray:
-    """Interpolate missing samples with a 3x3 bilinear kernel."""
+def _interpolate_channel(raw: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    raw_f32 = raw.astype(np.float32)
     kernel = np.array(
         [
             [1.0, 2.0, 1.0],
@@ -29,62 +36,60 @@ def _weighted_average(known_values: np.ndarray, known_mask: np.ndarray) -> np.nd
         ],
         dtype=np.float32,
     )
-    values = np.pad(known_values, 1, mode="constant")
-    weights = np.pad(known_mask.astype(np.float32), 1, mode="constant")
+    weighted_sum = cv2.filter2D(raw_f32 * mask, -1, kernel, borderType=cv2.BORDER_REFLECT_101)
+    weight = cv2.filter2D(mask, -1, kernel, borderType=cv2.BORDER_REFLECT_101)
+    interpolated = weighted_sum / np.maximum(weight, 1e-6)
+    interpolated[mask > 0] = raw_f32[mask > 0]
+    return interpolated
 
-    numerator = np.zeros_like(known_values, dtype=np.float32)
-    denominator = np.zeros_like(known_values, dtype=np.float32)
-    height, width = known_values.shape
 
-    for y in range(3):
-        for x in range(3):
-            weight = kernel[y, x]
-            numerator += values[y : y + height, x : x + width] * weight
-            denominator += weights[y : y + height, x : x + width] * weight
+def bilinear_demosaic(raw_bayer: np.ndarray, bayer_pattern: str) -> np.ndarray:
+    """Convert a single-channel Bayer RAW image to a linear RGB float32 image."""
+    positions = bayer_positions(bayer_pattern)
+    raw = np.asarray(raw_bayer)
+    if raw.ndim != 2:
+        raise ValueError(f"raw_bayer must be 2D, got shape {raw.shape}")
 
-    return numerator / np.maximum(denominator, 1.0)
+    r_mask = _known_mask(raw.shape, [positions["R"]])
+    g_mask = _known_mask(raw.shape, [positions["G1"], positions["G2"]])
+    b_mask = _known_mask(raw.shape, [positions["B"]])
+
+    rgb = np.stack(
+        [
+            _interpolate_channel(raw, r_mask),
+            _interpolate_channel(raw, g_mask),
+            _interpolate_channel(raw, b_mask),
+        ],
+        axis=-1,
+    )
+    return rgb.astype(np.float32)
+
+
+def rgb_preview(
+    rgb_linear: np.ndarray,
+    black: float = 0.0,
+    white: float | None = None,
+    gamma: float = 2.2,
+) -> np.ndarray:
+    """Map linear RGB data to an 8-bit display preview."""
+    rgb = rgb_linear.astype(np.float32) - float(black)
+    if white is None:
+        white = float(np.percentile(rgb, 99.5))
+    white = max(float(white), 1.0)
+    preview = np.clip(rgb / white, 0.0, 1.0)
+    if gamma > 0:
+        preview = np.power(preview, 1.0 / gamma)
+    return (preview * 255.0 + 0.5).astype(np.uint8)
 
 
 def demosaic_bilinear(raw: np.ndarray, bayer_pattern: str) -> np.ndarray:
-    """Convert a Bayer RAW image to linear RGB with bilinear interpolation.
-
-    The function keeps measured Bayer samples unchanged and only interpolates
-    the missing color channels. The returned array is float32 so later modules
-    can apply AWB, CCM, and tone mapping without integer clipping.
-    """
-    pattern = bayer_pattern.upper()
-    if pattern not in BAYER_POSITIONS:
-        raise ValueError(f"Unsupported Bayer pattern: {bayer_pattern}")
-    if raw.ndim != 2:
-        raise ValueError(f"Expected a 2D Bayer RAW array, got shape {raw.shape}")
-
-    raw_f32 = raw.astype(np.float32)
-    rgb = np.zeros((*raw.shape, 3), dtype=np.float32)
-    channel_indices = {"R": 0, "G": 1, "B": 2}
-
-    masks = {}
-    for name, (y_offset, x_offset) in BAYER_POSITIONS[pattern].items():
-        masks[name] = _channel_mask(raw.shape, y_offset, x_offset)
-
-    for color_name in ("R", "B"):
-        mask = masks[color_name]
-        known = np.where(mask, raw_f32, 0.0)
-        channel = _weighted_average(known, mask)
-        channel[mask] = raw_f32[mask]
-        rgb[:, :, channel_indices[color_name]] = channel
-
-    green_mask = masks["Gr"] | masks["Gb"]
-    green_known = np.where(green_mask, raw_f32, 0.0)
-    green = _weighted_average(green_known, green_mask)
-    green[green_mask] = raw_f32[green_mask]
-    rgb[:, :, channel_indices["G"]] = green
-
-    return rgb
+    """Backward-compatible alias for bilinear_demosaic."""
+    return bilinear_demosaic(raw, bayer_pattern)
 
 
 def normalize_rgb(rgb: np.ndarray, white_level: float | None = None) -> np.ndarray:
-    """Normalize linear RGB to 0..1 for preview or simple downstream use."""
+    """Backward-compatible 0..1 preview normalization."""
     rgb_f32 = rgb.astype(np.float32)
     if white_level is None:
-        white_level = max(float(np.percentile(rgb_f32, 99.5)), 1.0)
+        white_level = float(np.percentile(rgb_f32, 99.5))
     return np.clip(rgb_f32 / max(float(white_level), 1.0), 0.0, 1.0)

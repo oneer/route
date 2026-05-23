@@ -4,7 +4,7 @@
     python 03_dump_raw_metadata_table.py
 
 功能:
-    读取 data/raw/ 目录下所有 `S*.dng` 文件（即 FiveK Starter 样张），提取每幅图像的关键元数据：
+    读取 data/raw/ 目录下所有 `T*.dng` 文件（即当前 FiveK 主样张），提取每幅图像的关键元数据：
         - 文件名、分辨率形状、数据类型
         - 黑电平、白电平、色彩描述字符串
         - raw 像素的最小值、最大值、均值
@@ -24,9 +24,9 @@ import rawpy  # libraw 的 Python 绑定，用于读取 RAW/DNG 文件
 
 
 def main() -> None:
-    """遍历 FiveK Starter 样张，生成 Markdown 格式的元数据概览表。"""
+    """遍历当前 FiveK 主样张，生成 Markdown 格式的元数据概览表。"""
 
-    # 输入目录：存放 FiveK Starter 样张 DNG 文件
+    # 输入目录：存放当前 FiveK 主样张 DNG 文件
     raw_dir = Path("data/raw")
 
     # 输出路径：生成的 Markdown 表格文件
@@ -35,9 +35,9 @@ def main() -> None:
     # 收集每个文件的元数据行
     rows = []
 
-    # 遍历所有以 "S" 开头的 DNG 文件（FiveK Starter 样张命名格式）
+    # 遍历所有以 "T" 开头的 DNG 文件（当前主样张命名格式）
     # sorted() 确保输出顺序稳定可复现
-    for raw_path in sorted(raw_dir.glob("S*.dng")):
+    for raw_path in sorted(raw_dir.glob("T*.dng")):
         with rawpy.imread(str(raw_path)) as raw:
             # raw_image_visible 是去除光学黑边后的有效像素，类型为 uint16
             visible = raw.raw_image_visible

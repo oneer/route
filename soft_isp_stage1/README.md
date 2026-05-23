@@ -36,8 +36,11 @@ soft_isp_stage1/
 ├── notebooks/                    # Jupyter notebooks (reserved)
 ├── reports/
 │   ├── stage1_report.md          # Final stage 1 report template
-│   ├── week1_raw_statistics.md   # Week 1: RAW stats observations
-│   ├── week1_roi_analysis.md     # Week 1: ROI analysis report
+│   ├── README.md                 # Report index
+│   ├── week1/                    # Week 1: RAW stats, ROI, summary
+│   ├── week2/                    # Week 2: BLC, DPC, summary
+│   ├── week3/                    # Week 3: Demosaic, AWB, summary
+│   ├── interview/                # Interview prep materials
 │   ├── figures/                  # Generated histogram + ROI preview PNGs
 │   └── raw_stats/                # Per-sample JSON metadata dumps
 ├── scripts/
@@ -89,7 +92,7 @@ python scripts/02_generate_rawpy_references.py
 
 ```bash
 # Dump full metadata and channel statistics as JSON
-python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
+python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 ```
 
 ### 5. Plot Histograms
@@ -148,7 +151,7 @@ See `materials/stage1_start_here.md` for the detailed week-by-week plan.
 | Week | Focus | Key Deliverable |
 |---|---|---|
 | 0.5 | Environment + sample download + first RAW read | 5 DNGs in `data/raw/` |
-| 1 | RAW sensor intuition: metadata, histograms, ROIs | `week1_raw_statistics.md`, histogram PNGs |
+| 1 | RAW sensor intuition: metadata, histograms, ROIs | `reports/week1/raw_statistics.md`, histogram PNGs |
 | 2 | Front-end corrections: BLC, DPC, LSC | Per-module notes + before/after comparisons |
 | 3 | Demosaic + AWB | Working bilinear/AHD demosaic, gray-world AWB |
 | 4 | CCM + Gamma + Tone Mapping | Complete end-to-end pipeline output |
@@ -183,7 +186,7 @@ Each ISP module must answer 7 questions (from `materials/module_study_template.m
 | Metadata summary table | Done | `03_dump_raw_metadata_table.py` → Markdown table |
 | Histogram plots | Done | S01, S03, S05 histograms with black/white level annotations |
 | ROI analysis | Done | Dark/midtone/highlight ROIs for S01, S03, S05 with JSON + preview |
-| Week 1 report | Done | `week1_raw_statistics.md` + `week1_roi_analysis.md` |
+| Week 1 report | Done | `reports/week1/raw_statistics.md` + `reports/week1/roi_analysis.md` |
 | BLC module | Pending | Week 2 |
 | DPC module | Pending | Week 2 |
 | LSC module | Pending | Week 2 |

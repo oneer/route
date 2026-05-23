@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from matplotlib.patches import Rectangle
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from soft_isp.orientation import apply_rawpy_orientation, transform_box_for_orientation
 from soft_isp.stats import bayer_pattern_from_rawpy, describe_array, split_bayer
 
 
@@ -85,21 +87,32 @@ def annotate_preview(
     raw_shape: tuple[int, int],
     rois: dict[str, dict[str, int | float]],
     out_path: Path,
+    display_flip: int,
 ) -> None:
+    preview = apply_rawpy_orientation(preview, display_flip)
     preview_height, preview_width = preview.shape[:2]
     raw_height, raw_width = raw_shape
-    scale_x = preview_width / raw_width
-    scale_y = preview_height / raw_height
+    oriented_raw_height, oriented_raw_width = apply_rawpy_orientation(np.zeros(raw_shape, dtype=np.uint8), display_flip).shape[:2]
+    scale_x = preview_width / oriented_raw_width
+    scale_y = preview_height / oriented_raw_height
 
     fig, ax = plt.subplots(figsize=(10, 7), constrained_layout=True)
     ax.imshow(preview)
     ax.set_axis_off()
 
     for name, roi in rois.items():
-        x = int(roi["x"]) * scale_x
-        y = int(roi["y"]) * scale_y
-        w = int(roi["w"]) * scale_x
-        h = int(roi["h"]) * scale_y
+        box_x, box_y, box_w, box_h = transform_box_for_orientation(
+            float(roi["x"]),
+            float(roi["y"]),
+            float(roi["w"]),
+            float(roi["h"]),
+            raw_shape,
+            display_flip,
+        )
+        x = box_x * scale_x
+        y = box_y * scale_y
+        w = box_w * scale_x
+        h = box_h * scale_y
         color = ROI_COLORS[name]
         ax.add_patch(Rectangle((x, y), w, h, fill=False, edgecolor=color, linewidth=2.0))
         ax.text(x, max(y - 6, 0), name, color=color, fontsize=11, weight="bold")
@@ -115,6 +128,7 @@ def analyze_raw(raw_path: Path, out_dir: Path, roi_size: int, stride: int) -> di
         bayer_pattern = bayer_pattern_from_rawpy(raw.raw_pattern, color_desc)
         black_levels = list(raw.black_level_per_channel)
         white_level = raw.white_level
+        display_flip = int(raw.sizes.flip)
 
     preview = make_raw_preview(raw_visible, black_levels, white_level)
 
@@ -150,13 +164,14 @@ def analyze_raw(raw_path: Path, out_dir: Path, roi_size: int, stride: int) -> di
     out_dir.mkdir(parents=True, exist_ok=True)
     preview_path = out_dir / f"{raw_path.stem}_roi_preview.png"
     json_path = out_dir / f"{raw_path.stem}_roi.json"
-    annotate_preview(preview, raw_visible.shape, rois, preview_path)
+    annotate_preview(preview, raw_visible.shape, rois, preview_path, display_flip)
 
     result = {
         "file": str(raw_path),
         "bayer_pattern": bayer_pattern,
         "black_level_per_channel": black_levels,
         "white_level": white_level,
+        "display_flip": display_flip,
         "roi_size": roi_size,
         "stride": stride,
         "preview": str(preview_path),
@@ -176,7 +191,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
         "",
         "本报告把 histogram 里的暗部、中间亮度、高光，映射回图像上的具体区域。ROI 由脚本自动选择：暗部接近 p05，中间亮度接近 p50，高光接近 p99。",
         "",
-        "标注图使用 RAW 数值直接生成灰度预览，而不是 rawpy 的彩色后处理图。这样 ROI 框和 RAW 统计坐标严格一致；代价是图像方向可能不是相机最终显示方向，颜色也不代表最终 RGB。",
+        "标注图使用 RAW 数值直接生成灰度预览，而不是 rawpy 的彩色后处理图。ROI 统计仍然基于 RAW 原始坐标；为了阅读舒服，写入报告的预览图会按相机 display orientation 旋正。",
         "",
         "## ROI 标注图",
         "",
@@ -184,7 +199,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
 
     for result in results:
         sample_id = Path(result["file"]).name.split("_", 1)[0]
-        preview_rel = Path(result["preview"]).relative_to(report_path.parent).as_posix()
+        preview_rel = Path(os.path.relpath(result["preview"], report_path.parent)).as_posix()
         lines.extend(
             [
                 f"### {sample_id}",
@@ -258,7 +273,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Analyze dark/midtone/highlight ROIs in RAW files.")
     parser.add_argument("raw_paths", type=Path, nargs="+", help="One or more RAW/DNG files.")
     parser.add_argument("--out-dir", type=Path, default=Path("reports/figures"))
-    parser.add_argument("--report", type=Path, default=Path("reports/week1_roi_analysis.md"))
+    parser.add_argument("--report", type=Path, default=Path("reports/week1/roi_analysis.md"))
     parser.add_argument("--roi-size", type=int, default=256)
     parser.add_argument("--stride", type=int, default=128)
     args = parser.parse_args()

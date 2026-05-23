@@ -1,0 +1,73 @@
+{
+  "file": "data\\raw\\T11_a0033-KE_-2590.dng",
+  "sample_id": "T11",
+  "bayer_pattern": "BGGR",
+  "black_level_per_channel": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "white_level": 4095,
+  "display_flip": 0,
+  "min_delta": 1024,
+  "mad_k": 12.0,
+  "raw_blc": {
+    "shape": [
+      2014,
+      3040
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 4095.0,
+    "mean": 306.2115404340668,
+    "std": 414.7958925295203,
+    "p01": 9.0,
+    "p50": 163.0,
+    "p99": 1940.0
+  },
+  "dpc": {
+    "shape": [
+      2014,
+      3040
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 4095.0,
+    "mean": 306.2113437842994,
+    "std": 414.7944006720502,
+    "p01": 9.0,
+    "p50": 163.0,
+    "p99": 1940.0
+  },
+  "candidate_count": 1,
+  "candidate_ratio": 1.633303716092615e-07,
+  "channel_counts": {
+    "B": 0,
+    "Gb": 0,
+    "Gr": 0,
+    "R": 1
+  },
+  "thresholds": {
+    "B": 1024.0,
+    "Gb": 1024.0,
+    "Gr": 1024.0,
+    "R": 1024.0
+  },
+  "changed_abs_mean": 1204.0,
+  "changed_abs_max": 1204.0,
+  "mask_overlay": "reports\\figures\\T11_a0033-KE_-2590_dpc_mask_overlay.png",
+  "repair_crop": "reports\\figures\\T11_a0033-KE_-2590_dpc_repair_crop.png",
+  "crop_info": {
+    "candidate_y": 1995,
+    "candidate_x": 2141,
+    "before": 4055,
+    "after": 2851,
+    "crop": {
+      "x0": 2091,
+      "y0": 1914,
+      "x1": 2191,
+      "y1": 2014
+    }
+  }
+}
