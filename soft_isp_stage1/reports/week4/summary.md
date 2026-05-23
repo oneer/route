@@ -16,6 +16,14 @@ RAW -> BLC -> DPC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> Preview
 - [Gamma 报告](gamma_report.md)
 - [Tone Mapping 报告](tone_mapping_report.md)
 
+## 分模块脚本
+
+- `scripts/10_apply_ccm.py`：只负责 CCM 对比图和 CCM 报告
+- `scripts/11_apply_gamma.py`：只负责 Gamma 对比图和 Gamma 报告
+- `scripts/12_apply_tone_mapping.py`：只负责 Tone Mapping 对比图和 Tone Mapping 报告
+- `scripts/13_write_week4_summary.py`：只负责 Week4 综合对比图和总结
+- `scripts/week4_common.py`：只放共用的 RAW -> AWB -> CCM 基础流水线和画图工具
+
 ## 核心概念速查
 
 | 名词 | 简单理解 | 本周位置 |
