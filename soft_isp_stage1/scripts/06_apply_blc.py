@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from soft_isp.blc import apply_blc
+from soft_isp.orientation import apply_rawpy_orientation
 from soft_isp.stats import bayer_pattern_from_rawpy, describe_array, split_bayer
 
 
@@ -36,6 +38,39 @@ def channel_stats(raw_array: np.ndarray, bayer_pattern: str) -> dict:
         name: describe_array(channel)
         for name, channel in split_bayer(raw_array, bayer_pattern).items()
     }
+
+
+def make_preview(raw_array: np.ndarray, display_max: float) -> np.ndarray:
+    gray = np.clip(raw_array.astype(np.float32) / max(display_max, 1.0), 0.0, 1.0)
+    gray8 = (gray * 255).astype(np.uint8)
+    return np.repeat(gray8[:, :, None], 3, axis=2)
+
+
+def plot_blc_visual_compare(
+    raw_path: Path,
+    raw_visible: np.ndarray,
+    corrected: np.ndarray,
+    out_dir: Path,
+    display_flip: int,
+) -> Path:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{raw_path.stem}_blc_visual_compare.png"
+    display_max = max(float(np.percentile(raw_visible, 99.5)), float(np.percentile(corrected, 99.5)), 1.0)
+    before_preview = apply_rawpy_orientation(make_preview(raw_visible, display_max), display_flip)
+    after_preview = apply_rawpy_orientation(make_preview(corrected, display_max), display_flip)
+
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4), constrained_layout=True)
+    axes[0].imshow(before_preview)
+    axes[0].set_title("Before BLC")
+    axes[1].imshow(after_preview)
+    axes[1].set_title("After BLC")
+    for ax in axes:
+        ax.set_axis_off()
+
+    fig.suptitle(raw_path.name)
+    fig.savefig(out_path, dpi=140)
+    plt.close(fig)
+    return out_path
 
 
 def plot_blc_compare(
@@ -113,8 +148,10 @@ def analyze_one(raw_path: Path, out_dir: Path, bins: int) -> dict:
         raw_pattern = raw.raw_pattern.copy()
         black_levels = list(raw.black_level_per_channel)
         white_level = int(raw.white_level)
+        display_flip = int(raw.sizes.flip)
 
     corrected = apply_blc(raw_visible, raw_pattern, black_levels, white_level)
+    visual_path = plot_blc_visual_compare(raw_path, raw_visible, corrected, out_dir, display_flip)
     figure_path = plot_blc_compare(
         raw_path,
         raw_visible,
@@ -138,6 +175,7 @@ def analyze_one(raw_path: Path, out_dir: Path, bins: int) -> dict:
         "blc": describe_array(corrected),
         "channels_before": channel_stats(raw_visible, bayer_pattern),
         "channels_after": channel_stats(corrected, bayer_pattern),
+        "visual_compare": str(visual_path),
         "figure": str(figure_path),
     }
 
@@ -202,6 +240,27 @@ def write_report(results: list[dict], report_path: Path) -> None:
     lines.extend(
         [
             "",
+            "## 视觉前后对比",
+            "",
+            "这组图把 BLC 前后的 RAW 当成灰度图显示，并用同一个显示上限做缩放。重点不是看颜色，而是看暗部基线有没有被扣掉。当前这批样张大多 black level 为 0，所以视觉上通常几乎不变；这反而说明 BLC 在这些样张上是一个 identity case。",
+            "",
+        ]
+    )
+
+    for result in results:
+        visual_rel = Path(os.path.relpath(result["visual_compare"], report_path.parent)).as_posix()
+        lines.extend(
+            [
+                f"### {result['sample_id']}",
+                "",
+                f"![{result['sample_id']} BLC visual compare]({visual_rel})",
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
             "## 对比直方图",
             "",
             "看图时重点看两件事：第一，after BLC 的分布是否整体左移；第二，暗部是否从 black level 附近移动到 0 附近。",
@@ -210,7 +269,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     )
 
     for result in results:
-        figure_rel = Path(result["figure"]).relative_to(report_path.parent).as_posix()
+        figure_rel = Path(os.path.relpath(result["figure"], report_path.parent)).as_posix()
         lines.extend(
             [
                 f"### {result['sample_id']}",
@@ -259,7 +318,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Apply black level correction and write a learning report.")
     parser.add_argument("raw_paths", type=Path, nargs="+", help="One or more RAW/DNG files.")
     parser.add_argument("--out-dir", type=Path, default=Path("reports/figures"))
-    parser.add_argument("--report", type=Path, default=Path("reports/week2_blc_report.md"))
+    parser.add_argument("--report", type=Path, default=Path("reports/week2/blc_report.md"))
     parser.add_argument("--bins", type=int, default=512)
     args = parser.parse_args()
 

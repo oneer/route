@@ -1,35 +1,35 @@
 # RAW 样张登记表
 
-阶段 1 至少准备 5 张 RAW / DNG。当前已经下载 5 张 MIT-Adobe FiveK DNG 到 `data/raw/`。这些 DNG 不提交到 Git，由 `.gitignore` 排除。
+阶段 1 当前使用 14 张 MIT-Adobe FiveK DNG 作为主样张集。旧的 `S01-S05` 启动样张已替换为下面的 `T01-T14`。这些 DNG 不提交到 Git，由 `.gitignore` 排除。
 
-## 已准备样张
+## 当前主样张
 
-| 编号 | 建议用途 | 本地文件 | 来源链接 | 参考输出 | Bayer | black level | white level | 状态 |
-|---|---|---|---|---|---|---:|---:|---|
-| S01 | 起步样张：先跑通 metadata 和四通道统计 | `data/raw/S01_a0001-jmac_DSC1459.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0001-jmac_DSC1459.dng | `data/references/S01_a0001-jmac_DSC1459_rawpy_srgb.png` | BGGR | 0 / 0 / 0 / 0 | 4095 | 已完成 metadata 检查 |
-| S02 | 对照样张：观察曝光和通道分布差异 | `data/raw/S02_a0002-dgw_005.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0002-dgw_005.dng | `data/references/S02_a0002-dgw_005_rawpy_srgb.png` | RGGB | 0 / 0 / 0 / 0 | 15892 | 已完成 metadata 检查 |
-| S03 | 对照样张：观察不同相机/场景 metadata | `data/raw/S03_a0003-NKIM_MG_8178.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0003-NKIM_MG_8178.dng | `data/references/S03_a0003-NKIM_MG_8178_rawpy_srgb.png` | RGGB | 1023 / 1023 / 1023 / 1023 | 13600 | 已完成 metadata 检查 |
-| S04 | 对照样张：用于 histogram 和 clipping 检查 | `data/raw/S04_a0004-jmac_MG_1384.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0004-jmac_MG_1384.dng | `data/references/S04_a0004-jmac_MG_1384_rawpy_srgb.png` | RGGB | 128 / 127 / 128 / 128 | 3692 | 已完成 metadata 检查 |
-| S05 | 对照样张：用于 demosaic / AWB 初步实验 | `data/raw/S05_a0005-jn_2007_05_10__564.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0005-jn_2007_05_10__564.dng | `data/references/S05_a0005-jn_2007_05_10__564_rawpy_srgb.png` | RGGB | 127 / 128 / 127 / 127 | 3398 | 已完成 metadata 检查 |
+| 编号 | 原始 FiveK 文件 | 建议用途 | 本地文件 | 来源链接 | 参考输出 | 状态 |
+|---|---|---|---|---|---|---|
+| T01 | `a0006-IMG_2787.dng` | 水面细节 / 高频纹理 / Demosaic | `data/raw/T01_a0006-IMG_2787.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0006-IMG_2787.dng | `data/references/T01_a0006-IMG_2787_rawpy_srgb.png` | 已下载 |
+| T02 | `a0008-WP_CRW_3959.dng` | 人像 / 肤色 / AWB | `data/raw/T02_a0008-WP_CRW_3959.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0008-WP_CRW_3959.dng | `data/references/T02_a0008-WP_CRW_3959_rawpy_srgb.png` | 已下载 |
+| T03 | `a0010-jmac_MG_4807.dng` | 天空 / 彩虹 / AWB 风险 | `data/raw/T03_a0010-jmac_MG_4807.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0010-jmac_MG_4807.dng | `data/references/T03_a0010-jmac_MG_4807_rawpy_srgb.png` | 已下载 |
+| T04 | `a0012-kme_143.dng` | 建筑直线 / 边缘伪影 | `data/raw/T04_a0012-kme_143.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0012-kme_143.dng | `data/references/T04_a0012-kme_143_rawpy_srgb.png` | 已下载 |
+| T05 | `a0014-WP_CRW_6320.dng` | 黑白边界 / DPC 误检 / Demosaic | `data/raw/T05_a0014-WP_CRW_6320.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0014-WP_CRW_6320.dng | `data/references/T05_a0014-WP_CRW_6320_rawpy_srgb.png` | 已下载 |
+| T06 | `a0018-kme_234.dng` | 风景 / 高动态范围 / Tone | `data/raw/T06_a0018-kme_234.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0018-kme_234.dng | `data/references/T06_a0018-kme_234_rawpy_srgb.png` | 已下载 |
+| T07 | `a0020-jmac_MG_6225.dng` | 大面积绿色 / AWB 失败案例 | `data/raw/T07_a0020-jmac_MG_6225.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0020-jmac_MG_6225.dng | `data/references/T07_a0020-jmac_MG_6225_rawpy_srgb.png` | 已下载 |
+| T08 | `a0022-IMG_2380.dng` | 大面积蓝色 / AWB 失败案例 | `data/raw/T08_a0022-IMG_2380.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0022-IMG_2380.dng | `data/references/T08_a0022-IMG_2380_rawpy_srgb.png` | 已下载 |
+| T09 | `a0023-07-06-02-at-15h06m48-s_MG_1489.dng` | 室内人物 / 混合光 / AWB | `data/raw/T09_a0023-07-06-02-at-15h06m48-s_MG_1489.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0023-07-06-02-at-15h06m48-s_MG_1489.dng | `data/references/T09_a0023-07-06-02-at-15h06m48-s_MG_1489_rawpy_srgb.png` | 已下载 |
+| T10 | `a0026-kme_391.dng` | 隧道 / 暗部 / 高对比 | `data/raw/T10_a0026-kme_391.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0026-kme_391.dng | `data/references/T10_a0026-kme_391_rawpy_srgb.png` | 已下载 |
+| T11 | `a0033-KE_-2590.dng` | 室内暖光 / 食物 / 肤色 | `data/raw/T11_a0033-KE_-2590.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0033-KE_-2590.dng | `data/references/T11_a0033-KE_-2590_rawpy_srgb.png` | 已下载 |
+| T12 | `a0034-LSYD4O2202.dng` | 树林绿色 / 高频叶子 | `data/raw/T12_a0034-LSYD4O2202.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0034-LSYD4O2202.dng | `data/references/T12_a0034-LSYD4O2202_rawpy_srgb.png` | 已下载 |
+| T13 | `a0035-dgw_048.dng` | 城市建筑 / 高频边缘 | `data/raw/T13_a0035-dgw_048.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0035-dgw_048.dng | `data/references/T13_a0035-dgw_048_rawpy_srgb.png` | 已下载 |
+| T14 | `a0040-_DSC5693.dng` | 蓝天建筑 / CCM / 边缘 | `data/raw/T14_a0040-_DSC5693.dng` | https://data.csail.mit.edu/graphics/fivek/img/dng/a0040-_DSC5693.dng | `data/references/T14_a0040-_DSC5693_rawpy_srgb.png` | 已下载 |
 
-## 后续精挑目标
-
-当前 5 张是启动包，优点是马上能跑代码。等 Week 1 metadata 和 thumbnail 都看完后，再按下面目标替换或补充样张：
-
-| 目标编号 | 场景 | 选择原因 | 状态 |
-|---|---|---|---|
-| T01 | 日光室外正常曝光 | 建立正常 RAW histogram 和四通道均值直觉 | 待从 FiveK 缩略图精挑 |
-| T02 | 室内暖光 | 观察 AWB 偏色、混合光和 R/B gain | 待从 FiveK 缩略图精挑 |
-| T03 | 低光高 ISO | 观察暗部噪声、read noise、chroma noise | 可从 SID 或 FiveK 补 |
-| T04 | 高动态范围 | 观察高光 clipping 和暗部细节 | 可从 HDR+ 或 FiveK 补 |
-| T05 | 高频纹理/纯色 | 观察 demosaic artifact、false color、zipper | 待从 FiveK 缩略图精挑 |
-
-## 本周要填的字段
-
-运行：
+## 重新生成分析
 
 ```bash
-python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
+python scripts/02_generate_rawpy_references.py
+python scripts/03_dump_raw_metadata_table.py
+python scripts/04_plot_raw_histogram.py data/raw/T*.dng
+python scripts/05_analyze_raw_roi.py data/raw/T*.dng
+python scripts/06_apply_blc.py data/raw/T*.dng
+python scripts/07_apply_dpc.py data/raw/T*.dng
+python scripts/08_apply_demosaic.py data/raw/T*.dng
+python scripts/09_apply_awb.py data/raw/T*.dng
 ```
-
-把输出中的 `raw_pattern`、`black_level_per_channel`、`white_level`、四通道统计写回本表和 `reports/week1_raw_statistics.md`。

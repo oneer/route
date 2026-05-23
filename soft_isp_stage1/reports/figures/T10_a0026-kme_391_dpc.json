@@ -1,0 +1,73 @@
+{
+  "file": "data\\raw\\T10_a0026-kme_391.dng",
+  "sample_id": "T10",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    128,
+    128,
+    127,
+    127
+  ],
+  "white_level": 4095,
+  "display_flip": 0,
+  "min_delta": 1024,
+  "mad_k": 12.0,
+  "raw_blc": {
+    "shape": [
+      2348,
+      3522
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 3968.0,
+    "mean": 251.23023049568204,
+    "std": 286.9457577957721,
+    "p01": 10.0,
+    "p50": 170.0,
+    "p99": 1133.0
+  },
+  "dpc": {
+    "shape": [
+      2348,
+      3522
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 3968.0,
+    "mean": 251.15241286941077,
+    "std": 286.3598782427127,
+    "p01": 10.0,
+    "p50": 170.0,
+    "p99": 1132.0
+  },
+  "candidate_count": 551,
+  "candidate_ratio": 6.662913185264297e-05,
+  "channel_counts": {
+    "R": 154,
+    "Gr": 153,
+    "Gb": 188,
+    "B": 56
+  },
+  "thresholds": {
+    "R": 1024.0,
+    "Gr": 1024.0,
+    "Gb": 1024.0,
+    "B": 1024.0
+  },
+  "changed_abs_mean": 1679.6206896551723,
+  "changed_abs_max": 3651.0,
+  "mask_overlay": "reports\\figures\\T10_a0026-kme_391_dpc_mask_overlay.png",
+  "repair_crop": "reports\\figures\\T10_a0026-kme_391_dpc_repair_crop.png",
+  "crop_info": {
+    "candidate_y": 1045,
+    "candidate_x": 1746,
+    "before": 3968,
+    "after": 317,
+    "crop": {
+      "x0": 1696,
+      "y0": 995,
+      "x1": 1796,
+      "y1": 1095
+    }
+  }
+}

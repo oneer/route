@@ -1,0 +1,94 @@
+{
+  "file": "data\\raw\\T03_a0010-jmac_MG_4807.dng",
+  "sample_id": "T03",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    128,
+    128,
+    127,
+    128
+  ],
+  "white_level": 4095,
+  "display_flip": 0,
+  "display_white_p995": 2444.25,
+  "raw_blc": {
+    "shape": [
+      2348,
+      3522
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 3967.0,
+    "mean": 477.03904914545416,
+    "std": 459.11851184906277,
+    "p01": 2.0,
+    "p50": 417.0,
+    "p99": 2190.0
+  },
+  "raw_dpc": {
+    "shape": [
+      2348,
+      3522
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 3967.0,
+    "mean": 477.03890548772523,
+    "std": 459.1183325700896,
+    "p01": 2.0,
+    "p50": 417.0,
+    "p99": 2190.0
+  },
+  "rgb_linear": {
+    "shape": [
+      2348,
+      3522,
+      3
+    ],
+    "dtype": "float32",
+    "R": {
+      "shape": [
+        2348,
+        3522
+      ],
+      "dtype": "float32",
+      "min": 0.0,
+      "max": 2511.0,
+      "mean": 284.56170654296875,
+      "std": 266.1714172363281,
+      "p01": 2.0,
+      "p50": 255.0,
+      "p99": 1461.5
+    },
+    "G": {
+      "shape": [
+        2348,
+        3522
+      ],
+      "dtype": "float32",
+      "min": 0.0,
+      "max": 3967.0,
+      "mean": 596.3989868164062,
+      "std": 529.329833984375,
+      "p01": 4.25,
+      "p50": 556.0,
+      "p99": 2764.5
+    },
+    "B": {
+      "shape": [
+        2348,
+        3522
+      ],
+      "dtype": "float32",
+      "min": 0.0,
+      "max": 2835.0,
+      "mean": 430.7772521972656,
+      "std": 377.9741516113281,
+      "p01": 2.5,
+      "p50": 409.5,
+      "p99": 1776.0
+    }
+  },
+  "preview": "reports\\figures\\T03_a0010-jmac_MG_4807_demosaic_rgb.png",
+  "compare": "reports\\figures\\T03_a0010-jmac_MG_4807_demosaic_compare.png"
+}

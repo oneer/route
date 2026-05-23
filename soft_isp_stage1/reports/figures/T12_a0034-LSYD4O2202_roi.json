@@ -1,0 +1,113 @@
+{
+  "file": "C:\\Users\\ICRD\\Desktop\\route\\soft_isp_stage1\\data\\raw\\T12_a0034-LSYD4O2202.dng",
+  "bayer_pattern": "GBRG",
+  "black_level_per_channel": [
+    128,
+    128,
+    128,
+    128
+  ],
+  "white_level": 3711,
+  "display_flip": 0,
+  "roi_size": 256,
+  "stride": 128,
+  "preview": "reports\\figures\\T12_a0034-LSYD4O2202_roi_preview.png",
+  "rois": {
+    "dark": {
+      "target_percentile": 5,
+      "target_value": 137.0,
+      "roi": {
+        "x": 4480,
+        "y": 2560,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 124.0,
+        "max": 276.0,
+        "mean": 141.42774963378906,
+        "std": 8.17108689147888,
+        "p01": 129.0,
+        "p50": 141.0,
+        "p99": 162.0
+      },
+      "channel_means": {
+        "Gb": 146.9505615234375,
+        "B": 133.704345703125,
+        "R": 138.4173583984375,
+        "Gr": 146.63873291015625
+      },
+      "near_black": true,
+      "near_white": false
+    },
+    "midtone": {
+      "target_percentile": 50,
+      "target_value": 201.0,
+      "roi": {
+        "x": 512,
+        "y": 1920,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 127.0,
+        "max": 1479.0,
+        "mean": 200.8272705078125,
+        "std": 74.72659912258034,
+        "p01": 137.0,
+        "p50": 184.0,
+        "p99": 517.0
+      },
+      "channel_means": {
+        "Gb": 230.31219482421875,
+        "B": 162.9896240234375,
+        "R": 180.53033447265625,
+        "Gr": 229.4769287109375
+      },
+      "near_black": true,
+      "near_white": false
+    },
+    "highlight": {
+      "target_percentile": 99,
+      "target_value": 1495.0,
+      "roi": {
+        "x": 128,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      },
+      "stats": {
+        "shape": [
+          256,
+          256
+        ],
+        "dtype": "uint16",
+        "min": 152.0,
+        "max": 3329.0,
+        "mean": 906.9837188720703,
+        "std": 450.2430701625863,
+        "p01": 192.0,
+        "p50": 975.0,
+        "p99": 1565.0
+      },
+      "channel_means": {
+        "Gb": 1048.3232421875,
+        "B": 1083.0069580078125,
+        "R": 457.82763671875,
+        "Gr": 1038.7770385742188
+      },
+      "near_black": false,
+      "near_white": false
+    }
+  }
+}

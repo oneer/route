@@ -1,0 +1,62 @@
+{
+  "file": "data\\raw\\T02_a0008-WP_CRW_3959.dng",
+  "sample_id": "T02",
+  "bayer_pattern": "RGGB",
+  "black_level_per_channel": [
+    127,
+    128,
+    128,
+    127
+  ],
+  "white_level": 4000,
+  "display_flip": 5,
+  "min_delta": 1024,
+  "mad_k": 12.0,
+  "raw_blc": {
+    "shape": [
+      2055,
+      3088
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 825.0,
+    "mean": 264.92094899965963,
+    "std": 171.55981789851472,
+    "p01": 17.0,
+    "p50": 267.0,
+    "p99": 612.0
+  },
+  "dpc": {
+    "shape": [
+      2055,
+      3088
+    ],
+    "dtype": "uint16",
+    "min": 0.0,
+    "max": 825.0,
+    "mean": 264.92094899965963,
+    "std": 171.55981789851472,
+    "p01": 17.0,
+    "p50": 267.0,
+    "p99": 612.0
+  },
+  "candidate_count": 0,
+  "candidate_ratio": 0.0,
+  "channel_counts": {
+    "R": 0,
+    "Gr": 0,
+    "Gb": 0,
+    "B": 0
+  },
+  "thresholds": {
+    "R": 1024.0,
+    "Gr": 1024.0,
+    "Gb": 1024.0,
+    "B": 1024.0
+  },
+  "changed_abs_mean": 0.0,
+  "changed_abs_max": 0.0,
+  "mask_overlay": "reports\\figures\\T02_a0008-WP_CRW_3959_dpc_mask_overlay.png",
+  "repair_crop": "reports\\figures\\T02_a0008-WP_CRW_3959_dpc_repair_crop.png",
+  "crop_info": null
+}

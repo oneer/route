@@ -21,7 +21,7 @@ python scripts/01_inspect_raw.py data/raw/your_sample.dng
 ```
 
 4. 把输出中的 metadata 和统计结论填到 `materials/raw_sample_manifest.md`。
-5. 写第一篇笔记：`reports/week1_raw_statistics.md`。
+5. 写第一篇笔记：`reports/week1/raw_statistics.md`。
 
 ## 6 周路线
 
@@ -43,4 +43,3 @@ python scripts/01_inspect_raw.py data/raw/your_sample.dng
 5. 参数怎么调？
 6. 怎么验证？
 7. 失败场景是什么？
-

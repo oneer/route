@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from soft_isp.blc import apply_blc
 from soft_isp.dpc import detect_defects, merge_channel_masks, repair_defects
+from soft_isp.orientation import apply_rawpy_orientation
 from soft_isp.stats import bayer_pattern_from_rawpy, describe_array
 
 
@@ -31,10 +33,11 @@ def make_preview(raw_array: np.ndarray, display_max: float | None = None) -> np.
     return np.repeat(gray8[:, :, None], 3, axis=2)
 
 
-def plot_mask_overlay(raw_path: Path, raw_blc: np.ndarray, mask: np.ndarray, out_dir: Path) -> Path:
+def plot_mask_overlay(raw_path: Path, raw_blc: np.ndarray, mask: np.ndarray, out_dir: Path, display_flip: int) -> Path:
     out_path = out_dir / f"{raw_path.stem}_dpc_mask_overlay.png"
     preview = make_preview(raw_blc)
     preview[mask] = np.array([255, 0, 0], dtype=np.uint8)
+    preview = apply_rawpy_orientation(preview, display_flip)
 
     fig, ax = plt.subplots(figsize=(10, 7), constrained_layout=True)
     ax.imshow(preview)
@@ -87,7 +90,7 @@ def plot_repair_crop(
     mask_crop = mask[y0:y1, x0:x1]
     display_max = max(float(np.percentile(before_crop, 99.5)), float(np.percentile(after_crop, 99.5)), 1.0)
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 4), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(5.4, 1.9), constrained_layout=True)
     axes[0].imshow(make_preview(before_crop, display_max))
     axes[0].set_title("Before DPC")
     axes[1].imshow(make_preview(after_crop, display_max))
@@ -98,7 +101,7 @@ def plot_repair_crop(
     for ax in axes:
         ax.set_axis_off()
 
-    fig.savefig(out_path, dpi=150)
+    fig.savefig(out_path, dpi=120)
     plt.close(fig)
 
     crop_info = None
@@ -121,6 +124,7 @@ def analyze_one(raw_path: Path, out_dir: Path, min_delta: int, mad_k: float, cro
         raw_pattern = raw.raw_pattern.copy()
         black_levels = list(raw.black_level_per_channel)
         white_level = int(raw.white_level)
+        display_flip = int(raw.sizes.flip)
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -129,7 +133,7 @@ def analyze_one(raw_path: Path, out_dir: Path, min_delta: int, mad_k: float, cro
     repaired = repair_defects(raw_blc, bayer_pattern, detection)
     full_mask = merge_channel_masks(raw_blc.shape, bayer_pattern, detection["masks"])
 
-    overlay_path = plot_mask_overlay(raw_path, raw_blc, full_mask, out_dir)
+    overlay_path = plot_mask_overlay(raw_path, raw_blc, full_mask, out_dir, display_flip)
     crop_path, crop_info = plot_repair_crop(raw_path, raw_blc, repaired, full_mask, out_dir, crop_size)
 
     channel_counts = {name: int(mask.sum()) for name, mask in detection["masks"].items()}
@@ -143,6 +147,7 @@ def analyze_one(raw_path: Path, out_dir: Path, min_delta: int, mad_k: float, cro
         "bayer_pattern": bayer_pattern,
         "black_level_per_channel": black_levels,
         "white_level": white_level,
+        "display_flip": display_flip,
         "min_delta": min_delta,
         "mad_k": mad_k,
         "raw_blc": describe_array(raw_blc),
@@ -226,7 +231,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     )
 
     for result in results:
-        overlay_rel = Path(result["mask_overlay"]).relative_to(report_path.parent).as_posix()
+        overlay_rel = Path(os.path.relpath(result["mask_overlay"], report_path.parent)).as_posix()
         lines.extend(
             [
                 f"### {result['sample_id']}",
@@ -246,7 +251,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     )
 
     for result in results:
-        crop_rel = Path(result["repair_crop"]).relative_to(report_path.parent).as_posix()
+        crop_rel = Path(os.path.relpath(result["repair_crop"], report_path.parent)).as_posix()
         crop_info = result["crop_info"]
         lines.extend([f"### {result['sample_id']}", "", f"![{result['sample_id']} DPC repair crop]({crop_rel})", ""])
         if crop_info is None:
@@ -284,10 +289,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Apply BLC + DPC and write a learning report.")
     parser.add_argument("raw_paths", type=Path, nargs="+", help="One or more RAW/DNG files.")
     parser.add_argument("--out-dir", type=Path, default=Path("reports/figures"))
-    parser.add_argument("--report", type=Path, default=Path("reports/week2_dpc_report.md"))
+    parser.add_argument("--report", type=Path, default=Path("reports/week2/dpc_report.md"))
     parser.add_argument("--min-delta", type=int, default=1024)
     parser.add_argument("--mad-k", type=float, default=12.0)
-    parser.add_argument("--crop-size", type=int, default=160)
+    parser.add_argument("--crop-size", type=int, default=100)
     args = parser.parse_intermixed_args()
 
     results = [

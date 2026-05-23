@@ -36,8 +36,11 @@ soft_isp_stage1/
 ├── notebooks/                    # Jupyter notebooks（预留）
 ├── reports/
 │   ├── stage1_report.md          # 阶段总报告模板
-│   ├── week1_raw_statistics.md   # 第 1 周：RAW 统计观察
-│   ├── week1_roi_analysis.md     # 第 1 周：ROI 分析报告
+│   ├── README.md                 # 报告导航
+│   ├── week1/                    # 第 1 周：RAW 统计、ROI、总结
+│   ├── week2/                    # 第 2 周：BLC、DPC、总结
+│   ├── week3/                    # 第 3 周：Demosaic、AWB、总结
+│   ├── interview/                # 面试题与复习材料
 │   ├── figures/                  # 生成的直方图 + ROI 预览图
 │   └── raw_stats/                # 每张样张的 JSON 元数据
 ├── scripts/
@@ -89,7 +92,7 @@ python scripts/02_generate_rawpy_references.py
 
 ```bash
 # 导出完整的元数据和通道统计（JSON 格式）
-python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
+python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 ```
 
 ### 5. 绘制直方图
@@ -148,7 +151,7 @@ python scripts/05_analyze_raw_roi.py data/raw/*.dng
 | 周次 | 重点 | 核心交付物 |
 |---|---|---|
 | 0.5 | 环境搭建 + 样张下载 + 首次读取 RAW | 5 张 DNG 放入 `data/raw/` |
-| 1 | RAW 传感器直觉：元数据、直方图、ROI | `week1_raw_statistics.md`、直方图 PNG |
+| 1 | RAW 传感器直觉：元数据、直方图、ROI | `reports/week1/raw_statistics.md`、直方图 PNG |
 | 2 | 前端校正：BLC、DPC、LSC | 逐模块笔记 + 处理前后对比 |
 | 3 | 去马赛克 + 自动白平衡 | 可运行的双线性/AHD 去马赛克、灰度世界 AWB |
 | 4 | CCM + Gamma + 色调映射 | 端到端 Pipeline 完整输出 |
@@ -183,7 +186,7 @@ python scripts/05_analyze_raw_roi.py data/raw/*.dng
 | 元数据汇总表 | 已完成 | `03_dump_raw_metadata_table.py` → Markdown 表格 |
 | 直方图绘制 | 已完成 | S01、S03、S05 直方图，带黑/白电平标注 |
 | ROI 分析 | 已完成 | S01、S03、S05 的暗/中/亮 ROI，含 JSON + 预览图 |
-| 第 1 周报告 | 已完成 | `week1_raw_statistics.md` + `week1_roi_analysis.md` |
+| 第 1 周报告 | 已完成 | `reports/week1/raw_statistics.md` + `reports/week1/roi_analysis.md` |
 | BLC 模块 | 待完成 | 第 2 周 |
 | DPC 模块 | 待完成 | 第 2 周 |
 | LSC 模块 | 待完成 | 第 2 周 |

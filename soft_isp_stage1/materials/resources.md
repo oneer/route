@@ -12,11 +12,11 @@
 | 论文 | `materials/papers/Chen_2018_Learning_to_See_in_the_Dark.pdf` | RAW 数据定义、低光短曝光/长曝光设定 |
 | 讲义 | `materials/slides/Stanford_EE367_lecture4_camera_pipeline.pdf` | 相机传感器、RAW 到 RGB、ISP 顺序 |
 | 讲义 | `materials/slides/Cornell_CS6640_07_Pipeline.pdf` | 数字相机 pipeline 整体视角 |
-| 数据 | `data/raw/S01_a0001-jmac_DSC1459.dng` | 第一张 RAW 统计练习 |
-| 数据 | `data/raw/S02_a0002-dgw_005.dng` | 第二张 RAW 统计练习 |
-| 数据 | `data/raw/S03_a0003-NKIM_MG_8178.dng` | 第三张 RAW 统计练习 |
-| 数据 | `data/raw/S04_a0004-jmac_MG_1384.dng` | 第四张 RAW 统计练习 |
-| 数据 | `data/raw/S05_a0005-jn_2007_05_10__564.dng` | 第五张 RAW 统计练习 |
+| 数据 | `data/raw/T01_a0006-IMG_2787.dng` | 水面细节 / 高频纹理 |
+| 数据 | `data/raw/T02_a0008-WP_CRW_3959.dng` | 人像 / 肤色 / AWB |
+| 数据 | `data/raw/T07_a0020-jmac_MG_6225.dng` | 大面积绿色 / AWB 失败案例 |
+| 数据 | `data/raw/T10_a0026-kme_391.dng` | 隧道暗部 / 高对比 |
+| 数据 | `data/raw/T14_a0040-_DSC5693.dng` | 蓝天建筑 / 边缘与颜色 |
 
 ## 1. 必读顺序
 
@@ -66,4 +66,3 @@
 | MIT-Adobe FiveK | https://data.csail.mit.edu/graphics/fivek/ | 已保存索引页：`materials/datasets/fivek_index.html`；已下载 5 张 DNG 到 `data/raw/` | 阶段 1 首选，先用 5 张跑通，不下载 50GB 全量包。 |
 | Google HDR+ Dataset | https://www.hdrplusdata.org/dataset.html | 网页入口 | 可选。阶段 1 只挑单帧 DNG 看 RAW，不做 burst。 |
 | SID Dataset | https://cchen156.github.io/ | 网页入口 | 可选。观察低光 RAW，暂不训练模型。 |
-
