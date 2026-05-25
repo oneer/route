@@ -1,3 +1,15 @@
+"""Week 4 共用工具模块 —— 供 10/11/12/13 等脚本复用的 ISP 管线构建与显示函数。
+
+本模块封装了 Week 4 脚本中重复出现的：
+    - build_week4_base:  构建 BLC->DPC->Demosaic->AWB->CCM 的完整前置管线
+    - gamma_preview:     normalize + gamma + uint8 + orientation 的预览生成
+    - linear_preview:    normalize + uint8 + orientation 的线性预览
+    - reinhard_preview:  normalize + Reinhard + gamma + uint8 的色调映射预览
+    - reference_panel:   加载 rawpy 参考图（不存在时返回黑色占位图）
+    - save_compare:      多面板并排对比图的通用绘制函数
+    - 辅助函数: sample_id, describe_rgb, rgb_mean, fmt, rel
+"""
+
 from __future__ import annotations
 
 import os

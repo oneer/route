@@ -1,3 +1,25 @@
+"""LSC（镜头阴影校正）实验脚本 —— 用径向模型补偿镜头中心和边缘的亮度/颜色差异。
+
+用法:
+    python 14_apply_lsc.py <raw_path>... [--out-dir reports/figures]
+
+功能:
+    在 Bayer RAW 域（Demosaic 之前）对 BLC + DPC 后的数据应用径向 LSC，
+    使用简化的径向 gain map（中心 gain=1.0，边缘按指定 gain 逐渐升高），
+    生成 LSC 前后对比图和 gain map 可视化，并汇总为 Week 2 的 LSC 学习报告。
+
+LSC 在管线中的位置:
+    RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone/Gamma
+
+为什么 LSC 放在 Demosaic 之前:
+    镜头阴影发生在光学/Bayer 域，越早处理越不容易把位置相关的色偏带进后续全局统计。
+
+输出:
+    - {sample}_lsc_compare.png:  BLC+DPC / LSC / Gain map 三栏对比
+    - {sample}_lsc.json:         逐通道统计信息
+    - reports/week2/lsc_report.md: 汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

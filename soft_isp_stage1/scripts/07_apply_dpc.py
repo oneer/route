@@ -1,3 +1,25 @@
+"""DPC（坏点校正）实验脚本 —— BLC 后检测并修复 Bayer RAW 中的异常像素。
+
+用法:
+    python 07_apply_dpc.py <raw_path>... [--out-dir reports/figures] [--min-delta 1024] [--mad-k 12.0]
+
+功能:
+    在 BLC 后的 Bayer RAW 数据上运行坏点检测（基于同色通道的 3x3 中值 + MAD 阈值），
+    生成 mask 叠加图、修复前后局部对比图，并汇总为 Week 2 的 DPC 学习报告。
+
+DPC 算法:
+    1. 按 Bayer 模式拆分为 R/Gr/Gb/B 四个同色平面
+    2. 在每个平面上做 3×3 中值检测，使用 MAD（中位数绝对偏差）建立稳健阈值
+    3. threshold = max(min_delta, median(residual) + mad_k × MAD(residual))
+    4. 将异常像素替换为其同色邻域中值
+
+输出:
+    - {sample}_dpc_mask_overlay.png:  DPC 候选点在灰度预览上的红色标注
+    - {sample}_dpc_repair_crop.png:   修复幅度最大候选点附近的局部对比
+    - {sample}_dpc.json:              逐通道坏点数量与统计信息
+    - reports/week2/dpc_report.md:    汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

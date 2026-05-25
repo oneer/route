@@ -1,3 +1,28 @@
+"""AWB（自动白平衡）实验脚本 —— Demosaic 后用 Gray World 算法估计并应用白平衡增益。
+
+用法:
+    python 09_apply_awb.py <raw_path>... [--out-dir reports/figures] [--reference-dir data/references]
+
+功能:
+    对 Demosaic 后的线性 RGB 执行 Gray World AWB 算法，
+    通过排除最亮和最暗的百分位数像素来估计 R/B 通道增益（以 G 为基准），
+    生成 AWB 前后对比图，并汇总为 Week 3 的 AWB 学习报告。
+
+Gray World 假设:
+    场景中所有颜色的平均值为灰色 → R_mean ≈ G_mean ≈ B_mean
+    R_gain = G_mean / R_mean, B_gain = G_mean / B_mean
+
+算法流程:
+    RAW -> BLC -> DPC -> Demosaic -> Gray World AWB -> 对比图
+
+输出:
+    - {sample}_awb_before.png:   AWB 前的 RGB 预览
+    - {sample}_awb_after.png:    AWB 后的 RGB 预览
+    - {sample}_awb_compare.png:  AWB 前 / AWB 后 / rawpy reference 三栏对比
+    - {sample}_awb.json:         增益值与逐通道统计
+    - reports/week3/awb_report.md: 汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

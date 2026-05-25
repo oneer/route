@@ -1,3 +1,27 @@
+"""CCM（颜色校正矩阵）实验脚本 —— AWB 后用 3×3 CCM 将相机 RGB 映射到目标色彩空间。
+
+用法:
+    python 10_apply_ccm.py <raw_path>... [--out-dir reports/figures] [--reference-dir data/references]
+
+功能:
+    从 rawpy 的 color_matrix 元数据提取 3×3 颜色校正矩阵，
+    对 AWB 后的线性 RGB 应用矩阵变换，实现通道间颜色混合。
+    生成 CCM 前后对比图，并汇总为 Week 4 的 CCM 学习报告。
+
+CCM 公式:
+    [R']   [m00 m01 m02] [R]
+    [G'] = [m10 m11 m12] [G]
+    [B']   [m20 m21 m22] [B]
+
+算法流程:
+    RAW -> BLC -> DPC -> Demosaic -> AWB -> CCM -> 对比图
+
+输出:
+    - {sample}_ccm_compare.png:  AWB / CCM / rawpy reference 三栏对比
+    - {sample}_ccm.json:         CCM 矩阵与逐通道统计
+    - reports/week4/ccm_report.md: 汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

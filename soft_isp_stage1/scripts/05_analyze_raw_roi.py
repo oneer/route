@@ -1,3 +1,19 @@
+"""RAW ROI 分析工具 —— 自动定位暗部/中间调/高光区域并生成标注报告。
+
+用法:
+    python 05_analyze_raw_roi.py <raw_path>... [--out-dir reports/figures] [--roi-size 256] [--stride 128]
+
+功能:
+    在 RAW 图像上自动滑窗搜索三个目标亮度区域（暗部≈p05、中间调≈p50、高光≈p99），
+    输出包含 ROI 标注框的预览图和逐通道统计的 JSON 报告。
+    通过将直方图统计映射回图像空间坐标，帮助理解数值分布与实际场景的对应关系。
+
+输出:
+    - {sample}_roi_preview.png: 标有 dark/midtone/highlight 三类 ROI 框的 RAW 灰度预览
+    - {sample}_roi.json:        逐 ROI 的详细统计信息
+    - reports/week1/roi_analysis.md: 汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

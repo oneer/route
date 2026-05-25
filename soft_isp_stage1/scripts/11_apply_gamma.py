@@ -1,3 +1,30 @@
+"""Gamma 校正实验脚本 —— 将线性 RGB 通过 Gamma 编码映射为适合显示的图像。
+
+用法:
+    python 11_apply_gamma.py <raw_path>... [--out-dir reports/figures] [--gamma 2.2]
+
+功能:
+    对 CCM 后的线性 RGB 应用 Gamma 编码（幂函数 1/2.2），
+    生成 Linear display（线性直接显示）与 Gamma encoded 的对比图，
+    并汇总为 Week 4 的 Gamma 学习报告。
+
+Gamma 公式:
+    rgb_gamma = rgb_linear ** (1 / gamma)
+
+为什么需要 Gamma:
+    - 人眼对亮度的感知是非线性的（暗部更敏感）
+    - 显示设备的输入-输出响应近似为幂函数
+    - Gamma 编码让有限的 8-bit 码值更高效地分配给人眼敏感的区域
+
+算法流程:
+    rgb_ccm -> percentile normalize -> gamma encode -> uint8 preview
+
+输出:
+    - {sample}_gamma_compare.png:  Linear display / Gamma encoded 并排对比
+    - {sample}_gamma.json:         参数记录
+    - reports/week4/gamma_report.md: 汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

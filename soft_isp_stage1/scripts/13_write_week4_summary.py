@@ -1,3 +1,28 @@
+"""Week 4 综合总结脚本 —— 串联 CCM/Gamma/Tone Mapping 生成全管线可视化对比。
+
+用法:
+    python 13_write_week4_summary.py <raw_path>... [--out-dir reports/figures]
+
+功能:
+    将 Week 4 的三个子模块（CCM、Gamma、Tone Mapping）串联，
+    生成 AWB → CCM → Tone+Gamma → rawpy reference 的四栏对比图，
+    并汇总为 Week 4 的总体学习总结报告。
+
+全管线流程:
+    RAW -> BLC -> DPC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> Preview
+
+对比面板:
+    Panel 1:         AWB 后的 RGB（线性域，未做颜色校正）
+    Panel 2:         CCM 后的 RGB（颜色校正完成，仍在线性域）
+    Panel 3:         Tone Mapping + Gamma 后的最终预览
+    Panel 4:         rawpy 默认管线的参考输出
+
+输出:
+    - {sample}_week4_pipeline_compare.png: 四栏全管线对比图
+    - {sample}_week4_summary.json:         参数记录
+    - reports/week4/summary.md:            汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

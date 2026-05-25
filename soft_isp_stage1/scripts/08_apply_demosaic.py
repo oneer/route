@@ -1,3 +1,23 @@
+"""Demosaic（去马赛克）实验脚本 —— 将 BLC+DPC 后的 Bayer RAW 转换为三通道 RGB。
+
+用法:
+    python 08_apply_demosaic.py <raw_path>... [--out-dir reports/figures] [--reference-dir data/references]
+
+功能:
+    对 BLC + DPC 后的单通道 Bayer RAW 执行 bilinear demosaic，
+    将图像从 (H, W) 的 Bayer 马赛克格式转换为 (H, W, 3) 的线性 RGB 格式。
+    生成 RGB 预览图、与 rawpy reference 的对比图，并汇总为 Week 3 的 Demosaic 学习报告。
+
+算法流程:
+    RAW -> BLC -> DPC -> Bilinear Demosaic -> RGB Preview -> 对比图
+
+输出:
+    - {sample}_demosaic_rgb.png:       bilinear demosaic 后的 RGB 预览图
+    - {sample}_demosaic_compare.png:   RAW / demosaic RGB / rawpy reference 三栏对比
+    - {sample}_demosaic.json:          线性 RGB 逐通道统计信息
+    - reports/week3/demosaic_report.md: 汇总 Markdown 报告（含原理推导）
+"""
+
 from __future__ import annotations
 
 import argparse

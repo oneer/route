@@ -1,3 +1,33 @@
+"""IQA 与消融实验脚本 —— 量化评估各 ISP 模块对最终输出的贡献。
+
+用法:
+    python 15_evaluate_pipeline.py <raw_path>... [--out-dir reports/figures] [--reference-dir data/references]
+
+功能:
+    以 rawpy 默认管线的输出作为参考，计算不同模块组合下的 PSNR、SSIM 和平均绝对误差。
+    支持 6 种消融变体（full / no_lsc / no_dpc / no_awb / no_ccm / gamma_only），
+    通过逐个去掉模块来量化各模块对最终画质的贡献。
+
+消融变体:
+    | 变体       | 含义                                      |
+    | full       | BLC + DPC + LSC + Demosaic + AWB + CCM + Tone + Gamma |
+    | no_lsc     | 去掉 LSC，观察位置相关校正缺失的影响        |
+    | no_dpc     | 去掉 DPC，观察坏点是否扩散进 RGB            |
+    | no_awb     | 去掉 AWB，观察全局色偏                      |
+    | no_ccm     | 去掉 CCM，观察相机 RGB 与显示 RGB 的差异     |
+    | gamma_only | 去掉 Reinhard tone，只做分位归一化 + Gamma   |
+
+评价指标:
+    - PSNR (Peak Signal-to-Noise Ratio): 峰值信噪比，越高越好
+    - SSIM (Structural Similarity):      结构相似度，越高越好
+    - Mean Abs Diff:                     平均绝对像素差，越低越好
+
+输出:
+    - {sample}_week5_ablation.png:       各变体与 rawpy reference 的多栏网格对比
+    - week5_iqa_ablation.json:           所有变体的逐样张指标
+    - reports/week5/iqa_ablation_report.md: 汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

@@ -1,3 +1,22 @@
+"""BLC（黑电平校正）实验脚本 —— 从 RAW 扣除黑电平并生成前后对比报告。
+
+用法:
+    python 06_apply_blc.py <raw_path>... [--out-dir reports/figures] [--bins 512]
+
+功能:
+    读取 DNG 文件的 black_level 元数据，按 Bayer 位置扣除黑电平偏置，
+    生成 BLC 前后的视觉对比图和直方图对比图，并汇总为 Week 2 的 BLC 学习报告。
+
+BLC 公式:
+    corrected = clip(raw - black_level, 0, white_level - black_level)
+
+输出:
+    - {sample}_blc_visual_compare.png: BLC 前后灰度预览并排对比
+    - {sample}_blc_hist_compare.png:   BLC 前后直方图叠加对比
+    - {sample}_blc.json:               逐通道统计信息
+    - reports/week2/blc_report.md:     汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

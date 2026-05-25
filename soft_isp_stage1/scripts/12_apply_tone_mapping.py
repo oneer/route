@@ -1,3 +1,29 @@
+"""Tone Mapping（色调映射）实验脚本 —— 将高动态范围线性 RGB 压缩到显示范围。
+
+用法:
+    python 12_apply_tone_mapping.py <raw_path>... [--out-dir reports/figures] [--gamma 2.2] [--tone-percentile 99.5]
+
+功能:
+    对比两种简单的 Tone Mapping 方案：
+      - 方案 A（percentile clip）: rgb_norm = clip(rgb / percentile(rgb, 99.5), 0, 1)
+      - 方案 B（Reinhard）:       rgb_tone = rgb_norm / (1 + rgb_norm)
+    生成两种方案的对比图，并汇总为 Week 4 的 Tone Mapping 学习报告。
+
+为什么需要 Tone Mapping:
+    RAW/线性 RGB 的动态范围远超 8-bit 显示范围，
+    直接线性压缩会让暗部和中间调偏暗。
+    Tone Mapping 在高光保护、中间调亮度、暗部可见性之间折中。
+
+算法流程:
+    方案 A: rgb_ccm -> percentile normalize -> gamma -> preview
+    方案 B: rgb_ccm -> percentile normalize -> Reinhard -> gamma -> preview
+
+输出:
+    - {sample}_tone_mapping_compare.png:  Percentile / Reinhard / rawpy reference 三栏对比
+    - {sample}_tone_mapping.json:         参数记录
+    - reports/week4/tone_mapping_report.md: 汇总 Markdown 报告
+"""
+
 from __future__ import annotations
 
 import argparse

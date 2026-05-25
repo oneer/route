@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+runs/
+datasets/sidd/
+datasets/sid/
+*.pth
+*.pt
+*.ckpt
