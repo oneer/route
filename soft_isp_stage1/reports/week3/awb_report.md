@@ -1,5 +1,86 @@
 # Week 3 AWB 学习报告
 
+## 工程学习模板补全
+
+### 1. 一句话定位
+AWB 用来估计并应用颜色通道增益，让不同色温光源下的白色或灰色尽量回到中性，减少整体偏黄、偏蓝、偏绿等色偏。
+
+### 2. Pipeline 位置
+```text
+RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA -> CCM -> Tone/Gamma
+```
+当前项目在 CFA 后 RGB 域做 Gray World；OpenISP 展示的是 CFA 前 Bayer RAW 域 WB gain。两者位置不同，但都应发生在线性数据上，不能在 gamma 后再做白平衡估计。
+
+### 3. 输入输出定义
+| 项目 | 当前项目 | OpenISP 对照 |
+|---|---|---|
+| 输入 | Demosaic 后线性 RGB | Bayer RAW |
+| 输出 | 线性 RGB，尺寸不变 | Bayer RAW，尺寸不变 |
+| 数据范围 | `0..white_level` float/uint | RAW bit depth 范围 |
+| 通道处理 | R/G/B 三通道 gain | R/Gr/Gb/B 四位置 gain |
+| 依赖信息 | 图像统计、灰世界假设 | 外部给定 WB gain |
+
+### 4. 问题来源
+不同光源的光谱分布不同，同一个白色物体在钨丝灯、日光、阴天、荧光灯下会落到不同 R/G/B 比例。sensor 本身的光谱响应也不同于人眼，所以需要白平衡把中性物体拉回中性。
+
+### 5. 核心思想
+AWB 包含两层：先估计 gain，再应用 gain。Gray World 假设一张自然图像整体平均颜色接近灰色，于是通过拉齐 R/G/B 均值来估计增益。OpenISP 的 `awb.py` 更偏第二层：把外部 gain 正确乘到 Bayer 位置上。
+
+### 6. 算法流程
+```text
+1. 排除过暗和过亮像素，减少噪声和饱和影响。
+2. 计算 R/G/B 均值。
+3. 以 G 为参考估计 R_gain 和 B_gain。
+4. 对线性 RGB 或 Bayer RAW 对应通道乘 gain。
+5. clamp 到有效范围。
+6. 检查中性 ROI 的 R/G、B/G 是否接近 1。
+```
+
+### 7. 公式解释
+```text
+R_gain = G_mean / R_mean
+G_gain = 1
+B_gain = G_mean / B_mean
+RGB_out = RGB_in * [R_gain, 1, B_gain]
+```
+公式的意义是把 R、B 的平均响应拉到 G 附近，而不是让整张图变得“更好看”。
+
+### 8. 参数说明
+| 参数 | 作用 | 增大效果 | 减小效果 | 风险 |
+|---|---|---|---|---|
+| percentile 排除比例 | 去掉暗部/高光异常 | 统计更稳但样本少 | 样本多但更易受噪声影响 | 过大导致估计不稳定 |
+| R_gain/B_gain | 通道增益 | 对应通道更强 | 对应通道更弱 | 增益过大放大噪声或偏色 |
+| 灰世界假设 | 自动估计依据 | 简单可解释 | 不适合单色画面 | 大面积草地/天空会估错 |
+
+### 9. OpenISP 源码拆解
+OpenISP `awb.py` 接收 `[r_gain, gr_gain, gb_gain, b_gain]`，根据 Bayer pattern 对不同位置乘对应 gain。它不是完整自动估计算法，而是 WB gain control。这个对照提醒我们：报告里应把“估计 gain”和“应用 gain”拆开讨论。
+
+### 10. 边界条件
+饱和像素不能用于 AWB 统计，因为通道已经被截断；过暗像素噪声占比高，也不适合统计。应用 gain 后要 clamp，避免超过 white level。Gr/Gb 是否合并也要和 Bayer pattern 对齐。
+
+### 11. 效果对比
+本报告已有 AWB 前后对比和 R/G、B/G 统计。验证时不要只看主观颜色，还要看中性区域的通道比例是否接近 1，以及是否因为 Gray World 让本来有色的画面被错误拉灰。
+
+### 12. 常见伪影和风险
+大面积单色、混合光源、彩色灯光会让 Gray World 失败。AWB gain 过大还会放大暗部噪声，饱和区域也可能出现通道 clip 后的色偏。
+
+### 13. 与其他模块的关系
+AWB 依赖 BLC/LSC 的统计基础；LSC 不准会让边缘偏色参与统计。AWB 后的颜色比例会影响 CCM，CCM 往往按某个白点和色温拟合，所以 AWB 错了，CCM 也很难救回来。
+
+### 14. 简化实现
+```python
+def gray_world_awb(rgb):
+    mean = rgb.reshape(-1, 3).mean(axis=0)
+    gain = np.array([mean[1] / mean[0], 1.0, mean[1] / mean[2]])
+    return rgb * gain
+```
+
+### 15. 工程实现注意点
+产品 AWB 常用灰点检测、肤色保护、色温估计、历史平滑、场景分类和多光源处理。WB gain 应用通常适合硬件 RAW 域完成，OpenISP 的四通道 gain 更接近这种实现。
+
+### 16. 小结
+AWB 的本质是线性空间里的通道增益控制。学习版 Gray World 用来建立直觉，OpenISP WBGC 用来理解工程位置；最重要的 tradeoff 是偏色修正和场景误判之间的平衡。
+
 本次完成 Week3 的第二个核心模块：AWB，也就是 Auto White Balance，自动白平衡。输入是 Demosaic 后的线性 RGB，输出仍然是线性 RGB，只是每个颜色通道乘了不同的 gain。
 
 ## AWB 解决什么问题

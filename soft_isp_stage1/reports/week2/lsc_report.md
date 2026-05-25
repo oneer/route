@@ -1,5 +1,82 @@
 # Week 2-3 LSC 学习报告
 
+## 工程学习模板补全
+
+### 1. 一句话定位
+LSC 用来补偿镜头和 sensor 组合造成的边缘亮度或颜色衰减，让画面中心和边缘在同一照明下更接近一致。
+
+### 2. Pipeline 位置
+```text
+RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA -> CCM -> Tone/Gamma
+```
+LSC 通常在 RAW 域、AWB 前执行，因为暗角会影响 AWB 统计；如果放到 CFA 后再做，已经混色，per-channel gain map 的意义会变弱。
+
+### 3. 输入输出定义
+| 项目 | 定义 |
+|---|---|
+| 输入 | BLC/DPC 后的 Bayer RAW |
+| 输出 | Bayer RAW，尺寸和 Bayer pattern 不变 |
+| 数据范围 | 输出可能被 gain 放大，需要 clamp 到有效白电平 |
+| 通道处理 | 通常 R/Gr/Gb/B 分别有 gain map |
+| 依赖信息 | flat-field 标定图、镜头/焦距/光圈/色温相关表，学习版可用径向模型近似 |
+
+### 4. 问题来源
+镜头边缘入射角更大、光路遮挡更强，导致边缘进光少，形成暗角；不同颜色通道还可能因为微透镜和滤色片响应不同出现 color shading。现象上就是四角偏暗、偏色。
+
+### 5. 核心思想
+LSC 是空间位置相关的增益校正。中心 gain 通常接近 1，越到边缘 gain 越大；如果做 per-channel LSC，R/G/B 的边缘增益可以不同，用来补偿颜色渐变。
+
+### 6. 算法流程
+```text
+1. 估计或读取 gain map。
+2. 根据 Bayer 位置选择对应通道 gain。
+3. 对每个像素执行 raw * gain。
+4. clamp 到有效白电平。
+5. 输出 Bayer RAW 给 AWB/CFA。
+```
+
+### 7. 公式解释
+```text
+out(y, x, c) = clamp(raw(y, x, c) * gain_map_c(y, x), 0, white_level)
+gain(r) = 1 + strength * r^2
+```
+第二个公式是本项目的径向学习版，真实产品更常用标定得到的 mesh gain。
+
+### 8. 参数说明
+| 参数 | 作用 | 增大效果 | 减小效果 | 风险 |
+|---|---|---|---|---|
+| strength | 径向补偿强度 | 边缘更亮 | 边缘补偿更弱 | 过强会放大边缘噪声和高光 clipping |
+| gain_map | 标定增益表 | 更贴近真实镜头 | 更依赖模型 | 表不准会造成亮度波纹或色斑 |
+| per-channel gain | 颜色阴影校正 | 可修边缘偏色 | 只能修亮度 | 调错会影响 AWB 和 CCM |
+
+### 9. OpenISP 源码拆解
+OpenISP 当前没有直接的 `lsc.py`。这反而是重要信息：LSC 很难靠一段通用代码解决，它强依赖镜头、sensor、焦距、光圈和色温标定。OpenISP 的 AWB/CFA/CNF 等模块都默认前面的 RAW 已经比较均匀，说明 LSC 的质量会向后传递。
+
+### 10. 边界条件
+边缘 gain 最大，也最容易放大噪声和造成 clipping。gain map 插值要平滑，不能在 tile 边界形成块状痕迹；Bayer pattern 对齐也必须正确，否则会把颜色 shading 修反。
+
+### 11. 效果对比
+本报告已有 LSC 对比图。验证时看中心/边缘亮度是否更一致，四角是否被过度抬亮，边缘噪声是否明显变强。最好额外使用均匀白场图看 gain map 是否平滑。
+
+### 12. 常见伪影和风险
+LSC 过强会让四角噪声变明显、边缘发灰或高光截断；LSC 过弱会保留暗角；per-channel LSC 不准会造成边缘偏绿、偏红或偏蓝。
+
+### 13. 与其他模块的关系
+LSC 会影响 AWB 统计，因为边缘偏色会拉动通道均值；也会影响 CFA 和降噪，因为边缘被放大后噪声更强。它和 BLC、DPC 都在 CFA 前共同决定 RAW 输入质量。
+
+### 14. 简化实现
+```python
+def lsc(raw, gain_map, white):
+    out = raw.astype("float32") * gain_map
+    return np.clip(out, 0, white).astype("uint16")
+```
+
+### 15. 工程实现注意点
+产品 ISP 通常用标定表、mesh gain、双线性插值、不同色温/焦距表插值和硬件 line buffer。学习版径向模型只适合理解位置相关 gain，不应当当作真实镜头标定结果。
+
+### 16. 小结
+LSC 的本质是空间增益校正。它解决暗角和 color shading，但代价是可能放大边缘噪声；它强依赖标定数据，所以 OpenISP 没有通用 LSC 并不奇怪，反而说明这部分更偏 tuning 和 calibration。
+
 LSC 的全称是 Lens Shading Correction，镜头阴影校正。它处理的是位置相关的亮度和颜色不均匀：常见现象是中心较亮、边缘较暗，或者边缘带一点颜色偏移。
 
 ## 本次实现边界

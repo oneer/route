@@ -1,5 +1,86 @@
 # Week 2-2 DPC 学习报告
 
+## 工程学习模板补全
+
+### 1. 一句话定位
+DPC 用来检测并修复 sensor 中异常偏亮或偏暗的孤立像素，避免坏点在 demosaic、gamma、锐化后被放大成明显亮点、黑点或彩点。
+
+### 2. Pipeline 位置
+```text
+RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA -> CCM -> Tone/Gamma
+```
+DPC 通常放在 BLC 后、CFA 前。BLC 后数值基线更干净；CFA 前处理可以避免一个坏点被插值扩散成一片彩色伪影。
+
+### 3. 输入输出定义
+| 项目 | 定义 |
+|---|---|
+| 输入 | BLC 后的 Bayer RAW |
+| 输出 | Bayer RAW，尺寸、bit depth、Bayer pattern 不变 |
+| 数据范围 | 通常为 `0..white_level-black_level` |
+| 通道处理 | 必须按同色邻域比较，不能直接拿相邻异色像素判断 |
+| 依赖信息 | Bayer pattern、阈值参数、可选坏点表、ISO/温度相关 tuning |
+
+### 4. 问题来源
+坏点可能来自 sensor 制程缺陷、热噪声、长期老化或读出异常。它们常表现为单个像素远高于或远低于周围同色像素。因为 Bayer 相邻像素颜色不同，坏点检测必须回到同色采样网格上判断。
+
+### 5. 核心思想
+DPC 利用局部同色像素的连续性：正常像素通常和周围同色邻域接近，孤立异常点会和所有同色邻居差异很大。简单版用 median 修复，OpenISP 展示了沿最小梯度方向修复以保护边缘。
+
+### 6. 算法流程
+```text
+1. 取当前像素 P。
+2. 找到周围同色邻域。
+3. 计算 P 与邻域代表值的差异。
+4. 如果差异超过阈值，标记为坏点候选。
+5. 用 median、mean 或最小梯度方向插值替换。
+6. 否则保留原值。
+```
+
+### 7. 公式解释
+```text
+local_median = median(same_color_neighbors)
+residual = abs(P - local_median)
+threshold = max(min_delta, median(residual) + mad_k * MAD(residual))
+out = local_median if residual > threshold else P
+```
+OpenISP 的固定阈值版本更像 tuning 参数，本项目的 MAD 阈值更自适应。
+
+### 8. 参数说明
+| 参数 | 作用 | 增大效果 | 减小效果 | 风险 |
+|---|---|---|---|---|
+| min_delta | 最小检测差异 | 少误杀纹理 | 更敏感 | 太大漏检，太小误检噪声 |
+| mad_k | MAD 阈值倍数 | 更保守 | 更激进 | 太大坏点残留，太小误伤纹理 |
+| repair_mode | 修复方式 | gradient 更保边，median 更稳健 | 取决于模式 | 方向判断错会引入结构伪影 |
+| thres | OpenISP 固定阈值 | tuning 更可控 | 更敏感 | 难适配不同 ISO/曝光 |
+
+### 9. OpenISP 源码拆解
+OpenISP `dpc.py` 在完整 Bayer 上取隔 2 像素的 5x5 同色邻域，用 `p0..p8` 判断中心点是否和所有同色邻居都差异过大。修复支持 `mean` 和 `gradient`：后者比较垂直、水平、对角方向梯度，选择梯度最小的方向平均，减少边缘被抹平。
+
+### 10. 边界条件
+DPC 需要 3x3 同色邻域或原图 5x5 范围，因此最外侧一到两圈像素通常跳过或直接拷贝。实现时还要避免修复值溢出，坏点 mask 不能把高光边缘、星点、细线纹理都当成坏点。
+
+### 11. 效果对比
+本报告已有 mask 预览和局部修复对比。验证时要看三件事：候选点数量是否合理、红色 mask 是否集中在孤立异常点、修复后 crop 是否消除亮点同时没有抹掉纹理。
+
+### 12. 常见伪影和风险
+阈值太低会误杀星点、细线、纹理和高光边缘；阈值太高会漏掉坏点。median 修复稳定但可能抹边，gradient 修复保边但更依赖方向判断。
+
+### 13. 与其他模块的关系
+DPC 放在 CFA 前可以防止坏点扩散。它也会影响后续降噪和锐化：坏点没修会被锐化放大，误修太多又会让纹理变糊。BLC 不准时，暗部 residual 会偏，DPC 阈值也会被带偏。
+
+### 14. 简化实现
+```python
+def dpc_pixel(p, neigh, threshold):
+    med = np.median(neigh)
+    return med if abs(float(p) - med) > threshold else p
+```
+
+### 15. 工程实现注意点
+产品 ISP 常结合静态坏点表、动态坏点检测、ISO/温度阈值、line buffer 和硬件友好的方向插值。OpenISP 的 `gradient` 模式就是从教学版 median 走向工程版边缘保护的好桥。
+
+### 16. 小结
+DPC 的本质是 RAW 域异常点检测与替换。它要在坏点残留和纹理误杀之间平衡，核心参数是阈值和修复模式；它影响 CFA、降噪和锐化，是前端清洁度非常关键的一步。
+
 本次在 BLC 后继续做 DPC，也就是 Dead Pixel Correction，坏点检测与修复。这里先做一个保守版本：只寻找和同色邻域明显不一致的孤立异常点。
 
 ## 为什么 DPC 要在 BLC 后做
