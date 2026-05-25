@@ -30,7 +30,7 @@ route/
 
 一个动手实践的 Python Soft-ISP Pipeline — 读取真实 DNG 文件，亲手实现每个传统 ISP 模块（BLC、DPC、LSC、去马赛克、AWB、CCM、Gamma），与 rawpy 参考输出对比，撰写结构化实验报告。
 
-**当前状态：** 第 1 周已完成（RAW 统计、直方图、ROI 分析，覆盖 5 张 FiveK 样张）。第 2-6 周涵盖前端校正、去马赛克/AWB、色彩/色调、画质评价和最终报告。
+**当前状态：** 阶段一主体已完成：覆盖 T01-T14 样张，已实现 BLC、DPC、学习用 LSC、Demosaic、AWB、CCM、Tone/Gamma，并补齐 Week5 PSNR/SSIM/消融实验与阶段总报告。
 
 详见 [soft_isp_stage1/README_CN.md](soft_isp_stage1/README_CN.md)。
 

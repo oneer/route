@@ -1,4 +1,16 @@
-"""Gamma and tone-mapping helpers for display previews."""
+"""Gamma 校正与色调映射（Tone Mapping）模块。
+
+这些函数位于 ISP 管线的末端，负责将线性 RGB 转换为适合显示器观看的图像。
+主要解决两个问题：
+    1. 动态范围压缩：RAW/线性 RGB 的动态范围通常远超 8-bit 显示范围
+    2. 显示编码：人眼对亮度的感知是非线性的，显示设备也期望 gamma 编码的输入
+
+函数列表：
+    - normalize_by_percentile: 用高分位点做归一化到 0~1
+    - reinhard_tone_map:       全局 Reinhard 色调映射曲线
+    - apply_gamma:             应用显示 gamma（默认 1/2.2 幂函数）
+    - to_uint8:                将 0~1 浮点图像转换为 uint8（0~255）
+"""
 
 from __future__ import annotations
 

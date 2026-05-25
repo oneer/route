@@ -1,5 +1,85 @@
 # Week 3 Demosaic 学习报告
 
+## 工程学习模板补全
+
+### 1. 一句话定位
+Demosaic/CFA 插值用来把单通道 Bayer RAW 重建成每个像素都有 R/G/B 三个值的 RGB 图像，是 RAW 到彩色图像的关键重建步骤。
+
+### 2. Pipeline 位置
+```text
+RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA/Demosaic -> CCM -> Tone/Gamma
+```
+CFA 前应尽量完成 BLC、DPC、LSC 和 RAW 域 WB gain，因为 CFA 会把单点和单通道问题扩散到三通道 RGB。CFA 后再修坏点或黑位，代价会更高。
+
+### 3. 输入输出定义
+| 项目 | 定义 |
+|---|---|
+| 输入 | 校正后的 Bayer RAW，二维 `(H, W)` |
+| 输出 | 线性 RGB，三维 `(H, W, 3)` |
+| 数据范围 | 通常保持线性 `0..white_level`，不做 gamma |
+| 依赖信息 | Bayer pattern、边界处理方式、插值核 |
+| 是否改变 bit depth | 理论上不改变物理范围，但实现中常用 float32 中间结果 |
+
+### 4. 问题来源
+Bayer sensor 每个像素只采到一种颜色，因此原始 RAW 缺少另外两个颜色通道。要得到 RGB 图像，必须根据邻域估计缺失颜色。估计不准就会出现拉链边、伪彩、彩边和细节模糊。
+
+### 5. 核心思想
+Bilinear 的直觉是“缺什么颜色，就用附近同色样本平均补出来”。OpenISP Malvar 的改进是按 Bayer 位置使用不同校正公式，引入跨通道和二阶差分信息，让边缘和颜色重建更稳。
+
+### 6. 算法流程
+```text
+1. 根据 Bayer pattern 生成 R/G/B mask。
+2. 已采样位置保留原值。
+3. 对每个通道用邻域卷积估计缺失位置。
+4. 除以有效权重和，避免边界和 mask 数量影响亮度。
+5. 合并 R/G/B 得到线性 RGB。
+6. 与 rawpy reference 或局部 crop 对比结构是否正确。
+```
+
+### 7. 公式解释
+```text
+R_hat = conv(raw * M_R, kernel) / conv(M_R, kernel)
+G_hat = conv(raw * M_G, kernel) / conv(M_G, kernel)
+B_hat = conv(raw * M_B, kernel) / conv(M_B, kernel)
+```
+其中 mask 表示哪些位置真实采到了该颜色。真实采样点应优先保留，插值只补缺失值。
+
+### 8. 参数说明
+| 参数 | 作用 | 更复杂后的效果 | 更简单后的效果 | 风险 |
+|---|---|---|---|---|
+| 插值核大小 | 控制邻域范围 | 更平滑，可能更稳 | 更锐利但易噪 | 过大模糊，过小伪彩 |
+| Bayer pattern | 决定颜色位置 | 正确重建颜色 | pattern 错会整图错色 | 必须从 metadata 验证 |
+| 算法类型 | Bilinear/Malvar/AHD | 伪彩更少、边缘更好 | 简单可解释 | 复杂算法更难调试 |
+
+### 9. OpenISP 源码拆解
+OpenISP `cfa.py` 实现 Malvar 类插值。它不是统一对所有位置做同一个平均核，而是根据当前像素是 R、Gr、Gb 还是 B 使用不同公式，利用中心、上下左右、对角等位置修正缺失通道。它适合作为 bilinear 后的第二阶段升级参考。
+
+### 10. 边界条件
+插值需要邻域，边缘区域可能缺少足够像素，需要 padding、裁边或复制边界。Bayer pattern 对齐错误会造成严重偏色。坏点如果没在 CFA 前处理，会被插值扩散成彩色斑点。
+
+### 11. 效果对比
+本报告已有 rawpy reference 对比和 14 张图。验证 Demosaic 时重点看结构是否恢复、是否花屏、边缘是否有拉链、文字/树枝/格子区域是否有伪彩。颜色不好看不一定是 CFA 错，因为后面还缺 CCM/Tone/Gamma。
+
+### 12. 常见伪影和风险
+Bilinear 容易模糊细节，在斜边产生拉链，在高频纹理上产生假彩。Malvar 可以改善一部分问题，但仍可能在极细纹理和强边缘处出错。
+
+### 13. 与其他模块的关系
+CFA 会放大前端问题：坏点变彩点，黑位错误变暗部偏色，LSC 不准变边缘颜色问题。CFA 后的 RGB 又是 AWB、CCM、锐化和假彩抑制的输入。
+
+### 14. 简化实现
+```python
+def demosaic_channel(raw, mask, kernel):
+    value = convolve(raw * mask, kernel)
+    weight = convolve(mask.astype("float32"), kernel)
+    return value / np.maximum(weight, 1e-6)
+```
+
+### 15. 工程实现注意点
+真实 ISP 会考虑 line buffer、硬件插值核、边缘方向判断、假彩抑制和后续锐化配合。OpenISP Malvar 比 bilinear 更接近工程算法，但仍是可读参考，不等于完整产品级 CFA。
+
+### 16. 小结
+Demosaic 的本质是从不完整颜色采样重建 RGB。Bilinear 是最小可解释 baseline，OpenISP Malvar 是进阶桥梁；核心风险是假彩、拉链和细节模糊，它和前端清洁度强相关。
+
 本次只做一个小闭环：把 BLC + DPC 后的单通道 Bayer RAW，转换成三通道 RGB 图。这里实现的是最基础的 bilinear demosaic，目标是理解原理，不追求最终颜色好看。
 
 ## Demosaic 要解决什么问题
@@ -180,6 +260,43 @@ raw_dpc -> bilinear_demosaic(raw_dpc, bayer_pattern) -> rgb_linear
 
 缺点：它不判断边缘方向，只做局部平均，所以边缘容易变糊；在高频纹理区可能出现假彩色、拉链边等伪影。后续更高级的 demosaic 方法会根据边缘方向选择插值方向，避免跨边缘平均。
 
+## 和 OpenISP CFA / Malvar 的对照
+
+OpenISP 把 Demosaic 模块命名为 `cfa.py`，全称是 Color Filter Array Interpolation。它实现的是 Malvar 类插值，而不是当前项目的 bilinear baseline。
+
+当前 bilinear 的核心是：
+
+```text
+C_hat = conv(raw * mask, kernel) / conv(mask, kernel)
+```
+
+也就是只用同色邻域做加权平均。OpenISP 的 Malvar 思路更进一步：不同 Bayer 位置使用不同公式，除了周围同色像素，还会利用跨通道和二阶差分项修正颜色。例如在 R 像素位置估计 G/B 时，会用到中心、上下左右、对角等更多位置的组合：
+
+```text
+R 位置：R = center
+       G = 由中心、上下左右、两格距离项组合估计
+       B = 由中心、对角、两格距离项组合估计
+```
+
+两者对比如下：
+
+| 维度 | 当前项目 Bilinear | OpenISP Malvar CFA | 学习结论 |
+|---|---|---|---|
+| 算法目标 | 建立 Bayer 补色直觉 | 提升边缘和纹理处的插值质量 | bilinear 是 baseline，Malvar 是传统 ISP 进阶 |
+| 使用信息 | 同色邻域加权平均 | 同色 + 跨通道校正 + 二阶差分 | Malvar 能利用颜色通道相关性 |
+| Bayer 位置 | R/G/B 三个 mask 统一公式 | R/Gr/Gb/B 四类位置分别写公式 | 工程实现会按 Bayer 位置细分 |
+| 伪影控制 | 不判断边缘方向，容易糊/假彩 | 比 bilinear 更能压伪色，但仍非最强 | 后续还可继续到 AHD/MLRI/LMMSE |
+| 实现代价 | 向量化简单，快 | 公式多、分支多、参数更难检查 | 适合做第二阶段对比实验 |
+
+因此，本报告里的 bilinear 不是“最终 demosaic”，而是第一层可解释 baseline。结合 OpenISP 后，下一步最自然的实验是：
+
+```text
+BLC/DPC/LSC -> Bilinear Demosaic
+BLC/DPC/LSC -> Malvar Demosaic
+```
+
+对比时不要只看全图 PSNR，而要专门截取高频纹理、斜边、文字、树枝、格子等区域，看 false color、zipper 和边缘糊化。
+
 ## 它和 rawpy reference 为什么不一样
 
 下面的左图是我们自己的结果，右图是 rawpy 的完整 ISP 参考图。两者不能直接按颜色好坏比较，因为 rawpy reference 通常还做了白平衡、颜色矩阵、gamma、亮度映射等步骤。本次输出只验证 demosaic 是否把图像结构补出来，颜色偏绿或偏暗是正常现象。
@@ -279,6 +396,7 @@ raw_dpc -> bilinear_demosaic(raw_dpc, bayer_pattern) -> rgb_linear
 2. Demosaic 本质是估计缺失颜色，不是调色。
 3. bilinear 很容易理解，但边缘容易糊，也可能产生彩色伪影；后面更高级的方法会重点改善边缘。
 4. Demosaic 后的图还不是最终照片，因为还缺 AWB、CCM、gamma/tone mapping。
+5. 对照 OpenISP 后要记住：Malvar 通过按 Bayer 位置使用不同校正公式，把 demosaic 从“同色平均”推进到“跨通道校正”。
 
 ## 下一步
 

@@ -86,6 +86,22 @@ Gr 和 Gb 理论上应比较接近。如果 Gr/Gb 差异明显，可能要检查
 3. Histogram 只能说明数值分布，不能单独判断图像质量。
 4. ROI 是自动选择的，仍需要人工检查是否落在合理区域。
 
+## 结合 OpenISP 后的补充理解
+
+OpenISP 的模块不是从“读 RAW”开始讲，而是默认你已经知道 RAW 的 Bayer pattern、clip 范围、黑电平、通道位置和后续模块顺序。这反过来说明 Week1 的意义：它不是可有可无的准备工作，而是所有传统 ISP 模块的坐标系。
+
+对照 OpenISP，可以把 Week1 的输出理解成后续模块的输入合同：
+
+| Week1 观察项 | OpenISP 中会影响的模块 | 为什么重要 |
+|---|---|---|
+| Bayer pattern | `blc.py`、`awb.py`、`cfa.py`、`cnf.py` | 所有按 R/Gr/Gb/B 位置处理的模块都依赖正确 Bayer 排列 |
+| black / white level | `blc.py`、`dpc.py`、`bnf.py` | 决定扣黑、clip、阈值和归一化范围 |
+| 四通道统计 | `awb.py`、`cnf.py` | 判断通道响应、白平衡 gain 和色噪风险 |
+| histogram / p99 | `gac.py`、`bcc.py`、Tone Mapping | 判断曝光、显示白点和高光压缩压力 |
+| ROI | `dpc.py`、`cfa.py`、`eeh.py`、`fcs.py` | 观察坏点、边缘、假彩、锐化 halo 不能只看全图均值 |
+
+因此 Week1 的报告可以补一句关键结论：**没有 Week1 的 metadata 和统计表，OpenISP 那些模块就只是一堆参数；有了 Week1 的坐标系，才知道每个参数该作用在哪个数据域。**
+
 ## 和后续模块的关系
 
 ```text

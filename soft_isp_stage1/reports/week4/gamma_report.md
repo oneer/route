@@ -1,5 +1,80 @@
 # Week 4-2 Gamma 学习报告
 
+## 工程学习模板补全
+
+### 1. 一句话定位
+Gamma/OETF 把线性亮度编码成更适合人眼感知和普通显示链路的非线性值，让中间调不再显得过暗。
+
+### 2. Pipeline 位置
+```text
+RAW -> BLC -> DPC -> LSC -> AWB -> CFA -> CCM -> Tone Mapping -> Gamma -> 8-bit 输出/YUV
+```
+Gamma 通常靠近显示输出，不能太早做。大多数 ISP 校正和颜色矩阵应在线性空间执行，Gamma 后再做这些操作会破坏物理亮度关系。
+
+### 3. 输入输出定义
+| 项目 | 定义 |
+|---|---|
+| 输入 | Tone 或 CCM 后的线性 RGB，通常归一化到 `0..1` |
+| 输出 | 非线性 RGB，可量化到 8-bit/10-bit |
+| 数据范围 | 输入输出通常都 clamp 在 `0..1` 或 `0..255` |
+| 通道处理 | RGB 三通道同曲线，YUV 模式可对 Y/UV 分开 |
+| 依赖信息 | gamma 参数、sRGB OETF 或 LUT |
+
+### 4. 问题来源
+线性 RGB 表示物理光强，但人眼对暗部更敏感，显示和图像文件也通常假设输入是非线性编码。直接把线性值显示出来，中间调会偏暗，视觉上不自然。
+
+### 5. 核心思想
+Gamma 是映射模块，不改变图像结构，只改变亮度编码。简单版用 `x ** (1/gamma)` 抬高中间调；工程版常用 LUT 表示任意曲线。
+
+### 6. 算法流程
+```text
+1. 将线性 RGB clamp/normalize 到 0..1。
+2. 应用 gamma 曲线或查 LUT。
+3. 再次 clamp。
+4. 量化到输出 bit depth。
+```
+
+### 7. 公式解释
+```text
+out = in ** (1 / gamma)
+```
+当 `gamma = 2.2` 时，`1/gamma < 1`，所以 `0..1` 的中间值会变大，画面中间调变亮。完整 sRGB OETF 在暗部还有线性分段，不只是单一幂函数。
+
+### 8. 参数说明
+| 参数 | 作用 | 增大效果 | 减小效果 | 风险 |
+|---|---|---|---|---|
+| gamma | 控制曲线弯曲程度 | 中间调更亮 | 中间调更暗 | 过大显灰、噪声明显 |
+| LUT | 工程曲线表 | 可表达复杂风格 | 曲线更简单 | 表不平滑会 banding |
+| output bit depth | 输出精度 | banding 更少 | 文件更小 | 8-bit 下暗部更容易断层 |
+
+### 9. OpenISP 源码拆解
+OpenISP `gac.py` 使用 LUT 查表。RGB 模式下三个通道查同一张表；YUV 模式下 Y 和 UV 可以使用不同 LUT。这比逐像素算 `pow` 更接近硬件和产品 tuning 流程。
+
+### 10. 边界条件
+输入必须先限制在合法范围，负数不能直接做幂函数。LUT 索引要防止越界。输出到 8-bit 时要注意量化和 banding，暗部被 gamma 抬起后噪声也会更明显。
+
+### 11. 效果对比
+本报告已有 Gamma 前后对比。验证时看中间调是否变亮、暗部噪声是否被抬起、高光是否被压坏，以及和 rawpy reference 的显示观感差距。
+
+### 12. 常见伪影和风险
+Gamma 过强会让画面发灰、暗部噪声突出；曲线不平滑会产生 banding；如果在 tone mapping 前错误应用，后续动态范围压缩会变得难解释。
+
+### 13. 与其他模块的关系
+Gamma 应接在 tone mapping 后或接近最终输出。CCM、AWB、DPC 这类物理或线性统计模块不应在 gamma 后做。OpenISP 的 GAC 还可能与 BCC/HSC 等后端风格模块配合。
+
+### 14. 简化实现
+```python
+def gamma_encode(rgb, gamma=2.2):
+    x = np.clip(rgb, 0.0, 1.0)
+    return x ** (1.0 / gamma)
+```
+
+### 15. 工程实现注意点
+工程中通常用 LUT，便于硬件实时处理、调试曲线和固定延迟。LUT 可由 sRGB OETF、gamma 曲线或产品风格曲线生成，也可以分 Y/UV 分别控制。
+
+### 16. 小结
+Gamma 的本质是显示编码，不是颜色校正。它解决线性图直接显示过暗的问题，核心风险是暗部噪声和 banding；OpenISP 的 LUT 实现说明产品里曲线通常是 tuning 表，而不是实时 `pow`。
+
 Gamma 是把线性 RGB 映射到更适合显示和人眼感知的非线性 RGB。线性图直接显示通常会显得偏暗，因为显示编码和人眼感知都不是简单的线性关系。
 
 这一节重点解释两个词：`linear display` 和 `gamma`。你看到的现象是：左边线性 RGB 直接显示更暗，右边加 gamma 后中间调和暗部被抬起来。这个现象是正常的，而且可以用数学直接解释。
@@ -71,6 +146,41 @@ rgb_ccm -> percentile normalize -> gamma encode -> uint8 preview
 
 这里的 gamma 是简化版。严格的 sRGB OETF 在暗部有一段线性分段，不完全等于单纯 `1/2.2` 幂函数。本周先用简化公式，是为了看清楚非线性显示编码的核心作用。
 
+## 和 OpenISP Gamma 的对照
+
+当前项目的 Gamma 是直接用浮点幂函数计算：
+
+```text
+rgb_gamma = rgb ** (1 / 2.2)
+```
+
+OpenISP 的 `openisp/gac.py` 使用 LUT，也就是查表。输入像素值作为索引，输出从预先准备好的表里取：
+
+```text
+gc_img[y, x, c] = lut[input_value]
+```
+
+在 RGB 模式下，OpenISP 对三个通道分别查同一张 LUT；在 YUV 模式下，Y 使用一张 LUT，UV 使用另一张 LUT。这说明 Gamma/曲线不一定只发生在 RGB，也可以在亮度/色度空间里分开控制。
+
+两者对比如下：
+
+| 维度 | 当前项目 Gamma | OpenISP GAC | 学习结论 |
+|---|---|---|---|
+| 实现方式 | 浮点 `pow` | LUT 查表 | 学习用 `pow` 直观，工程用 LUT 快且可调 |
+| 曲线形态 | 固定 `1/2.2` | 任意预设曲线 | LUT 可以表达 sRGB、对比度曲线、厂商 tone 曲线 |
+| 数据域 | 归一化 float RGB | RGB 或 YUV 整数值 | 后端 ISP 常在定点/8-bit 或 10-bit 域工作 |
+| 性能 | 简单但逐像素 pow 成本高 | 查表成本低 | 端侧实现通常避免 pow |
+| 调参 | 改 gamma 参数 | 改 LUT 表 | LUT 更接近 tuning 工作流 |
+
+因此 Gamma 报告里要把“数学曲线”和“工程实现”分开：
+
+```text
+数学上：Gamma/OETF 是非线性亮度编码
+工程上：常用 LUT 实现，方便定点化、加速和 tuning
+```
+
+后续可以增加一个 `pow gamma vs LUT gamma` 小实验：用同一条曲线生成 LUT，再比较查表输出和浮点输出的误差。
+
 ## Gamma 前后对比
 
 左边是线性 RGB 直接显示，右边是加 gamma 后。重点看中间调和暗部是不是被抬起来了。它们被抬起来不是因为曝光变了，而是同一批线性数值换了一种更适合显示的编码方式。
@@ -138,3 +248,4 @@ rgb_ccm -> percentile normalize -> gamma encode -> uint8 preview
 3. `1/2.2` 会抬高中间调，让线性图更适合普通显示器观看。
 4. Gamma 不等于 Tone Mapping。Gamma 主要解决显示编码和感知亮度，Tone Mapping 主要解决动态范围压缩。
 5. 看到 linear display 偏暗不是算法错了，而是线性数据还没有进入适合显示的编码状态。
+6. 对照 OpenISP 后要记住：产品实现通常用 LUT 表达 Gamma/OETF 和调色曲线，而不是每个像素实时算 `pow`。

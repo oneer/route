@@ -180,21 +180,21 @@ Each ISP module must answer 7 questions (from `materials/module_study_template.m
 
 | Deliverable | Status | Description |
 |---|---|---|
-| RAW sample download script | Done | PowerShell script for 5 FiveK starter DNGs |
-| RAW metadata inspection | Done | `01_inspect_raw.py` + 5 per-sample JSON dumps |
-| Reference image generation | Done | `02_generate_rawpy_references.py` + 5 reference PNGs |
+| RAW sample download script | Done | PowerShell script for FiveK starter DNGs |
+| RAW metadata inspection | Done | `01_inspect_raw.py` + T01-T14 per-sample JSON dumps |
+| Reference image generation | Done | `02_generate_rawpy_references.py` + T01-T14 reference PNGs |
 | Metadata summary table | Done | `03_dump_raw_metadata_table.py` → Markdown table |
 | Histogram plots | Done | S01, S03, S05 histograms with black/white level annotations |
 | ROI analysis | Done | Dark/midtone/highlight ROIs for S01, S03, S05 with JSON + preview |
 | Week 1 report | Done | `reports/week1/raw_statistics.md` + `reports/week1/roi_analysis.md` |
-| BLC module | Pending | Week 2 |
-| DPC module | Pending | Week 2 |
-| LSC module | Pending | Week 2 |
-| Demosaic module | Pending | Week 3 |
-| AWB module | Pending | Week 3 |
-| CCM module | Pending | Week 4 |
-| Gamma/Tone module | Pending | Week 4 |
-| IQA + final report | Pending | Week 5-6 |
+| BLC module | Done | `soft_isp/blc.py` + `reports/week2/blc_report.md` |
+| DPC module | Done | `soft_isp/dpc.py` + `reports/week2/dpc_report.md` |
+| LSC module | Done | Learning radial LSC: `soft_isp/lsc.py` + `reports/week2/lsc_report.md` |
+| Demosaic module | Done | Bilinear demosaic: `soft_isp/demosaic.py` |
+| AWB module | Done | Gray World AWB: `soft_isp/awb.py` |
+| CCM module | Done | Learning 3x3 CCM: `soft_isp/ccm.py` |
+| Gamma/Tone module | Done | Gamma + Reinhard/percentile tone: `soft_isp/tone.py` |
+| IQA + final report | Done | `reports/week5/iqa_ablation_report.md` + `reports/stage1_report.md` |
 
 ## License
 

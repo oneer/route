@@ -1,4 +1,14 @@
-"""Display orientation helpers for RAW-derived preview images."""
+"""显示方向处理模块。
+
+相机在拍摄时可能旋转机身（竖拍/倒拍），这些方向信息记录在 RAW 元数据中。
+本模块提供工具函数来应用这些旋转/翻转变换，使预览图与拍摄时的取景方向一致。
+
+LibRaw 用 flip 整数值（0~7）编码 8 种可能的显示方向，对应不同的旋转/镜像组合。
+
+函数列表：
+    - apply_rawpy_orientation:       对图像数组应用显示方向变换
+    - transform_box_for_orientation: 将边界框坐标变换到显示方向坐标系
+"""
 
 from __future__ import annotations
 
