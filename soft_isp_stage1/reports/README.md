@@ -7,6 +7,7 @@
 | 文件 | 用途 |
 |---|---|
 | `stage1_report.md` | 阶段一总报告 |
+| `openisp_reference_notes.md` | OpenISP 模块参考和后续升级点 |
 | `figures/` | 所有生成图片、对比图和模块 JSON |
 | `raw_stats/` | RAW metadata 和统计 JSON |
 

@@ -65,6 +65,34 @@ RAW -> BLC -> DPC -> Demosaic -> AWB -> CCM
 
 产品 ISP 里更常见的做法是拍摄标准色卡，在已知光源下拿到多个色块的目标颜色，然后拟合一组矩阵，让相机输出尽量接近目标颜色。真实系统还会按色温准备多套 CCM，并在不同光源之间插值。
 
+## 和 OpenISP CCM / CSC 的对照
+
+当前项目的 CCM 是 float32 线性 RGB 矩阵乘法：
+
+```text
+rgb_ccm = rgb_awb @ ccm.T
+```
+
+OpenISP 的 `openisp/ccm.py` 和 `openisp/csc.py` 更接近端侧 ISP 的定点实现风格。它们使用 3x4 矩阵：前三列做 RGB 线性组合，第四列是 offset，然后整体除以 1024：
+
+```text
+R' = (m00 * R + m01 * G + m02 * B + offset0) / 1024
+G' = (m10 * R + m11 * G + m12 * B + offset1) / 1024
+B' = (m20 * R + m21 * G + m22 * B + offset2) / 1024
+```
+
+两者对比如下：
+
+| 维度 | 当前项目 CCM | OpenISP CCM/CSC | 学习结论 |
+|---|---|---|---|
+| 数值表达 | float32 3x3 | fixed-point 风格 3x4，缩放因子 1024 | 工程实现常把浮点矩阵量化成整数 |
+| offset | 无显式 offset | 第四列为 offset | 色彩空间转换常需要平移，例如 RGB/YUV 偏置 |
+| 数据域 | AWB 后线性 RGB | RGB 或 YUV 风格 8-bit/uint 数据 | 当前更适合解释物理线性；OpenISP 更贴近显示后端 |
+| 性能取舍 | NumPy 向量化 | 逐像素/向量化混合，但思想是定点运算 | C++/硬件实现会优先考虑定点和 LUT |
+| 验证重点 | 色相变化、均值、rawpy 对比 | clip、offset、量化误差、溢出 | 产品级要同时关心颜色准确和数值安全 |
+
+因此，当前 CCM 报告可以多记一层：**3x3 矩阵是数学形式，OpenISP 的 3x4/1024 是工程落地形式。** 后续如果要向端侧部署靠近，可以增加一个 fixed-point CCM 实验：把 float CCM 量化成整数矩阵，再比较量化前后的 PSNR/SSIM/DeltaE。
+
 ## 结果总表
 
 | 样张 | R gain | G gain | B gain | AWB mean RGB | CCM mean RGB | 观察 |
@@ -161,3 +189,4 @@ RAW -> BLC -> DPC -> Demosaic -> AWB -> CCM
 3. CCM 后可能出现负值或超过白电平的值，所以工程上要 clip 或配合后续 tone mapping。
 4. 真正产品中的 CCM 通常来自色卡标定，不是随便调一个看起来舒服的矩阵。
 5. 当前结果和 rawpy 不完全一致是正常的，因为 rawpy 还包含更完整的颜色空间转换、曲线、亮度处理和相机 profile 逻辑。
+6. 对照 OpenISP 后要记住：工程 CCM/CSC 往往是 fixed-point 3x4 矩阵，包含 offset、缩放和 clip，不只是浮点 3x3。

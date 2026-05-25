@@ -180,6 +180,43 @@ raw_dpc -> bilinear_demosaic(raw_dpc, bayer_pattern) -> rgb_linear
 
 缺点：它不判断边缘方向，只做局部平均，所以边缘容易变糊；在高频纹理区可能出现假彩色、拉链边等伪影。后续更高级的 demosaic 方法会根据边缘方向选择插值方向，避免跨边缘平均。
 
+## 和 OpenISP CFA / Malvar 的对照
+
+OpenISP 把 Demosaic 模块命名为 `cfa.py`，全称是 Color Filter Array Interpolation。它实现的是 Malvar 类插值，而不是当前项目的 bilinear baseline。
+
+当前 bilinear 的核心是：
+
+```text
+C_hat = conv(raw * mask, kernel) / conv(mask, kernel)
+```
+
+也就是只用同色邻域做加权平均。OpenISP 的 Malvar 思路更进一步：不同 Bayer 位置使用不同公式，除了周围同色像素，还会利用跨通道和二阶差分项修正颜色。例如在 R 像素位置估计 G/B 时，会用到中心、上下左右、对角等更多位置的组合：
+
+```text
+R 位置：R = center
+       G = 由中心、上下左右、两格距离项组合估计
+       B = 由中心、对角、两格距离项组合估计
+```
+
+两者对比如下：
+
+| 维度 | 当前项目 Bilinear | OpenISP Malvar CFA | 学习结论 |
+|---|---|---|---|
+| 算法目标 | 建立 Bayer 补色直觉 | 提升边缘和纹理处的插值质量 | bilinear 是 baseline，Malvar 是传统 ISP 进阶 |
+| 使用信息 | 同色邻域加权平均 | 同色 + 跨通道校正 + 二阶差分 | Malvar 能利用颜色通道相关性 |
+| Bayer 位置 | R/G/B 三个 mask 统一公式 | R/Gr/Gb/B 四类位置分别写公式 | 工程实现会按 Bayer 位置细分 |
+| 伪影控制 | 不判断边缘方向，容易糊/假彩 | 比 bilinear 更能压伪色，但仍非最强 | 后续还可继续到 AHD/MLRI/LMMSE |
+| 实现代价 | 向量化简单，快 | 公式多、分支多、参数更难检查 | 适合做第二阶段对比实验 |
+
+因此，本报告里的 bilinear 不是“最终 demosaic”，而是第一层可解释 baseline。结合 OpenISP 后，下一步最自然的实验是：
+
+```text
+BLC/DPC/LSC -> Bilinear Demosaic
+BLC/DPC/LSC -> Malvar Demosaic
+```
+
+对比时不要只看全图 PSNR，而要专门截取高频纹理、斜边、文字、树枝、格子等区域，看 false color、zipper 和边缘糊化。
+
 ## 它和 rawpy reference 为什么不一样
 
 下面的左图是我们自己的结果，右图是 rawpy 的完整 ISP 参考图。两者不能直接按颜色好坏比较，因为 rawpy reference 通常还做了白平衡、颜色矩阵、gamma、亮度映射等步骤。本次输出只验证 demosaic 是否把图像结构补出来，颜色偏绿或偏暗是正常现象。
@@ -279,6 +316,7 @@ raw_dpc -> bilinear_demosaic(raw_dpc, bayer_pattern) -> rgb_linear
 2. Demosaic 本质是估计缺失颜色，不是调色。
 3. bilinear 很容易理解，但边缘容易糊，也可能产生彩色伪影；后面更高级的方法会重点改善边缘。
 4. Demosaic 后的图还不是最终照片，因为还缺 AWB、CCM、gamma/tone mapping。
+5. 对照 OpenISP 后要记住：Malvar 通过按 Bayer 位置使用不同校正公式，把 demosaic 从“同色平均”推进到“跨通道校正”。
 
 ## 下一步
 

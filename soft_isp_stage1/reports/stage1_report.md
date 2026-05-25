@@ -41,14 +41,30 @@ RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> s
 4. **LSC 是径向 baseline**：没有 flat-field 标定图时，LSC 不一定让全图更接近 rawpy；它主要用于理解位置和风险。
 5. **Demosaic 是 bilinear**：边缘和高频纹理不如 rawpy/LibRaw 的高级算法，可能出现边缘糊、假彩色和拉链纹。
 
-## 6. 阶段复盘
+## 6. OpenISP 参考后的补充认识
+
+引入 OpenISP 模块后，可以更清楚地看到当前项目的定位：Week1-4 已经覆盖了主干数据域转换，但还不是完整传统 ISP。OpenISP 里有 AAF、BNF、CNF、NLM、Malvar CFA、False Color Suppression、Edge Enhancement、Brightness/Contrast/Hue/Saturation 等模块，说明产品或教学完整 pipeline 还会包含更多 IQ 调参和伪影控制环节。
+
+最值得吸收的点有三类：
+
+1. **Demosaic 前的 RAW 域处理更多。** AAF 用同色低通抑制混叠；BNF/CNF/NLM 说明降噪不是只有坏点修复。
+2. **Demosaic 可以升级。** 当前 bilinear 适合建立直觉，OpenISP 的 Malvar 插值可作为下一阶段对照。
+3. **后处理也属于 ISP。** 假彩抑制、锐化、Gamma LUT、色相/饱和度/亮度/对比度控制都是最终图像风格和伪影控制的一部分。
+
+详见 [OpenISP 模块参考笔记](openisp_reference_notes.md)。
+
+## 7. 阶段复盘
 
 阶段 1 已经从“能读 RAW”推进到“能逐模块解释 RAW 到可显示图的每一步”。现在最有价值的成果不是最终图像多好看，而是每个模块都有代码、图、JSON 和报告支撑，能回答输入输出、核心假设、验证方法和失败场景。
 
-当前仍然是学习版 pipeline。下一阶段如果继续向产品级靠近，优先顺序应是：标定版 LSC、边缘感知 Demosaic、更稳健 AWB、色卡 CCM、sRGB OETF/局部 tone、系统化 DeltaE/LPIPS/主观评价。
+当前仍然是学习版 pipeline。下一阶段如果继续向产品级靠近，优先顺序应是：标定版 LSC、Malvar/AHD Demosaic、RAW 域 AAF/BNF 消融、更稳健 AWB、色卡 CCM、sRGB OETF/局部 tone、假彩抑制/锐化、系统化 DeltaE/LPIPS/主观评价。
 
-## 7. 面试复述笔记
+## 8. 面试复述笔记
 
 可以这样介绍本阶段：
 
 > 我从真实 DNG 出发，搭了一个可解释 Soft-ISP。前端在 Bayer RAW 域完成 BLC、DPC 和学习用 LSC；随后用 bilinear demosaic 得到线性 RGB，再做 Gray World AWB、CCM、Tone Mapping 和 Gamma 输出可显示图。每个模块都有独立脚本、统计 JSON、对比图和 Markdown 报告。最后我用 rawpy reference 做 PSNR/SSIM/Mean Abs Diff 指标和模块消融，明确说明学习版 pipeline 与产品级 ISP 的差距。
+
+如果面试官追问“为什么算法这么简单”，可以补充：
+
+> 这是我刻意做的第一层 baseline，目的是把数据域和验证闭环打通。后面我参考 OpenISP 梳理了更完整的传统 ISP 模块，包括 RAW 域 AAF/BNF/CNF、Malvar demosaic、假彩抑制、锐化、Gamma LUT 和颜色/风格控制。下一步会选 Malvar demosaic 和 RAW 域降噪做消融，而不是直接堆复杂模块。

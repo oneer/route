@@ -20,6 +20,46 @@ threshold = max(min_delta, median(residual) + mad_k * MAD(residual))
 
 这里输出的是“坏点候选”，不是最终工厂标定意义上的永久坏点表。高光边缘、强纹理和噪声也可能被少量误检，所以后面要结合局部 crop 图判断。
 
+## 和 OpenISP DPC 的对照
+
+当前项目的 DPC 是“同色平面 + robust threshold + median repair”的学习版。它先把 Bayer RAW 拆成 R/Gr/Gb/B 四个同色平面，再在每个平面里用 3x3 median 判断孤立异常点。这种写法优点是概念清楚：坏点一定要和同色邻域比较，阈值由 MAD 自适应估计。
+
+OpenISP 的 `openisp/dpc.py` 采用另一种更工程直觉的写法：直接在完整 Bayer RAW 上取隔 2 像素的 5x5 同色邻域，中心点 `p0` 周围有 8 个同色点：
+
+```text
+p1 p2 p3
+p4 p0 p5
+p6 p7 p8
+```
+
+检测条件是：如果 `p0` 和 8 个同色邻居的差异都超过固定阈值，就认为它是坏点候选。修复时有两种模式：
+
+```text
+mean 模式：     p0 = (p2 + p4 + p5 + p7) / 4
+gradient 模式： 选择垂直/水平/对角线中梯度最小的方向做平均
+```
+
+两者对比如下：
+
+| 维度 | 当前项目 DPC | OpenISP DPC | 学习结论 |
+|---|---|---|---|
+| 同色处理方式 | 先拆 R/Gr/Gb/B 平面 | 在原 Bayer 图上隔 2 像素取同色邻域 | 本质都是同色比较，只是数据组织不同 |
+| 检测阈值 | `max(min_delta, median + mad_k * MAD)` | 固定 `thres` | 当前版本更自适应；OpenISP 更接近 tuning 参数 |
+| 邻域大小 | 同色平面 3x3 | 原图 5x5 中的 3x3 同色点 | 对应关系相近，都是 8 邻域同色判断 |
+| 修复方式 | local median | mean 或 gradient direction average | median 抗孤立异常；gradient repair 更保护边缘方向 |
+| 工程风险 | 强纹理/highlight 仍可能误检 | 固定阈值对不同 ISO/曝光不够自适应 | 产品级通常会结合坏点表、ISO、温度和边缘保护 |
+
+因此 DPC 报告里要多记一层：**坏点修复不是只有“检测到就换成 median”。在边缘区域，沿最小梯度方向修复能减少抹边；在不同噪声水平下，自适应阈值又比固定阈值更稳。**
+
+后续如果升级当前 DPC，可以加入一个 `repair_mode` 参数：
+
+```text
+median：当前版本，稳健简单
+gradient：参考 OpenISP，按最小梯度方向修复
+```
+
+然后专门看强边缘 crop：median 是否把边缘抹平，gradient 是否更保结构。
+
 ## 结果总表
 
 | 样张 | Bayer | 候选数 | 占比 | R | Gr | Gb | B | 最大修复幅度 | 观察 |
@@ -204,6 +244,7 @@ threshold = max(min_delta, median(residual) + mad_k * MAD(residual))
 2. Bayer RAW 里必须按同色像素比较，不能直接用相邻像素判断坏点。
 3. 中值适合修复孤立异常点，因为它不容易被单个极端值带偏。
 4. 当前版本是学习用的保守候选检测；真正产品里通常还会结合暗场/亮场标定、温度、曝光和固定坏点表。
+5. 对照 OpenISP 后要补充：DPC 的修复策略可以沿最小梯度方向选择邻居，以减少边缘被 median 抹平。
 
 ## 下一步
 

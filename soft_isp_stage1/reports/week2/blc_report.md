@@ -15,6 +15,50 @@ corrected = clip(corrected, 0, white_level - black_level)
 
 如果一张图的 black level 是 0，那么 BLC 前后应该几乎不变；如果 black level 不为 0，暗部会向 0 移动，后续 demosaic、AWB、颜色校正才是在真实光信号上继续做。
 
+## 和 OpenISP BLC 的对照
+
+当前项目的 BLC 是一个“metadata 驱动的最小正确实现”：从 DNG/rawpy 读取 `black_level_per_channel` 和 `raw_pattern`，生成逐像素 black map，然后执行减法和 clip。它的重点是把 RAW 数值从“带偏置的传感器读数”变成“以 0 为起点的有效光信号”。
+
+OpenISP 的 `openisp/blc.py` 则更像一个工程 ISP 模块接口。它不直接从 DNG metadata 取 black level，而是接收一组外部参数：
+
+```text
+[bl_r, bl_gr, bl_gb, bl_b, alpha, beta]
+```
+
+前四个参数对应 R、Gr、Gb、B 四个 Bayer 位置的黑电平偏移；`alpha` 和 `beta` 是额外的绿色通道串扰修正项。以 RGGB 为例，OpenISP 的核心逻辑可以写成：
+
+```text
+R  = R_raw  + bl_r
+B  = B_raw  + bl_b
+Gr = Gr_raw + bl_gr + alpha * R / 256
+Gb = Gb_raw + bl_gb + beta  * B / 256
+```
+
+这比我们当前实现多了两层工程含义：
+
+1. **参数来源不同。** 我们依赖 DNG metadata，适合真实 DNG 学习闭环；OpenISP 假设黑电平和串扰参数已经由外部配置、标定或 tuning 系统给出。
+2. **BLC 不一定只是减常数。** OpenISP 里 Gr/Gb 还会根据 R/B 做一个比例修正，说明工程 BLC 可能顺手处理读出通道串扰、OB 统计偏差或绿色通道不一致。
+
+两者对比如下：
+
+| 维度 | 当前项目 BLC | OpenISP BLC | 学习结论 |
+|---|---|---|---|
+| 参数来源 | rawpy/DNG metadata | 外部参数列表 `[bl_r, bl_gr, bl_gb, bl_b, alpha, beta]` | DNG 学习版重在自动读取，工程模块重在可 tuning |
+| Bayer 位置 | `raw_pattern` 生成 black map | 手写 `rggb/bggr/gbrg/grbg` 四套分支 | 两种方式本质相同，都是按 2x2 Bayer 位置处理 |
+| 黑电平处理 | `raw - black_level` | `raw + bl_*`，通常 `bl_*` 可表示负偏移 | 符号约定不同，目标都是把黑位移到 0 附近 |
+| 绿色通道修正 | 未做 | `Gr += alpha * R / 256`，`Gb += beta * B / 256` | 工程 BLC 可能包含串扰/通道耦合补偿 |
+| 输出范围 | clip 到 `0..white_level-black_level` | clip 到 `0..clip` | 我们显式更新有效白电平，OpenISP 使用统一 clip 参数 |
+| 数据类型 | int32 中间计算，uint16 输出 | int16 中间数组，clip 后输出 | 中间计算要避免 underflow/overflow |
+
+因此，当前 BLC 报告不能只停留在“扣 black level”。更完整的理解是：
+
+```text
+学习版 BLC：metadata -> black map -> raw - black -> 更新有效 white
+工程版 BLC：tuning 参数 -> per-Bayer-position offset -> 可选串扰修正 -> clip
+```
+
+后续如果要把当前 BLC 向 OpenISP 靠近，最小升级不是直接照搬代码，而是增加一个可选的 `green_crosstalk` 实验参数，观察 `alpha/beta` 对 Gr/Gb 均值、暗部中性和 AWB gain 的影响。
+
 ## 结果总表
 
 | 样张 | Bayer | black level | white before | white after | p50 before | p50 after | mean before | mean after | 结论 |
@@ -247,3 +291,4 @@ corrected = clip(corrected, 0, white_level - black_level)
 2. black level 为 0 时，BLC 可以保留这个步骤，但结果应基本不变，用来验证流程没有破坏数据。
 3. black level 不为 0 时，必须先扣除，再进入 demosaic/AWB；否则后面的颜色和亮度判断都会带着偏置。
 4. BLC 后有效白电平变成 `white_level - black_level`；如果四通道 black level 不完全一样，有效白电平也会按 Bayer 位置略有差异。
+5. 对照 OpenISP 后要记住：工程 BLC 还可能包含 per-channel tuning、绿色通道串扰修正和 fixed-point/clip 约定，不只是一个固定减法。

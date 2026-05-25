@@ -53,6 +53,32 @@ Reinhard 的特点是输入越大，压缩越强。几个例子：
 
 注意 gamma 放在 tone mapping 后面。原因是 tone mapping 的输入应尽量保持线性亮度关系；如果先做 gamma，曲线处理的就不是物理线性光强，后续亮度压缩会变得更难解释。
 
+## 和 OpenISP 后端模块的对照
+
+OpenISP 里没有一个直接叫 `tone_mapping.py` 的模块。它把显示后端拆成多个更具体的 IQ 控制模块，例如：
+
+| OpenISP 模块 | 作用 | 和 Tone Mapping 的关系 |
+|---|---|---|
+| `bcc.py` | Brightness / Contrast Control | 控制整体亮度和对比度，可视为 tone 曲线之后的风格调节 |
+| `hsc.py` | Hue / Saturation Control | 控制色相和饱和度，不解决动态范围，但影响最终观感 |
+| `eeh.py` | Edge Enhancement | 提升边缘锐度，常与 tone/contrast 一起影响“清晰感” |
+| `fcs.py` | False Color Suppression | 抑制强边缘假彩，避免 demosaic 后彩边过重 |
+| `gac.py` | Gamma LUT | 承担显示编码，也可能承载一部分曲线调节 |
+
+这说明当前项目的 Tone Mapping 报告还比较“全局曲线化”：percentile clip 和 Reinhard 都是一条全局曲线。OpenISP 的后端更接近传统 ISP tuning：动态范围、对比度、锐度、假彩、饱和度会拆成多个模块分别调。
+
+两者对比如下：
+
+| 维度 | 当前项目 Tone Mapping | OpenISP 后端 IQ 模块 | 学习结论 |
+|---|---|---|---|
+| 目标 | 把线性高动态范围压到显示范围 | 分别控制亮度、对比度、锐度、假彩、饱和度 | 完整后端不止一条 tone curve |
+| 实现 | percentile clip / Reinhard | BCC/HSC/EE/FCS/Gamma LUT | OpenISP 更像 tuning 模块集合 |
+| 数据域 | float RGB | 多为 8-bit RGB/YUV 风格 | 后端常在显示域或 YUV 域工作 |
+| 风险 | 高光压缩过度、整体偏灰 | halo、过锐、假彩、过饱和 | 主观 IQ 需要多模块平衡 |
+| 验证 | rawpy 对比、亮暗观察 | crop、边缘图、UV 变化、主观评价 | 后端评价不能只靠 PSNR |
+
+因此，当前 Tone Mapping 是“显示输出的第一条曲线”；OpenISP 提醒我们，后续还要把最终 IQ 拆成更细问题：高光、对比度、锐度、假彩、饱和度分别怎么调。
+
 ## Tone Mapping 对比
 
 左边是 percentile clip + gamma，中间是 Reinhard + gamma，右边是 rawpy 参考。重点看亮部压缩和整体观感的差异。
@@ -126,3 +152,4 @@ Reinhard 的特点是输入越大，压缩越强。几个例子：
 3. Reinhard 曲线会更柔和地压亮部，但整体可能偏灰或偏暗。
 4. Gamma 和 Tone Mapping 经常一起出现在显示输出阶段，但它们解决的问题不同。
 5. 一个好的 tone curve 通常要同时考虑高光保护、中间调亮度、暗部可见性和整体对比度。
+6. 对照 OpenISP 后要记住：最终观感不是 Tone Mapping 单独决定的，还会被 BCC、HSC、EE、FCS、Gamma LUT 等后端 IQ 模块共同影响。

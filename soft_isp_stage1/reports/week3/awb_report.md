@@ -30,6 +30,44 @@ B_gain = G_mean / B_mean
 
 本次实现会先排除最暗的 5% 和最亮的 5% 像素，再计算均值。这样可以减少黑场噪声和高光饱和区域对白平衡估计的影响。
 
+## 和 OpenISP AWB 的对照
+
+当前项目的 AWB 是“自动估计 + RGB 域应用”：先 Demosaic 得到线性 RGB，再用 Gray World 估计 R/B gain，最后对 RGB 三通道乘 gain。
+
+OpenISP 的 `openisp/awb.py` 更准确地说是 WB Gain Control，而不是完整自动估计算法。它接收外部给定的四个 gain：
+
+```text
+[r_gain, gr_gain, gb_gain, b_gain]
+```
+
+然后直接在 Bayer RAW 域按 R/Gr/Gb/B 位置乘增益。以 RGGB 为例：
+
+```text
+R  = R_raw  * r_gain
+Gr = Gr_raw * gr_gain
+Gb = Gb_raw * gb_gain
+B  = B_raw  * b_gain
+```
+
+两者对比如下：
+
+| 维度 | 当前项目 Gray World AWB | OpenISP WBGC | 学习结论 |
+|---|---|---|---|
+| gain 来源 | 从图像统计自动估计 | 外部参数直接输入 | 自动 AWB 和 WB gain application 是两个不同问题 |
+| 应用位置 | Demosaic 后 RGB 域 | Demosaic 前 Bayer RAW 域 | RAW 域 WB 可避免插值后再改通道比例 |
+| 通道数量 | R/G/B 三个 gain，G 固定 1 | R/Gr/Gb/B 四个 Bayer 位置 gain | 工程上 Gr/Gb 可以分别控制 |
+| 失败模式 | 大面积单色、混合光源会估错 | gain 如果 tuning 错，整条 pipeline 都会偏 | 一个解决估计，一个解决执行 |
+| 验证方法 | R/G、B/G 是否接近 1；看中性 ROI | 检查 per-Bayer 通道均值和后续 RGB 中性 | 应把“估计 gain”和“应用 gain”分开评价 |
+
+因此 AWB 报告需要补一个关键区分：
+
+```text
+AWB estimation：从图像或统计中估计应该用什么 gain
+WB gain control：把已知 gain 正确应用到 RAW 或 RGB 数据域
+```
+
+当前项目做的是前者加 RGB 域应用；OpenISP 展示的是后者，而且是在 RAW/Bayer 域执行。后续升级时，可以把 Gray World 估计出的 RGB gain 转换成 R/Gr/Gb/B gain，在 Demosaic 前应用，再和当前 RGB 域 AWB 做对比。
+
 ## 结果总表
 
 | 样张 | Bayer | R gain | G gain | B gain | R/G before | B/G before | R/G after | B/G after | 观察 |
@@ -121,3 +159,4 @@ Gray World 很简单，也很容易失败。比如画面里大面积草地、天
 2. AWB 本质是估计并应用每通道 gain，不是复杂调色。
 3. Gray World 是一个可解释的 baseline，适合学习和建立直觉。
 4. AWB 后颜色仍然不等于最终照片，因为还缺 CCM、Gamma/Tone。
+5. 对照 OpenISP 后要记住：自动估计 gain 和在 Bayer RAW 域应用 gain 是两个不同层次，工程 pipeline 常把它们拆开。
