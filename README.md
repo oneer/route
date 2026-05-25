@@ -30,7 +30,7 @@ Architecture covers: render graph, data model (RAW/non-linear/display nodes), UI
 
 A hands-on Python Soft-ISP Pipeline — read real DNG files, implement every traditional ISP module yourself (BLC, DPC, LSC, Demosaic, AWB, CCM, Gamma), compare against rawpy references, and write structured reports.
 
-**Status:** Week 1 complete (RAW statistics, histograms, ROI analysis across 5 FiveK samples). Weeks 2-6 cover front-end correction, demosaic/AWB, color/tone, IQA, and final report.
+**Status:** Stage 1 is now complete in its learning-project form: T01-T14 samples are covered, BLC/DPC/learning LSC/Demosaic/AWB/CCM/Tone/Gamma are implemented, and Week5 PSNR/SSIM ablation plus the final stage report are included.
 
 See [soft_isp_stage1/README.md](soft_isp_stage1/README.md) for details.
 

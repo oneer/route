@@ -180,21 +180,21 @@ python scripts/05_analyze_raw_roi.py data/raw/*.dng
 
 | 交付物 | 状态 | 说明 |
 |---|---|---|
-| RAW 样张下载脚本 | 已完成 | 5 张 FiveK 入门 DNG 的 PowerShell 下载脚本 |
-| RAW 元数据检查 | 已完成 | `01_inspect_raw.py` + 5 份 JSON 统计 |
-| 参考图像生成 | 已完成 | `02_generate_rawpy_references.py` + 5 张参考 PNG |
+| RAW 样张下载脚本 | 已完成 | FiveK 入门 DNG 的 PowerShell 下载脚本 |
+| RAW 元数据检查 | 已完成 | `01_inspect_raw.py` + T01-T14 JSON 统计 |
+| 参考图像生成 | 已完成 | `02_generate_rawpy_references.py` + T01-T14 参考 PNG |
 | 元数据汇总表 | 已完成 | `03_dump_raw_metadata_table.py` → Markdown 表格 |
 | 直方图绘制 | 已完成 | S01、S03、S05 直方图，带黑/白电平标注 |
 | ROI 分析 | 已完成 | S01、S03、S05 的暗/中/亮 ROI，含 JSON + 预览图 |
 | 第 1 周报告 | 已完成 | `reports/week1/raw_statistics.md` + `reports/week1/roi_analysis.md` |
-| BLC 模块 | 待完成 | 第 2 周 |
-| DPC 模块 | 待完成 | 第 2 周 |
-| LSC 模块 | 待完成 | 第 2 周 |
-| 去马赛克模块 | 待完成 | 第 3 周 |
-| AWB 模块 | 待完成 | 第 3 周 |
-| CCM 模块 | 待完成 | 第 4 周 |
-| Gamma/Tone 模块 | 待完成 | 第 4 周 |
-| IQA + 最终报告 | 待完成 | 第 5-6 周 |
+| BLC 模块 | 已完成 | `soft_isp/blc.py` + `reports/week2/blc_report.md` |
+| DPC 模块 | 已完成 | `soft_isp/dpc.py` + `reports/week2/dpc_report.md` |
+| LSC 模块 | 已完成 | 学习用径向 LSC：`soft_isp/lsc.py` + `reports/week2/lsc_report.md` |
+| 去马赛克模块 | 已完成 | Bilinear demosaic：`soft_isp/demosaic.py` |
+| AWB 模块 | 已完成 | Gray World AWB：`soft_isp/awb.py` |
+| CCM 模块 | 已完成 | 学习用 3x3 CCM：`soft_isp/ccm.py` |
+| Gamma/Tone 模块 | 已完成 | Gamma + Reinhard/percentile tone：`soft_isp/tone.py` |
+| IQA + 最终报告 | 已完成 | `reports/week5/iqa_ablation_report.md` + `reports/stage1_report.md` |
 
 ## 许可
 

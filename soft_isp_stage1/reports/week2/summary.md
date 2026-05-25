@@ -1,6 +1,6 @@
 ﻿# Week 2 学习总结：BLC / DPC
 
-Week2 的目标是做 RAW 前端校正。前端校正发生在 Demosaic 之前，仍然工作在单通道 Bayer RAW 上。本周已经完成 BLC 和 DPC 两个模块；LSC 在路线里属于 Week2 范围，但当前还没有实现，建议后续作为单独小闭环补齐。
+Week2 的目标是做 RAW 前端校正。前端校正发生在 Demosaic 之前，仍然工作在单通道 Bayer RAW 上。本周已经完成 BLC、DPC 和一个学习用径向 LSC baseline。LSC 不是产品标定版，但已经把镜头阴影校正放回了正确的数据域和 pipeline 位置。
 
 ## 本周 Pipeline 位置
 
@@ -17,6 +17,7 @@ RAW
 |---|---|---|---|
 | BLC | `soft_isp/blc.py`、`scripts/06_apply_blc.py` | `reports/week2/blc_report.md` | `reports/figures/*_blc_*.png/json` |
 | DPC | `soft_isp/dpc.py`、`scripts/07_apply_dpc.py` | `reports/week2/dpc_report.md` | `reports/figures/*_dpc_*.png/json` |
+| LSC | `soft_isp/lsc.py`、`scripts/14_apply_lsc.py` | `reports/week2/lsc_report.md` | `reports/figures/*_lsc_*.png/json` |
 
 ## BLC 学到了什么
 
@@ -61,18 +62,30 @@ threshold = max(min_delta, median(residual) + mad_k * MAD(residual))
 4. DPC mask 要叠到图上看，确认候选点是否集中在强边缘、高光或纹理区域。
 5. DPC 修复 crop 要检查修复前后是否合理。
 
+## LSC 学到了什么
+
+LSC 的全称是 Lens Shading Correction，镜头阴影校正。它主要处理中心亮、边缘暗，以及不同 Bayer 通道位置相关响应不一致的问题。当前实现使用保守径向 gain map：
+
+```text
+gain(center) = 1
+gain(edge)   = edge_gain
+raw_lsc      = raw * gain_map
+```
+
+这能帮助理解 LSC 应放在 Demosaic 前，但它不能替代积分球或均匀白场标定。
+
 ## 本周局限
 
 1. 当前 DPC 是学习用候选检测，不是工厂坏点表。
 2. 强边缘、高光饱和、纹理区域可能被误检。
-3. 当前还没有做 LSC。镜头暗角和色彩阴影仍可能影响后续 AWB。
+3. 当前 LSC 是学习用径向模型，不是标定 gain map；它可能把真实场景亮度变化误当成镜头暗角。
 4. BLC/DPC 都在 Bayer RAW 上工作，不能用最终视觉效果单独评价。
 
-## 为什么 LSC 后续还要补
+## 为什么 LSC 后续还要升级
 
 LSC 是 Lens Shading Correction，镜头阴影校正。它主要解决画面边缘变暗、不同颜色通道边缘响应不一致的问题。如果不做 LSC，AWB 可能被边缘色偏影响，CCM 也可能在不同位置表现不一致。
 
-但 LSC 通常需要 flat-field 标定图或可靠的估计策略。当前数据集没有专门的均匀白场标定图，所以建议后续先做一个“简化版径向 LSC / 低频拟合 LSC”实验，而不是把它混进 BLC/DPC 的闭环里。
+但 LSC 通常需要 flat-field 标定图或可靠的估计策略。当前数据集没有专门的均匀白场标定图，所以本次只做“简化版径向 LSC”实验。后续如果要产品化，应使用均匀白场估计 R/Gr/Gb/B 四通道 gain map，并评估边缘噪声放大。
 
 ## 和 Week3 的关系
 
