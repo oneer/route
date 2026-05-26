@@ -2,6 +2,8 @@
 
 配套复习材料：[Week 0.5 问答题](week0_qa.md)
 
+如果还没有很多机器学习 / 神经网络基础，建议先读：[Week 0.6：神经网络图像恢复基础](week0_6_neural_network_foundation.md)。那份笔记会先把模型、loss、backward、optimizer、step 和 PSNR/SSIM 讲清楚，再回到这里看训练闭环。
+
 ## 0. 先回答：阶段二到底在学什么
 
 阶段一学的是传统 Soft-ISP：你手写一条从 RAW 到可显示图像的处理链路，理解每个模块的输入、输出、假设和失败场景。

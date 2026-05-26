@@ -1,0 +1,33 @@
+# Week 0.6: TinyCNN 10-step learning probe.
+# Same setup as toy_rgb_denoise_tiny.yaml, but intentionally stops very early.
+
+experiment:
+  name: toy_rgb_denoise_tiny_10
+  seed: 42
+  output_dir: runs/toy_rgb_denoise_tiny_10
+
+data:
+  patch_size: 64
+  train_size: 256
+  val_size: 16
+  noise:
+    type: gaussian
+    sigma_min: 0.03
+    sigma_max: 0.12
+
+model:
+  name: tiny_cnn
+  in_channels: 3
+  out_channels: 3
+  features: 32
+
+train:
+  steps: 10
+  batch_size: 8
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: l1
+  log_every: 10
+  val_every: 10
+  num_workers: 0
+  device: auto
