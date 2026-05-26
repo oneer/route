@@ -1,42 +1,39 @@
-# Soft ISP — 从 RAW 到 RGB，逐像素理解成像管线
+# Route — AI-ISP 学习作品集
 
 [English Version](README.md)
 
-面向 ISP 算法工程师方向的自驱动学习仓库，覆盖从传感器物理到 C++ 桌面工具的完整链路。
+面向 AI-ISP 算法工程师方向的自驱动、项目驱动学习仓库，覆盖从传感器物理、传统 ISP 算法到 AI 图像恢复、最终 C++/CUDA 部署的完整链路。
 
 ## 仓库地图
 
 ```
 route/
-├── docs/
-│   └── soft_isp_desktop_design.md   # C++ 桌面端 Soft ISP 工作台设计文档
-├── soft_isp_stage1/                 # 阶段一：Python Soft-ISP 学习项目
-├── study-roadmap/                   # 10 个月 AI-ISP 社招学习路线
-└── README.md
+├── soft_isp_stage1/       # 阶段一：传统 ISP Pipeline（Python）
+├── ai_isp_stage2/         # 阶段二：AI-ISP 图像恢复（PyTorch）
+├── study-roadmap/         # 10 个月 AI-ISP 社招学习路线
+├── README.md
+└── README_CN.md
 ```
 
-### [docs/](docs/) — 设计文档
+### [soft_isp_stage1/](soft_isp_stage1/) — 阶段一：传统 ISP Pipeline
 
-[Soft ISP 桌面工作台设计文档](docs/soft_isp_desktop_design.md) 规划了一个基于 C++ 的交互式 ISP 可视化平台：
+一个动手实践的 Python Soft-ISP Pipeline — 读取真实 DNG 文件，亲手实现每个传统 ISP 模块（BLC、DPC、LSC、去马赛克、AWB、CCM、Gamma、Tone Mapping），与 rawpy 参考输出对比，撰写结构化实验报告。同时包含完整的 [OpenISP](https://github.com/cruxopen/openISP) 参考实现，用于逐模块对照学习。
 
-- RAW/DNG → 分阶段执行 Pipeline → 查看每个阶段的中间结果
-- 修改各阶段参数并实时观察效果
-- 替换或扩展算法模块
-- 导出最终 sRGB 或任意中间结果
-
-架构覆盖：渲染图、数据模型（RAW/非线性/显示节点）、UI 布局、基于 OpenColorIO 的色彩管理、EXIF 往返、CI/测试策略（GoogleTest、OpenImageIO、感知容差比对）。一期目标为 Qt + CPU 浮点 Pipeline，预览与全分辨率分离。
-
-### [soft_isp_stage1/](soft_isp_stage1/) — 阶段一学习项目
-
-一个动手实践的 Python Soft-ISP Pipeline — 读取真实 DNG 文件，亲手实现每个传统 ISP 模块（BLC、DPC、LSC、去马赛克、AWB、CCM、Gamma），与 rawpy 参考输出对比，撰写结构化实验报告。
-
-**当前状态：** 阶段一主体已完成：覆盖 T01-T14 样张，已实现 BLC、DPC、学习用 LSC、Demosaic、AWB、CCM、Tone/Gamma，并补齐 Week5 PSNR/SSIM/消融实验与阶段总报告。
+**状态：** 已完成。所有模块均已实现，IQA 消融实验完成，Week 6 知识盲区闭合。共 16 个脚本，完整的 Pipeline 评估，以及 Week 1–6 的周报。
 
 详见 [soft_isp_stage1/README_CN.md](soft_isp_stage1/README_CN.md)。
 
+### [ai_isp_stage2/](ai_isp_stage2/) — 阶段二：AI-ISP 图像恢复
+
+第二阶段从手工算法转向可学习图像恢复。当前阶段先用合成 RGB 去噪任务跑通深度学习训练闭环，验证工程链路后再推进到真实传感器数据（SIDD、SID）。
+
+**状态：** 进行中。TinyCNN / DnCNN / UNet 三种模型的 toy RGB denoise baseline 已跑通，训练循环、配置系统和 PSNR/SSIM 评估链路均已就绪。
+
+详见 [ai_isp_stage2/README.md](ai_isp_stage2/README.md)。
+
 ### [study-roadmap/](study-roadmap/) — 职业学习路线
 
-一份 10 个月、项目驱动的学习路线，面向已有 ISP 工程经验（Python/C++ Pipeline 维护、定点化、多通道重构）、需要从"会对齐输出、会改代码"升级到"能解释算法、能设计实验、能评估画质、能部署 AI-ISP 模型"的工程师。
+一份 10 个月、4 阶段的完整学习路线，面向已有 ISP 工程经验的工程师，从"会对齐输出、会改代码"升级到"能解释算法、能设计实验、能评估画质、能部署 AI-ISP 模型"。
 
 详见 [study-roadmap/AI-ISP 图像算法工程师 · 社招学习路线.md](study-roadmap/AI-ISP%20图像算法工程师%20·%20社招学习路线.md)。
 
@@ -59,7 +56,7 @@ route/
 ```bash
 cd soft_isp_stage1
 pip install -r requirements.txt
-python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
+python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 ```
 
 如果还没有 RAW 文件，使用项目自带的下载脚本：
@@ -85,16 +82,17 @@ python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
 | 可视化 | Matplotlib |
 | 指标 | scikit-image (SSIM), colour-science (Delta E) |
 | 配置 | YAML |
+| 深度学习 | PyTorch, torchvision |
 | 未来 C++ 工作台 | C++17, Qt 6, OpenColorIO, GoogleTest, OpenImageIO |
 
-## 后续阶段
+## 阶段规划
 
-| 阶段 | 重点 | 语言 |
-|---|---|---|
-| 1（当前） | 传统 ISP Pipeline 基础 | Python |
-| 2 | AI 驱动的 RAW 降噪 / 暗光增强 | Python + PyTorch |
-| 3 | C++ 高性能 ISP 库 | C++ |
-| 4 | CUDA 加速 + TensorRT/NCNN 部署 + 桌面工作台 | C++ / CUDA |
+| 阶段 | 重点 | 语言 | 状态 |
+|---|---|---|---|
+| 1 | 传统 ISP Pipeline 基础 | Python | 已完成 |
+| 2 | AI 驱动的图像恢复与降噪 | Python + PyTorch | 进行中 |
+| 3 | C++ 高性能 ISP 库 | C++ | 计划中 |
+| 4 | CUDA 加速 + TensorRT/NCNN 部署 | C++ / CUDA | 计划中 |
 
 ## 许可
 

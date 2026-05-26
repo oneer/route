@@ -1,42 +1,39 @@
-# Soft ISP — From RAW to RGB, One Pixel at a Time
+# Route — AI-ISP Learning Portfolio
 
 [中文版本](README_CN.md)
 
-A self-directed learning repository for mastering the full Image Signal Processing (ISP) pipeline — from sensor physics to C++ desktop tools. Built for software engineers transitioning into AI-ISP algorithm roles.
+A self-directed, project-driven learning repository for mastering the full Image Signal Processing (ISP) pipeline — from sensor physics and traditional ISP algorithms to AI-driven image restoration and eventual C++/CUDA deployment. Built for software engineers transitioning into AI-ISP algorithm roles.
 
 ## Repository Map
 
 ```
 route/
-├── docs/
-│   └── soft_isp_desktop_design.md   # C++ desktop Soft ISP workbench design doc
-├── soft_isp_stage1/                 # Stage 1: Python Soft-ISP learning project
-├── study-roadmap/                   # 10-month AI-ISP career learning roadmap
-└── README.md
+├── soft_isp_stage1/       # Stage 1: Traditional ISP pipeline (Python)
+├── ai_isp_stage2/         # Stage 2: AI-ISP image restoration (PyTorch)
+├── study-roadmap/         # 10-month AI-ISP career learning roadmap
+├── README.md
+└── README_CN.md
 ```
 
-### [docs/](docs/) — Design Document
+### [soft_isp_stage1/](soft_isp_stage1/) — Stage 1: Traditional ISP Pipeline
 
-The [Soft ISP Desktop Design Document](docs/soft_isp_desktop_design.md) specifies a C++ desktop workbench for interactive ISP exploration:
+A hands-on Python Soft-ISP Pipeline — read real DNG files, implement every traditional ISP module yourself (BLC, DPC, LSC, Demosaic, AWB, CCM, Gamma, Tone Mapping), compare against rawpy references, and write structured reports. Also includes a full [OpenISP](https://github.com/cruxopen/openISP) reference implementation for side-by-side algorithm study.
 
-- RAW/DNG → staged pipeline → inspect every intermediate result
-- Modify per-stage parameters and observe effects in real time
-- Swap or extend algorithm modules
-- Export final sRGB or any intermediate buffer
-
-Architecture covers: render graph, data model (RAW/non-linear/display nodes), UI layout, color management via OpenColorIO, EXIF round-tripping, and CI/testing strategy (GoogleTest, OpenImageIO, perceptual diff tolerance). Phase 1 targets Qt + CPU float pipeline with preview/full-res separation.
-
-### [soft_isp_stage1/](soft_isp_stage1/) — Stage 1 Learning Project
-
-A hands-on Python Soft-ISP Pipeline — read real DNG files, implement every traditional ISP module yourself (BLC, DPC, LSC, Demosaic, AWB, CCM, Gamma), compare against rawpy references, and write structured reports.
-
-**Status:** Stage 1 is now complete in its learning-project form: T01-T14 samples are covered, BLC/DPC/learning LSC/Demosaic/AWB/CCM/Tone/Gamma are implemented, and Week5 PSNR/SSIM ablation plus the final stage report are included.
+**Status:** Complete. All modules implemented, IQA ablation done, Week 6 mastery gap closure finished. 16 scripts, full pipeline evaluation, and comprehensive weekly reports (Week 1–6).
 
 See [soft_isp_stage1/README.md](soft_isp_stage1/README.md) for details.
 
+### [ai_isp_stage2/](ai_isp_stage2/) — Stage 2: AI-ISP Image Restoration
+
+The second stage shifts from hand-crafted algorithms to learned image restoration. Currently focused on establishing a reliable deep learning training loop with synthetic RGB denoising before moving to real sensor data (SIDD, SID).
+
+**Status:** In progress. Toy RGB denoise baseline with TinyCNN / DnCNN / UNet is running. Training loop, config system, and PSNR/SSIM evaluation pipeline are in place.
+
+See [ai_isp_stage2/README.md](ai_isp_stage2/README.md) for details.
+
 ### [study-roadmap/](study-roadmap/) — Career Learning Roadmap
 
-A 10-month, project-driven curriculum designed for someone with existing ISP engineering experience (Python/C++ pipeline maintenance, fixed-point conversion, multi-channel refactoring) who needs to upgrade from "can align outputs and adapt code" to "can explain algorithms, design experiments, evaluate image quality, and deploy AI-ISP models."
+A 10-month, project-driven curriculum across 4 stages, designed for engineers with existing ISP experience who need to level up from "can adapt code" to "can explain algorithms, design experiments, evaluate image quality, and deploy AI-ISP models."
 
 See [study-roadmap/AI-ISP 图像算法工程师 · 社招学习路线.md](study-roadmap/AI-ISP%20图像算法工程师%20·%20社招学习路线.md) for the full plan.
 
@@ -59,7 +56,7 @@ Start with [soft_isp_stage1/](soft_isp_stage1/) — the Python learning project.
 ```bash
 cd soft_isp_stage1
 pip install -r requirements.txt
-python scripts/01_inspect_raw.py data/raw/S01_a0001-jmac_DSC1459.dng
+python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 ```
 
 If you don't have RAW files yet, use the included download script:
@@ -85,16 +82,17 @@ If you don't have RAW files yet, use the included download script:
 | Visualization | Matplotlib |
 | Metrics | scikit-image (SSIM), colour-science (Delta E) |
 | Configuration | YAML |
+| Deep learning | PyTorch, torchvision |
 | Future C++ workbench | C++17, Qt 6, OpenColorIO, GoogleTest, OpenImageIO |
 
-## Future Stages
+## Stages
 
-| Stage | Focus | Language |
-|---|---|---|
-| 1 (current) | Traditional ISP pipeline fundamentals | Python |
-| 2 | AI-driven RAW denoising / low-light enhancement | Python + PyTorch |
-| 3 | C++ high-performance ISP library | C++ |
-| 4 | CUDA acceleration + TensorRT/NCNN deployment + desktop workbench | C++ / CUDA |
+| Stage | Focus | Language | Status |
+|---|---|---|---|
+| 1 | Traditional ISP pipeline fundamentals | Python | Complete |
+| 2 | AI-driven image restoration & denoising | Python + PyTorch | In progress |
+| 3 | C++ high-performance ISP library | C++ | Planned |
+| 4 | CUDA acceleration + TensorRT/NCNN deployment | C++ / CUDA | Planned |
 
 ## License
 
