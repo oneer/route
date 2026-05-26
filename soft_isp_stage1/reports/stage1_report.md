@@ -57,7 +57,9 @@ RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> s
 
 阶段 1 已经从“能读 RAW”推进到“能逐模块解释 RAW 到可显示图的每一步”。现在最有价值的成果不是最终图像多好看，而是每个模块都有代码、图、JSON 和报告支撑，能回答输入输出、核心假设、验证方法和失败场景。
 
-当前仍然是学习版 pipeline。下一阶段如果继续向产品级靠近，优先顺序应是：标定版 LSC、Malvar/AHD Demosaic、RAW 域 AAF/BNF 消融、更稳健 AWB、色卡 CCM、sRGB OETF/局部 tone、假彩抑制/锐化、系统化 DeltaE/LPIPS/主观评价。
+更细的模块掌握标准已经整理到 [ISP 模块掌握标准对照表](module_mastery_matrix.md)。这张表按“入门 / 掌握 / 面试可讲”检查 RAW、BLC、DPC、LSC、Demosaic、AWB、CCM、Gamma/Tone 和 IQA 的覆盖情况。此前标出的短板已经集中放到 [Week6 补短板实验报告](week6/mastery_gap_closure_report.md) 中验证，包括静态 defect map、合成 flat-field / mesh LSC、OpenCV demosaic baseline、AWB white patch / gray ROI、CCM DeltaE、sRGB OETF / S-curve 和 ROI IQA。
+
+当前仍然是学习版 pipeline。下一阶段如果继续向产品级靠近，优先顺序应是：真实 flat-field 标定版 LSC、ColorChecker CCM / DeltaE、Malvar/AHD Demosaic、RAW 域 AAF/BNF 消融、语义 ROI 主观评价、局部 tone、假彩抑制/锐化和后端 IQ 模块。
 
 ## 8. 面试复述笔记
 

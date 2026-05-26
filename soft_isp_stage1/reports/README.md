@@ -7,6 +7,7 @@
 | 文件 | 用途 |
 |---|---|
 | `stage1_report.md` | 阶段一总报告 |
+| `module_mastery_matrix.md` | ISP 模块入门 / 掌握 / 面试可讲标准对照 |
 | `openisp_reference_notes.md` | OpenISP 模块参考和后续升级点 |
 | `figures/` | 所有生成图片、对比图和模块 JSON |
 | `raw_stats/` | RAW metadata 和统计 JSON |
@@ -50,6 +51,12 @@
 | 文件 | 内容 |
 |---|---|
 | `week5/iqa_ablation_report.md` | PSNR / SSIM / Mean Abs Diff 指标和模块消融 |
+
+## Week 6：补短板实验
+
+| 文件 | 内容 |
+|---|---|
+| `week6/mastery_gap_closure_report.md` | 静态 DPC、mesh LSC、OpenCV Demosaic、AWB ROI、CCM DeltaE、sRGB/S-curve、ROI IQA |
 
 ## 面试准备
 

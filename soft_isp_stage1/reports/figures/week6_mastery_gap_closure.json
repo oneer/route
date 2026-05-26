@@ -1,0 +1,2004 @@
+[
+  {
+    "sample_id": "T01",
+    "file": "data\\raw\\T01_a0006-IMG_2787.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 100,
+      "static_count": 58
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 19.278956684077507,
+        "ssim": 0.8780290484428406,
+        "mean_abs_diff": 0.10101617872714996
+      },
+      "opencv_bilinear": {
+        "psnr": 19.280579718572678,
+        "ssim": 0.8780152201652527,
+        "mean_abs_diff": 0.10098946839570999
+      },
+      "opencv_edge_aware": {
+        "psnr": 19.287380934911017,
+        "ssim": 0.8770098686218262,
+        "mean_abs_diff": 0.10087607055902481
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.9746999740600586,
+        1.0,
+        1.657099962234497
+      ],
+      "white_patch_gains": [
+        2.094399929046631,
+        1.0,
+        1.4265999794006348
+      ],
+      "gray_roi_gains": [
+        1.9854999780654907,
+        1.0,
+        1.654099941253662
+      ],
+      "gray_roi_coverage": 0.7,
+      "metrics": {
+        "gray_world": {
+          "psnr": 21.07253118040107,
+          "ssim": 0.8908374905586243,
+          "mean_abs_diff": 0.07224207371473312
+        },
+        "white_patch": {
+          "psnr": 21.807627305850495,
+          "ssim": 0.8948445320129395,
+          "mean_abs_diff": 0.0705808773636818
+        },
+        "gray_roi": {
+          "psnr": 21.108185375350025,
+          "ssim": 0.8910223841667175,
+          "mean_abs_diff": 0.07193678617477417
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 12.00564956665039,
+      "ccm_delta_e": 12.066823959350586,
+      "no_ccm": {
+        "psnr": 21.233880387254946,
+        "ssim": 0.8630735874176025,
+        "mean_abs_diff": 0.06657325476408005
+      },
+      "ccm": {
+        "psnr": 21.21725242769116,
+        "ssim": 0.8599072098731995,
+        "mean_abs_diff": 0.06781288236379623
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 21.21725242769116,
+        "ssim": 0.8599072098731995,
+        "mean_abs_diff": 0.06781288236379623
+      },
+      "gamma_only": {
+        "psnr": 22.085132657321196,
+        "ssim": 0.8788809776306152,
+        "mean_abs_diff": 0.06461820006370544
+      },
+      "srgb_oetf": {
+        "psnr": 22.021402695675167,
+        "ssim": 0.8780865669250488,
+        "mean_abs_diff": 0.06499084085226059
+      },
+      "s_curve_lut": {
+        "psnr": 19.075938656721988,
+        "ssim": 0.8257932662963867,
+        "mean_abs_diff": 0.0958077609539032
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 22.595050062045196,
+        "ssim": 0.8796107769012451,
+        "mean_abs_diff": 0.059442609548568726,
+        "delta_e": 12.21956729888916,
+        "subjective_tag": "color_shift"
+      },
+      "dark": {
+        "psnr": 22.89253386944146,
+        "ssim": 0.7974534034729004,
+        "mean_abs_diff": 0.06128587946295738,
+        "delta_e": 9.85162353515625,
+        "subjective_tag": "acceptable"
+      },
+      "highlight": {
+        "psnr": 15.360772010793646,
+        "ssim": 0.7420348525047302,
+        "mean_abs_diff": 0.15608182549476624,
+        "delta_e": 13.786781311035156,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 18.36026795339151,
+        "ssim": 0.8013403415679932,
+        "mean_abs_diff": 0.10306810587644577,
+        "delta_e": 12.87319564819336,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 23.13618697843927,
+        "ssim": 0.8820444941520691,
+        "mean_abs_diff": 0.05778588727116585,
+        "delta_e": 12.056924819946289,
+        "subjective_tag": "color_shift"
+      }
+    },
+    "figures": {
+      "dpc": "reports\\figures\\T01_a0006-IMG_2787_week6_dpc_static_dynamic.png",
+      "lsc": "reports\\figures\\T01_a0006-IMG_2787_week6_lsc_mesh.png",
+      "demosaic": "reports\\figures\\T01_a0006-IMG_2787_week6_demosaic_compare.png",
+      "awb": "reports\\figures\\T01_a0006-IMG_2787_week6_awb_compare.png",
+      "ccm": "reports\\figures\\T01_a0006-IMG_2787_week6_ccm_deltae.png",
+      "tone": "reports\\figures\\T01_a0006-IMG_2787_week6_tone_curves.png"
+    }
+  },
+  {
+    "sample_id": "T02",
+    "file": "data\\raw\\T02_a0008-WP_CRW_3959.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 0,
+      "static_count": 0
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 11.620731636420938,
+        "ssim": 0.6768271923065186,
+        "mean_abs_diff": 0.25126200914382935
+      },
+      "opencv_bilinear": {
+        "psnr": 11.635678755869955,
+        "ssim": 0.6765782237052917,
+        "mean_abs_diff": 0.2507283389568329
+      },
+      "opencv_edge_aware": {
+        "psnr": 11.634616494461289,
+        "ssim": 0.6693423390388489,
+        "mean_abs_diff": 0.2507210075855255
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.0817999839782715,
+        1.0,
+        1.7661000490188599
+      ],
+      "white_patch_gains": [
+        1.2314000129699707,
+        1.0,
+        1.615399956703186
+      ],
+      "gray_roi_gains": [
+        1.1339000463485718,
+        1.0,
+        1.2617000341415405
+      ],
+      "gray_roi_coverage": 0.003178125,
+      "metrics": {
+        "gray_world": {
+          "psnr": 10.633169265695862,
+          "ssim": 0.654956579208374,
+          "mean_abs_diff": 0.27805814146995544
+        },
+        "white_patch": {
+          "psnr": 10.588640330388088,
+          "ssim": 0.6523351669311523,
+          "mean_abs_diff": 0.28588876128196716
+        },
+        "gray_roi": {
+          "psnr": 10.970749196399705,
+          "ssim": 0.6608070731163025,
+          "mean_abs_diff": 0.274410218000412
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 22.379737854003906,
+      "ccm_delta_e": 22.72317886352539,
+      "no_ccm": {
+        "psnr": 13.901055100780848,
+        "ssim": 0.720133364200592,
+        "mean_abs_diff": 0.18376316130161285
+      },
+      "ccm": {
+        "psnr": 14.048285549262765,
+        "ssim": 0.6955464482307434,
+        "mean_abs_diff": 0.17984871566295624
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 14.048285549262765,
+        "ssim": 0.6955464482307434,
+        "mean_abs_diff": 0.17984871566295624
+      },
+      "gamma_only": {
+        "psnr": 10.80189426464609,
+        "ssim": 0.5915356874465942,
+        "mean_abs_diff": 0.27159571647644043
+      },
+      "srgb_oetf": {
+        "psnr": 10.681787846680917,
+        "ssim": 0.588169515132904,
+        "mean_abs_diff": 0.27559250593185425
+      },
+      "s_curve_lut": {
+        "psnr": 11.604833724018519,
+        "ssim": 0.5287402272224426,
+        "mean_abs_diff": 0.22634123265743256
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 14.24432741467448,
+        "ssim": 0.7157549858093262,
+        "mean_abs_diff": 0.17727085947990417,
+        "delta_e": 23.259193420410156,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 13.98623233501841,
+        "ssim": 0.5371039509773254,
+        "mean_abs_diff": 0.19084550440311432,
+        "delta_e": 21.382946014404297,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 14.943897585243226,
+        "ssim": 0.8073568344116211,
+        "mean_abs_diff": 0.14865347743034363,
+        "delta_e": 20.987895965576172,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 14.278379037139109,
+        "ssim": 0.7106438279151917,
+        "mean_abs_diff": 0.17681139707565308,
+        "delta_e": 20.685258865356445,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 13.38177788968595,
+        "ssim": 0.6298255920410156,
+        "mean_abs_diff": 0.2014102041721344,
+        "delta_e": 23.428659439086914,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T03",
+    "file": "data\\raw\\T03_a0010-jmac_MG_4807.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 0,
+      "static_count": 0
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 10.110540566877406,
+        "ssim": 0.8396825790405273,
+        "mean_abs_diff": 0.2969054877758026
+      },
+      "opencv_bilinear": {
+        "psnr": 10.115113300060596,
+        "ssim": 0.8397738933563232,
+        "mean_abs_diff": 0.29671406745910645
+      },
+      "opencv_edge_aware": {
+        "psnr": 10.114838341573325,
+        "ssim": 0.8388423919677734,
+        "mean_abs_diff": 0.29671385884284973
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        2.0978000164031982,
+        1.0,
+        1.322700023651123
+      ],
+      "white_patch_gains": [
+        2.1184000968933105,
+        1.0,
+        1.3698999881744385
+      ],
+      "gray_roi_gains": [
+        2.0880000591278076,
+        1.0,
+        1.319000005722046
+      ],
+      "gray_roi_coverage": 0.7,
+      "metrics": {
+        "gray_world": {
+          "psnr": 8.483492485407746,
+          "ssim": 0.7930476069450378,
+          "mean_abs_diff": 0.3740706145763397
+        },
+        "white_patch": {
+          "psnr": 8.465631566584168,
+          "ssim": 0.7925722599029541,
+          "mean_abs_diff": 0.37501952052116394
+        },
+        "gray_roi": {
+          "psnr": 8.483868405856608,
+          "ssim": 0.7930712103843689,
+          "mean_abs_diff": 0.37405893206596375
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 21.279306411743164,
+      "ccm_delta_e": 20.451045989990234,
+      "no_ccm": {
+        "psnr": 13.105445266969474,
+        "ssim": 0.8841575980186462,
+        "mean_abs_diff": 0.21985958516597748
+      },
+      "ccm": {
+        "psnr": 13.566098820649584,
+        "ssim": 0.8882589340209961,
+        "mean_abs_diff": 0.20843704044818878
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 13.566098820649584,
+        "ssim": 0.8882589340209961,
+        "mean_abs_diff": 0.20843704044818878
+      },
+      "gamma_only": {
+        "psnr": 9.015781819368556,
+        "ssim": 0.7914304137229919,
+        "mean_abs_diff": 0.35172539949417114
+      },
+      "srgb_oetf": {
+        "psnr": 8.901682940798663,
+        "ssim": 0.7891901135444641,
+        "mean_abs_diff": 0.3563665747642517
+      },
+      "s_curve_lut": {
+        "psnr": 8.511245724615456,
+        "ssim": 0.764479398727417,
+        "mean_abs_diff": 0.3682301938533783
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 13.822325780113927,
+        "ssim": 0.9000032544136047,
+        "mean_abs_diff": 0.20258747041225433,
+        "delta_e": 21.32183837890625,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 12.899933091374017,
+        "ssim": 0.8291336894035339,
+        "mean_abs_diff": 0.22456054389476776,
+        "delta_e": 21.822572708129883,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 14.598021658601583,
+        "ssim": 0.9298167824745178,
+        "mean_abs_diff": 0.18527817726135254,
+        "delta_e": 15.894290924072266,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 12.899933091374017,
+        "ssim": 0.8291336894035339,
+        "mean_abs_diff": 0.22456054389476776,
+        "delta_e": 21.822572708129883,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 12.78191626109174,
+        "ssim": 0.8837183117866516,
+        "mean_abs_diff": 0.22879818081855774,
+        "delta_e": 22.438955307006836,
+        "subjective_tag": "luminance_gap, color_shift"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T04",
+    "file": "data\\raw\\T04_a0012-kme_143.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 35,
+      "static_count": 35
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 15.518147564072367,
+        "ssim": 0.7606456875801086,
+        "mean_abs_diff": 0.15274234116077423
+      },
+      "opencv_bilinear": {
+        "psnr": 15.544426526556474,
+        "ssim": 0.760984480381012,
+        "mean_abs_diff": 0.15212857723236084
+      },
+      "opencv_edge_aware": {
+        "psnr": 15.600615342807417,
+        "ssim": 0.7585835456848145,
+        "mean_abs_diff": 0.1509840488433838
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        2.011899948120117,
+        1.0,
+        1.4359999895095825
+      ],
+      "white_patch_gains": [
+        2.2265000343322754,
+        1.0,
+        1.2446000576019287
+      ],
+      "gray_roi_gains": [
+        1.1289000511169434,
+        1.0,
+        1.1296000480651855
+      ],
+      "gray_roi_coverage": 0.000575,
+      "metrics": {
+        "gray_world": {
+          "psnr": 14.299509814726402,
+          "ssim": 0.7369276881217957,
+          "mean_abs_diff": 0.188089057803154
+        },
+        "white_patch": {
+          "psnr": 14.218810416065233,
+          "ssim": 0.7369348406791687,
+          "mean_abs_diff": 0.1884780079126358
+        },
+        "gray_roi": {
+          "psnr": 15.600126307516113,
+          "ssim": 0.7609036564826965,
+          "mean_abs_diff": 0.15450133383274078
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 13.749933242797852,
+      "ccm_delta_e": 14.242684364318848,
+      "no_ccm": {
+        "psnr": 16.6033628073582,
+        "ssim": 0.7629392147064209,
+        "mean_abs_diff": 0.14381784200668335
+      },
+      "ccm": {
+        "psnr": 16.519286023406966,
+        "ssim": 0.7490397095680237,
+        "mean_abs_diff": 0.14515116810798645
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 16.519286023406966,
+        "ssim": 0.7490397095680237,
+        "mean_abs_diff": 0.14515116810798645
+      },
+      "gamma_only": {
+        "psnr": 14.178155433046868,
+        "ssim": 0.7136659622192383,
+        "mean_abs_diff": 0.19027024507522583
+      },
+      "srgb_oetf": {
+        "psnr": 14.085324066979696,
+        "ssim": 0.7100796699523926,
+        "mean_abs_diff": 0.1918225884437561
+      },
+      "s_curve_lut": {
+        "psnr": 18.733637887123503,
+        "ssim": 0.7411453127861023,
+        "mean_abs_diff": 0.0851275846362114
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 17.10995217193566,
+        "ssim": 0.8033512234687805,
+        "mean_abs_diff": 0.13602668046951294,
+        "delta_e": 13.977643966674805,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 16.25141133825195,
+        "ssim": 0.633263111114502,
+        "mean_abs_diff": 0.15234091877937317,
+        "delta_e": 13.239039421081543,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 18.285170368772434,
+        "ssim": 0.7787987589836121,
+        "mean_abs_diff": 0.10943438112735748,
+        "delta_e": 13.146383285522461,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 16.58997857713873,
+        "ssim": 0.6774806976318359,
+        "mean_abs_diff": 0.13988222181797028,
+        "delta_e": 14.588412284851074,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 16.25141133825195,
+        "ssim": 0.633263111114502,
+        "mean_abs_diff": 0.15234091877937317,
+        "delta_e": 13.239039421081543,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T05",
+    "file": "data\\raw\\T05_a0014-WP_CRW_6320.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 2,
+      "static_count": 2
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 20.955769772598224,
+        "ssim": 0.8497975468635559,
+        "mean_abs_diff": 0.061000432819128036
+      },
+      "opencv_bilinear": {
+        "psnr": 20.957931687505567,
+        "ssim": 0.849825382232666,
+        "mean_abs_diff": 0.06094478815793991
+      },
+      "opencv_edge_aware": {
+        "psnr": 20.959171015237278,
+        "ssim": 0.8486330509185791,
+        "mean_abs_diff": 0.06089232861995697
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        2.461400032043457,
+        1.0,
+        1.0503000020980835
+      ],
+      "white_patch_gains": [
+        2.5274999141693115,
+        1.0,
+        1.03410005569458
+      ],
+      "gray_roi_gains": [
+        2.468899965286255,
+        1.0,
+        1.0420000553131104
+      ],
+      "gray_roi_coverage": 0.7,
+      "metrics": {
+        "gray_world": {
+          "psnr": 25.36947161205275,
+          "ssim": 0.8661908507347107,
+          "mean_abs_diff": 0.048302773386240005
+        },
+        "white_patch": {
+          "psnr": 25.274525214817587,
+          "ssim": 0.8661251068115234,
+          "mean_abs_diff": 0.04846079275012016
+        },
+        "gray_roi": {
+          "psnr": 25.345721005274466,
+          "ssim": 0.8661587238311768,
+          "mean_abs_diff": 0.04833235591650009
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 7.086172103881836,
+      "ccm_delta_e": 6.909338474273682,
+      "no_ccm": {
+        "psnr": 19.805888103134354,
+        "ssim": 0.8409721851348877,
+        "mean_abs_diff": 0.0732068344950676
+      },
+      "ccm": {
+        "psnr": 19.81027549335571,
+        "ssim": 0.8339330554008484,
+        "mean_abs_diff": 0.07301531732082367
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 19.81027549335571,
+        "ssim": 0.8339330554008484,
+        "mean_abs_diff": 0.07301531732082367
+      },
+      "gamma_only": {
+        "psnr": 25.389178849951968,
+        "ssim": 0.8548035025596619,
+        "mean_abs_diff": 0.04815367981791496
+      },
+      "srgb_oetf": {
+        "psnr": 26.30866497365508,
+        "ssim": 0.8585289120674133,
+        "mean_abs_diff": 0.04252219945192337
+      },
+      "s_curve_lut": {
+        "psnr": 18.80846224331726,
+        "ssim": 0.6942567229270935,
+        "mean_abs_diff": 0.10579446703195572
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 16.96731479391267,
+        "ssim": 0.8315749168395996,
+        "mean_abs_diff": 0.1141330674290657,
+        "delta_e": 9.69201374053955,
+        "subjective_tag": "luminance_gap"
+      },
+      "dark": {
+        "psnr": 24.69059874261637,
+        "ssim": 0.800920307636261,
+        "mean_abs_diff": 0.0557350255548954,
+        "delta_e": 6.186582565307617,
+        "subjective_tag": "acceptable"
+      },
+      "highlight": {
+        "psnr": 12.32920721240392,
+        "ssim": 0.8633575439453125,
+        "mean_abs_diff": 0.22484508156776428,
+        "delta_e": 14.144176483154297,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 16.364819967396215,
+        "ssim": 0.812461793422699,
+        "mean_abs_diff": 0.11444169282913208,
+        "delta_e": 9.815155029296875,
+        "subjective_tag": "luminance_gap"
+      },
+      "corner": {
+        "psnr": 25.699074105311798,
+        "ssim": 0.8477721214294434,
+        "mean_abs_diff": 0.048553988337516785,
+        "delta_e": 5.463922500610352,
+        "subjective_tag": "acceptable"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T06",
+    "file": "data\\raw\\T06_a0018-kme_234.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 0,
+      "static_count": 0
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 20.003701011176716,
+        "ssim": 0.8483992218971252,
+        "mean_abs_diff": 0.08814024925231934
+      },
+      "opencv_bilinear": {
+        "psnr": 20.012836800509195,
+        "ssim": 0.8484371304512024,
+        "mean_abs_diff": 0.0880264937877655
+      },
+      "opencv_edge_aware": {
+        "psnr": 20.020120429922265,
+        "ssim": 0.8464746475219727,
+        "mean_abs_diff": 0.0878932923078537
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.6267000436782837,
+        1.0,
+        1.614300012588501
+      ],
+      "white_patch_gains": [
+        1.5484000444412231,
+        1.0,
+        1.725600004196167
+      ],
+      "gray_roi_gains": [
+        1.6332000494003296,
+        1.0,
+        1.6140999794006348
+      ],
+      "gray_roi_coverage": 0.7000015625,
+      "metrics": {
+        "gray_world": {
+          "psnr": 19.07952286319395,
+          "ssim": 0.8524910807609558,
+          "mean_abs_diff": 0.09625548869371414
+        },
+        "white_patch": {
+          "psnr": 18.492719306455854,
+          "ssim": 0.849666178226471,
+          "mean_abs_diff": 0.09996512532234192
+        },
+        "gray_roi": {
+          "psnr": 19.11913405632294,
+          "ssim": 0.8526248931884766,
+          "mean_abs_diff": 0.09587465971708298
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 11.077901840209961,
+      "ccm_delta_e": 11.155824661254883,
+      "no_ccm": {
+        "psnr": 20.868169631153076,
+        "ssim": 0.8066082000732422,
+        "mean_abs_diff": 0.06984908133745193
+      },
+      "ccm": {
+        "psnr": 20.63152261296045,
+        "ssim": 0.8030189871788025,
+        "mean_abs_diff": 0.07138974964618683
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 20.63152261296045,
+        "ssim": 0.8030189871788025,
+        "mean_abs_diff": 0.07138974964618683
+      },
+      "gamma_only": {
+        "psnr": 20.347200576801896,
+        "ssim": 0.8338825702667236,
+        "mean_abs_diff": 0.08129224181175232
+      },
+      "srgb_oetf": {
+        "psnr": 20.056793884327753,
+        "ssim": 0.8329620361328125,
+        "mean_abs_diff": 0.08421652019023895
+      },
+      "s_curve_lut": {
+        "psnr": 20.18191684911661,
+        "ssim": 0.80143141746521,
+        "mean_abs_diff": 0.07788831740617752
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 19.87779309685305,
+        "ssim": 0.7478178143501282,
+        "mean_abs_diff": 0.07334823161363602,
+        "delta_e": 12.288849830627441,
+        "subjective_tag": "structure_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 21.88870119473038,
+        "ssim": 0.8264351487159729,
+        "mean_abs_diff": 0.07092379033565521,
+        "delta_e": 9.573500633239746,
+        "subjective_tag": "acceptable"
+      },
+      "highlight": {
+        "psnr": 16.74948282164605,
+        "ssim": 0.7742317318916321,
+        "mean_abs_diff": 0.12166561186313629,
+        "delta_e": 14.661372184753418,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 19.46837018442348,
+        "ssim": 0.699935257434845,
+        "mean_abs_diff": 0.0812823474407196,
+        "delta_e": 12.979654312133789,
+        "subjective_tag": "structure_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 21.005116567788455,
+        "ssim": 0.8261890411376953,
+        "mean_abs_diff": 0.07260796427726746,
+        "delta_e": 10.013663291931152,
+        "subjective_tag": "acceptable"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T07",
+    "file": "data\\raw\\T07_a0020-jmac_MG_6225.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 16,
+      "static_count": 16
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 10.09330806444045,
+        "ssim": 0.6064437031745911,
+        "mean_abs_diff": 0.2984704077243805
+      },
+      "opencv_bilinear": {
+        "psnr": 10.101718995802004,
+        "ssim": 0.6065362095832825,
+        "mean_abs_diff": 0.29811277985572815
+      },
+      "opencv_edge_aware": {
+        "psnr": 10.122891327146,
+        "ssim": 0.6036868691444397,
+        "mean_abs_diff": 0.29736658930778503
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        2.086899995803833,
+        1.0,
+        1.9365999698638916
+      ],
+      "white_patch_gains": [
+        1.9874000549316406,
+        1.0,
+        2.0151000022888184
+      ],
+      "gray_roi_gains": [
+        2.0929999351501465,
+        1.0,
+        1.924299955368042
+      ],
+      "gray_roi_coverage": 0.7,
+      "metrics": {
+        "gray_world": {
+          "psnr": 8.305625375576701,
+          "ssim": 0.5431026816368103,
+          "mean_abs_diff": 0.37650513648986816
+        },
+        "white_patch": {
+          "psnr": 8.284222311640594,
+          "ssim": 0.5436388850212097,
+          "mean_abs_diff": 0.37651941180229187
+        },
+        "gray_roi": {
+          "psnr": 8.311178194534726,
+          "ssim": 0.5431594252586365,
+          "mean_abs_diff": 0.37635937333106995
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 26.669715881347656,
+      "ccm_delta_e": 26.172903060913086,
+      "no_ccm": {
+        "psnr": 10.899058127885258,
+        "ssim": 0.6293469667434692,
+        "mean_abs_diff": 0.2808431088924408
+      },
+      "ccm": {
+        "psnr": 11.187374335670322,
+        "ssim": 0.614388644695282,
+        "mean_abs_diff": 0.2712567150592804
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 11.187374335670322,
+        "ssim": 0.614388644695282,
+        "mean_abs_diff": 0.2712567150592804
+      },
+      "gamma_only": {
+        "psnr": 8.61772396276524,
+        "ssim": 0.5155689716339111,
+        "mean_abs_diff": 0.36199668049812317
+      },
+      "srgb_oetf": {
+        "psnr": 8.515411845277917,
+        "ssim": 0.5121695399284363,
+        "mean_abs_diff": 0.3663027882575989
+      },
+      "s_curve_lut": {
+        "psnr": 9.370796080131635,
+        "ssim": 0.4721846878528595,
+        "mean_abs_diff": 0.3118261694908142
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 11.609246868230388,
+        "ssim": 0.5608016848564148,
+        "mean_abs_diff": 0.25807008147239685,
+        "delta_e": 24.549468994140625,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 12.764130800226106,
+        "ssim": 0.45788154006004333,
+        "mean_abs_diff": 0.2270955741405487,
+        "delta_e": 19.98509979248047,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 10.931887991264624,
+        "ssim": 0.7043623924255371,
+        "mean_abs_diff": 0.27863675355911255,
+        "delta_e": 27.684856414794922,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 11.167808646626781,
+        "ssim": 0.48853448033332825,
+        "mean_abs_diff": 0.26714131236076355,
+        "delta_e": 25.192190170288086,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 10.611251467116787,
+        "ssim": 0.7181742787361145,
+        "mean_abs_diff": 0.2910067141056061,
+        "delta_e": 29.59378433227539,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T08",
+    "file": "data\\raw\\T08_a0022-IMG_2380.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 7907,
+      "static_count": 100
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 17.795791547986322,
+        "ssim": 0.6765941977500916,
+        "mean_abs_diff": 0.09510937333106995
+      },
+      "opencv_bilinear": {
+        "psnr": 17.794642331483963,
+        "ssim": 0.6765574812889099,
+        "mean_abs_diff": 0.0951155573129654
+      },
+      "opencv_edge_aware": {
+        "psnr": 17.809788215093242,
+        "ssim": 0.6738827228546143,
+        "mean_abs_diff": 0.09504741430282593
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        2.978800058364868,
+        1.0,
+        1.4371999502182007
+      ],
+      "white_patch_gains": [
+        2.1445999145507812,
+        1.0,
+        1.6689000129699707
+      ],
+      "gray_roi_gains": [
+        1.1456999778747559,
+        1.0,
+        1.104099988937378
+      ],
+      "gray_roi_coverage": 0.0001078125,
+      "metrics": {
+        "gray_world": {
+          "psnr": 15.872233629250104,
+          "ssim": 0.6808001399040222,
+          "mean_abs_diff": 0.1446407288312912
+        },
+        "white_patch": {
+          "psnr": 19.470309139284538,
+          "ssim": 0.6962723731994629,
+          "mean_abs_diff": 0.08976098895072937
+        },
+        "gray_roi": {
+          "psnr": 18.746854711934933,
+          "ssim": 0.683903694152832,
+          "mean_abs_diff": 0.08708914369344711
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 19.961532592773438,
+      "ccm_delta_e": 22.130582809448242,
+      "no_ccm": {
+        "psnr": 13.940423504549038,
+        "ssim": 0.6083733439445496,
+        "mean_abs_diff": 0.17776070535182953
+      },
+      "ccm": {
+        "psnr": 12.944199387897248,
+        "ssim": 0.6216505765914917,
+        "mean_abs_diff": 0.19217143952846527
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 12.944199387897248,
+        "ssim": 0.6216505765914917,
+        "mean_abs_diff": 0.19217143952846527
+      },
+      "gamma_only": {
+        "psnr": 14.67745932392714,
+        "ssim": 0.6778745651245117,
+        "mean_abs_diff": 0.16403062641620636
+      },
+      "srgb_oetf": {
+        "psnr": 14.79531292404526,
+        "ssim": 0.6806233525276184,
+        "mean_abs_diff": 0.16248205304145813
+      },
+      "s_curve_lut": {
+        "psnr": 12.15062373095141,
+        "ssim": 0.6459919810295105,
+        "mean_abs_diff": 0.2106049507856369
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 13.603169046842499,
+        "ssim": 0.6401522159576416,
+        "mean_abs_diff": 0.173879474401474,
+        "delta_e": 21.288997650146484,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 15.532294947163921,
+        "ssim": 0.6619073152542114,
+        "mean_abs_diff": 0.14289960265159607,
+        "delta_e": 19.414047241210938,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 11.580124595319155,
+        "ssim": 0.5438757538795471,
+        "mean_abs_diff": 0.22736887633800507,
+        "delta_e": 25.25018882751465,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 12.228891694651676,
+        "ssim": 0.5319380164146423,
+        "mean_abs_diff": 0.20460613071918488,
+        "delta_e": 23.95944595336914,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 14.193658205513193,
+        "ssim": 0.660426139831543,
+        "mean_abs_diff": 0.17403751611709595,
+        "delta_e": 21.55941390991211,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      }
+    },
+    "figures": {
+      "dpc": "reports\\figures\\T08_a0022-IMG_2380_week6_dpc_static_dynamic.png",
+      "lsc": "reports\\figures\\T08_a0022-IMG_2380_week6_lsc_mesh.png",
+      "demosaic": "reports\\figures\\T08_a0022-IMG_2380_week6_demosaic_compare.png",
+      "awb": "reports\\figures\\T08_a0022-IMG_2380_week6_awb_compare.png",
+      "ccm": "reports\\figures\\T08_a0022-IMG_2380_week6_ccm_deltae.png",
+      "tone": "reports\\figures\\T08_a0022-IMG_2380_week6_tone_curves.png"
+    }
+  },
+  {
+    "sample_id": "T09",
+    "file": "data\\raw\\T09_a0023-07-06-02-at-15h06m48-s_MG_1489.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 0,
+      "static_count": 0
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 12.990423797099375,
+        "ssim": 0.6907796859741211,
+        "mean_abs_diff": 0.21340374648571014
+      },
+      "opencv_bilinear": {
+        "psnr": 13.008584693900008,
+        "ssim": 0.6907643675804138,
+        "mean_abs_diff": 0.21284718811511993
+      },
+      "opencv_edge_aware": {
+        "psnr": 13.02634626130981,
+        "ssim": 0.6855185627937317,
+        "mean_abs_diff": 0.21238234639167786
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.4701999425888062,
+        1.0,
+        2.0941998958587646
+      ],
+      "white_patch_gains": [
+        1.3997000455856323,
+        1.0,
+        2.0915000438690186
+      ],
+      "gray_roi_gains": [
+        1.4780000448226929,
+        1.0,
+        2.069999933242798
+      ],
+      "gray_roi_coverage": 0.7,
+      "metrics": {
+        "gray_world": {
+          "psnr": 11.472195909648828,
+          "ssim": 0.6477317810058594,
+          "mean_abs_diff": 0.26162928342819214
+        },
+        "white_patch": {
+          "psnr": 11.488101726106905,
+          "ssim": 0.6481606364250183,
+          "mean_abs_diff": 0.2606046497821808
+        },
+        "gray_roi": {
+          "psnr": 11.471248986038544,
+          "ssim": 0.6476158499717712,
+          "mean_abs_diff": 0.26183435320854187
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 19.053878784179688,
+      "ccm_delta_e": 18.67871856689453,
+      "no_ccm": {
+        "psnr": 13.755506293025013,
+        "ssim": 0.7015335559844971,
+        "mean_abs_diff": 0.20207741856575012
+      },
+      "ccm": {
+        "psnr": 14.033518183907072,
+        "ssim": 0.6756537556648254,
+        "mean_abs_diff": 0.1952822357416153
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 14.033518183907072,
+        "ssim": 0.6756537556648254,
+        "mean_abs_diff": 0.1952822357416153
+      },
+      "gamma_only": {
+        "psnr": 11.776039984653924,
+        "ssim": 0.59455806016922,
+        "mean_abs_diff": 0.2521466612815857
+      },
+      "srgb_oetf": {
+        "psnr": 11.663652379100043,
+        "ssim": 0.5878095626831055,
+        "mean_abs_diff": 0.25534355640411377
+      },
+      "s_curve_lut": {
+        "psnr": 14.7589824061994,
+        "ssim": 0.5741390585899353,
+        "mean_abs_diff": 0.15180973708629608
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 14.55531846378301,
+        "ssim": 0.6218650937080383,
+        "mean_abs_diff": 0.1849370151758194,
+        "delta_e": 17.75334930419922,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 14.701822046691444,
+        "ssim": 0.5624515414237976,
+        "mean_abs_diff": 0.18187308311462402,
+        "delta_e": 17.142099380493164,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 15.321330274561484,
+        "ssim": 0.794658362865448,
+        "mean_abs_diff": 0.1590787172317505,
+        "delta_e": 16.4991397857666,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 14.224365973619884,
+        "ssim": 0.6935207843780518,
+        "mean_abs_diff": 0.1902814507484436,
+        "delta_e": 18.710657119750977,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 13.297201835903804,
+        "ssim": 0.6565268635749817,
+        "mean_abs_diff": 0.21401135623455048,
+        "delta_e": 20.524755477905273,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      }
+    },
+    "figures": {
+      "dpc": "reports\\figures\\T09_a0023-07-06-02-at-15h06m48-s_MG_1489_week6_dpc_static_dynamic.png",
+      "lsc": "reports\\figures\\T09_a0023-07-06-02-at-15h06m48-s_MG_1489_week6_lsc_mesh.png",
+      "demosaic": "reports\\figures\\T09_a0023-07-06-02-at-15h06m48-s_MG_1489_week6_demosaic_compare.png",
+      "awb": "reports\\figures\\T09_a0023-07-06-02-at-15h06m48-s_MG_1489_week6_awb_compare.png",
+      "ccm": "reports\\figures\\T09_a0023-07-06-02-at-15h06m48-s_MG_1489_week6_ccm_deltae.png",
+      "tone": "reports\\figures\\T09_a0023-07-06-02-at-15h06m48-s_MG_1489_week6_tone_curves.png"
+    }
+  },
+  {
+    "sample_id": "T10",
+    "file": "data\\raw\\T10_a0026-kme_391.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 490,
+      "static_count": 100
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 23.47188430942309,
+        "ssim": 0.7862696647644043,
+        "mean_abs_diff": 0.05934019386768341
+      },
+      "opencv_bilinear": {
+        "psnr": 23.52570533893885,
+        "ssim": 0.7874117493629456,
+        "mean_abs_diff": 0.058962948620319366
+      },
+      "opencv_edge_aware": {
+        "psnr": 23.547410948184844,
+        "ssim": 0.7871840000152588,
+        "mean_abs_diff": 0.058820318430662155
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        0.7150999903678894,
+        1.0,
+        6.146100044250488
+      ],
+      "white_patch_gains": [
+        0.9404000043869019,
+        1.0,
+        1.5082999467849731
+      ],
+      "gray_roi_gains": [
+        0.9531999826431274,
+        1.0,
+        1.0017000436782837
+      ],
+      "gray_roi_coverage": 0.0001125,
+      "metrics": {
+        "gray_world": {
+          "psnr": 16.984450049208025,
+          "ssim": 0.6902361512184143,
+          "mean_abs_diff": 0.11620159447193146
+        },
+        "white_patch": {
+          "psnr": 22.39872821323372,
+          "ssim": 0.7685920596122742,
+          "mean_abs_diff": 0.06679968535900116
+        },
+        "gray_roi": {
+          "psnr": 23.21429661108973,
+          "ssim": 0.783586323261261,
+          "mean_abs_diff": 0.06134231761097908
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 19.287260055541992,
+      "ccm_delta_e": 19.779556274414062,
+      "no_ccm": {
+        "psnr": 17.069860769964105,
+        "ssim": 0.6882727146148682,
+        "mean_abs_diff": 0.11545167863368988
+      },
+      "ccm": {
+        "psnr": 16.970187734956333,
+        "ssim": 0.6778407692909241,
+        "mean_abs_diff": 0.11670064181089401
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 16.970187734956333,
+        "ssim": 0.6778407692909241,
+        "mean_abs_diff": 0.11670064181089401
+      },
+      "gamma_only": {
+        "psnr": 16.866086219316873,
+        "ssim": 0.6780034899711609,
+        "mean_abs_diff": 0.11766491830348969
+      },
+      "srgb_oetf": {
+        "psnr": 17.110268657920045,
+        "ssim": 0.680554211139679,
+        "mean_abs_diff": 0.11440367996692657
+      },
+      "s_curve_lut": {
+        "psnr": 15.552137364652992,
+        "ssim": 0.5618972778320312,
+        "mean_abs_diff": 0.13436640799045563
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 18.376123919850016,
+        "ssim": 0.6184524297714233,
+        "mean_abs_diff": 0.09311176836490631,
+        "delta_e": 17.741804122924805,
+        "subjective_tag": "structure_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 20.51100293015956,
+        "ssim": 0.6327467560768127,
+        "mean_abs_diff": 0.07897621393203735,
+        "delta_e": 15.931422233581543,
+        "subjective_tag": "structure_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 13.944768884935295,
+        "ssim": 0.7490053772926331,
+        "mean_abs_diff": 0.1656329482793808,
+        "delta_e": 25.516796112060547,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 14.525227308593918,
+        "ssim": 0.6428322196006775,
+        "mean_abs_diff": 0.14923137426376343,
+        "delta_e": 21.858705520629883,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 18.605310289034612,
+        "ssim": 0.6640989184379578,
+        "mean_abs_diff": 0.09907228499650955,
+        "delta_e": 18.41051483154297,
+        "subjective_tag": "structure_gap, color_shift"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T11",
+    "file": "data\\raw\\T11_a0033-KE_-2590.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 0,
+      "static_count": 0
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.05249254032969475
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 19.114953834191386,
+        "ssim": 0.8445354104042053,
+        "mean_abs_diff": 0.09340335428714752
+      },
+      "opencv_bilinear": {
+        "psnr": 19.126501423782422,
+        "ssim": 0.8447403907775879,
+        "mean_abs_diff": 0.09322775155305862
+      },
+      "opencv_edge_aware": {
+        "psnr": 19.135435086225655,
+        "ssim": 0.8435222506523132,
+        "mean_abs_diff": 0.09313780814409256
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.2131999731063843,
+        1.0,
+        2.3106000423431396
+      ],
+      "white_patch_gains": [
+        1.5994999408721924,
+        1.0,
+        1.7833000421524048
+      ],
+      "gray_roi_gains": [
+        1.1783000230789185,
+        1.0,
+        2.3915998935699463
+      ],
+      "gray_roi_coverage": 0.7,
+      "metrics": {
+        "gray_world": {
+          "psnr": 17.921683200361095,
+          "ssim": 0.8308578133583069,
+          "mean_abs_diff": 0.1128387376666069
+        },
+        "white_patch": {
+          "psnr": 17.18867841970875,
+          "ssim": 0.8195054531097412,
+          "mean_abs_diff": 0.13292212784290314
+        },
+        "gray_roi": {
+          "psnr": 17.985025867141506,
+          "ssim": 0.8327968716621399,
+          "mean_abs_diff": 0.11232743412256241
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 12.896303176879883,
+      "ccm_delta_e": 13.316298484802246,
+      "no_ccm": {
+        "psnr": 19.338409804973434,
+        "ssim": 0.8311231136322021,
+        "mean_abs_diff": 0.09381289780139923
+      },
+      "ccm": {
+        "psnr": 19.624426132879986,
+        "ssim": 0.8281762003898621,
+        "mean_abs_diff": 0.08892802894115448
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 19.624426132879986,
+        "ssim": 0.8281762003898621,
+        "mean_abs_diff": 0.08892802894115448
+      },
+      "gamma_only": {
+        "psnr": 18.520682753844387,
+        "ssim": 0.8263456225395203,
+        "mean_abs_diff": 0.10316010564565659
+      },
+      "srgb_oetf": {
+        "psnr": 18.583061418037282,
+        "ssim": 0.8382301330566406,
+        "mean_abs_diff": 0.09981371462345123
+      },
+      "s_curve_lut": {
+        "psnr": 19.48106641587788,
+        "ssim": 0.7584914565086365,
+        "mean_abs_diff": 0.08306697010993958
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 17.20453010953419,
+        "ssim": 0.8562734127044678,
+        "mean_abs_diff": 0.10869883000850677,
+        "delta_e": 17.612749099731445,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 22.37500523903558,
+        "ssim": 0.389169305562973,
+        "mean_abs_diff": 0.07375778257846832,
+        "delta_e": 6.739515781402588,
+        "subjective_tag": "structure_gap"
+      },
+      "highlight": {
+        "psnr": 16.79132109533736,
+        "ssim": 0.8225530982017517,
+        "mean_abs_diff": 0.11459921300411224,
+        "delta_e": 18.91986656188965,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 18.61928828005917,
+        "ssim": 0.8469794392585754,
+        "mean_abs_diff": 0.09388025850057602,
+        "delta_e": 13.937509536743164,
+        "subjective_tag": "color_shift"
+      },
+      "corner": {
+        "psnr": 20.191639495645575,
+        "ssim": 0.922311007976532,
+        "mean_abs_diff": 0.07915568351745605,
+        "delta_e": 13.524171829223633,
+        "subjective_tag": "color_shift"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T12",
+    "file": "data\\raw\\T12_a0034-LSYD4O2202.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 140,
+      "static_count": 55
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.05249254032969475
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 18.894203292599805,
+        "ssim": 0.6095543503761292,
+        "mean_abs_diff": 0.09370072931051254
+      },
+      "opencv_bilinear": {
+        "psnr": 18.916157396514688,
+        "ssim": 0.6098966002464294,
+        "mean_abs_diff": 0.09336437284946442
+      },
+      "opencv_edge_aware": {
+        "psnr": 18.937725517796558,
+        "ssim": 0.6084517240524292,
+        "mean_abs_diff": 0.09307947009801865
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.6651999950408936,
+        1.0,
+        4.1041998863220215
+      ],
+      "white_patch_gains": [
+        1.559399962425232,
+        1.0,
+        3.6875998973846436
+      ],
+      "gray_roi_gains": [
+        1.6366000175476074,
+        1.0,
+        4.118299961090088
+      ],
+      "gray_roi_coverage": 0.7,
+      "metrics": {
+        "gray_world": {
+          "psnr": 14.661888383359065,
+          "ssim": 0.583675742149353,
+          "mean_abs_diff": 0.13175062835216522
+        },
+        "white_patch": {
+          "psnr": 14.777889590262546,
+          "ssim": 0.5837810039520264,
+          "mean_abs_diff": 0.13171322643756866
+        },
+        "gray_roi": {
+          "psnr": 14.638323292833807,
+          "ssim": 0.5835331082344055,
+          "mean_abs_diff": 0.1318868100643158
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 20.11821174621582,
+      "ccm_delta_e": 20.351327896118164,
+      "no_ccm": {
+        "psnr": 15.434214868568661,
+        "ssim": 0.5682857632637024,
+        "mean_abs_diff": 0.12899699807167053
+      },
+      "ccm": {
+        "psnr": 15.750018125929909,
+        "ssim": 0.5647322535514832,
+        "mean_abs_diff": 0.12319554388523102
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 15.750018125929909,
+        "ssim": 0.5647322535514832,
+        "mean_abs_diff": 0.12319554388523102
+      },
+      "gamma_only": {
+        "psnr": 15.119427304750321,
+        "ssim": 0.5794672966003418,
+        "mean_abs_diff": 0.12418121844530106
+      },
+      "srgb_oetf": {
+        "psnr": 15.252534138214441,
+        "ssim": 0.5836485028266907,
+        "mean_abs_diff": 0.11821732670068741
+      },
+      "s_curve_lut": {
+        "psnr": 15.355514495420799,
+        "ssim": 0.5275763869285583,
+        "mean_abs_diff": 0.1327848583459854
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 17.54135312403252,
+        "ssim": 0.6003571152687073,
+        "mean_abs_diff": 0.09769332408905029,
+        "delta_e": 18.448074340820312,
+        "subjective_tag": "structure_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 19.59164452792824,
+        "ssim": 0.584677517414093,
+        "mean_abs_diff": 0.08698196709156036,
+        "delta_e": 13.63486099243164,
+        "subjective_tag": "structure_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 13.25530592391332,
+        "ssim": 0.5625083446502686,
+        "mean_abs_diff": 0.18507841229438782,
+        "delta_e": 31.571853637695312,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 13.55059061185534,
+        "ssim": 0.502356231212616,
+        "mean_abs_diff": 0.16705894470214844,
+        "delta_e": 22.19923210144043,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 13.65591241203684,
+        "ssim": 0.5677217841148376,
+        "mean_abs_diff": 0.16890104115009308,
+        "delta_e": 27.811899185180664,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      }
+    },
+    "figures": {}
+  },
+  {
+    "sample_id": "T13",
+    "file": "data\\raw\\T13_a0035-dgw_048.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 1018,
+      "static_count": 83
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 10.206231153591077,
+        "ssim": 0.6693188548088074,
+        "mean_abs_diff": 0.29978376626968384
+      },
+      "opencv_bilinear": {
+        "psnr": 10.20800540874012,
+        "ssim": 0.669369637966156,
+        "mean_abs_diff": 0.2997116148471832
+      },
+      "opencv_edge_aware": {
+        "psnr": 10.210647645224299,
+        "ssim": 0.6686763167381287,
+        "mean_abs_diff": 0.299594908952713
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.50409996509552,
+        1.0,
+        1.2785999774932861
+      ],
+      "white_patch_gains": [
+        2.212899923324585,
+        1.0,
+        0.9699000120162964
+      ],
+      "gray_roi_gains": [
+        1.0865999460220337,
+        1.0,
+        1.1577999591827393
+      ],
+      "gray_roi_coverage": 0.1620484375,
+      "metrics": {
+        "gray_world": {
+          "psnr": 10.374563164333157,
+          "ssim": 0.672882080078125,
+          "mean_abs_diff": 0.2967659533023834
+        },
+        "white_patch": {
+          "psnr": 8.421156314075896,
+          "ssim": 0.6214187145233154,
+          "mean_abs_diff": 0.3597055971622467
+        },
+        "gray_roi": {
+          "psnr": 10.614715917085189,
+          "ssim": 0.6808469891548157,
+          "mean_abs_diff": 0.2879318594932556
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 23.678895950317383,
+      "ccm_delta_e": 22.589384078979492,
+      "no_ccm": {
+        "psnr": 12.293228891967416,
+        "ssim": 0.7297343611717224,
+        "mean_abs_diff": 0.23926588892936707
+      },
+      "ccm": {
+        "psnr": 12.814277587058488,
+        "ssim": 0.7378739714622498,
+        "mean_abs_diff": 0.22634680569171906
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 12.814277587058488,
+        "ssim": 0.7378739714622498,
+        "mean_abs_diff": 0.22634680569171906
+      },
+      "gamma_only": {
+        "psnr": 10.900461926814458,
+        "ssim": 0.6815176606178284,
+        "mean_abs_diff": 0.27979329228401184
+      },
+      "srgb_oetf": {
+        "psnr": 10.811664586706293,
+        "ssim": 0.6777895092964172,
+        "mean_abs_diff": 0.2824222147464752
+      },
+      "s_curve_lut": {
+        "psnr": 13.748202819711157,
+        "ssim": 0.7682321071624756,
+        "mean_abs_diff": 0.1738189309835434
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 13.069779130319546,
+        "ssim": 0.777357280254364,
+        "mean_abs_diff": 0.22009910643100739,
+        "delta_e": 21.380115509033203,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 13.410189169211504,
+        "ssim": 0.6074654459953308,
+        "mean_abs_diff": 0.21165870130062103,
+        "delta_e": 20.078907012939453,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "highlight": {
+        "psnr": 12.510006927932364,
+        "ssim": 0.769775390625,
+        "mean_abs_diff": 0.22692355513572693,
+        "delta_e": 25.335126876831055,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 12.4334836102374,
+        "ssim": 0.7041463255882263,
+        "mean_abs_diff": 0.2327745109796524,
+        "delta_e": 24.72568702697754,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 12.261248207030713,
+        "ssim": 0.6841456890106201,
+        "mean_abs_diff": 0.24208365380764008,
+        "delta_e": 23.009876251220703,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      }
+    },
+    "figures": {
+      "dpc": "reports\\figures\\T13_a0035-dgw_048_week6_dpc_static_dynamic.png",
+      "lsc": "reports\\figures\\T13_a0035-dgw_048_week6_lsc_mesh.png",
+      "demosaic": "reports\\figures\\T13_a0035-dgw_048_week6_demosaic_compare.png",
+      "awb": "reports\\figures\\T13_a0035-dgw_048_week6_awb_compare.png",
+      "ccm": "reports\\figures\\T13_a0035-dgw_048_week6_ccm_deltae.png",
+      "tone": "reports\\figures\\T13_a0035-dgw_048_week6_tone_curves.png"
+    }
+  },
+  {
+    "sample_id": "T14",
+    "file": "data\\raw\\T14_a0040-_DSC5693.dng",
+    "analysis_crop": [
+      800,
+      800
+    ],
+    "dpc": {
+      "dynamic_count": 13057,
+      "static_count": 100
+    },
+    "lsc": {
+      "synthetic_mesh_mae": 0.052492547780275345
+    },
+    "demosaic": {
+      "ours_bilinear": {
+        "psnr": 23.339210043743165,
+        "ssim": 0.8814635872840881,
+        "mean_abs_diff": 0.05436599254608154
+      },
+      "opencv_bilinear": {
+        "psnr": 23.342426229605348,
+        "ssim": 0.881502091884613,
+        "mean_abs_diff": 0.05433285981416702
+      },
+      "opencv_edge_aware": {
+        "psnr": 23.37001576312462,
+        "ssim": 0.8818692564964294,
+        "mean_abs_diff": 0.05415116250514984
+      }
+    },
+    "awb": {
+      "gray_world_gains": [
+        1.3832999467849731,
+        1.0,
+        1.6950000524520874
+      ],
+      "white_patch_gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "gray_roi_gains": [
+        1.1167999505996704,
+        1.0,
+        1.1345000267028809
+      ],
+      "gray_roi_coverage": 0.0030421875,
+      "metrics": {
+        "gray_world": {
+          "psnr": 21.126775828231047,
+          "ssim": 0.8789787888526917,
+          "mean_abs_diff": 0.07576718181371689
+        },
+        "white_patch": {
+          "psnr": 23.339210043743165,
+          "ssim": 0.8814635872840881,
+          "mean_abs_diff": 0.05436599254608154
+        },
+        "gray_roi": {
+          "psnr": 23.60024657965277,
+          "ssim": 0.8831355571746826,
+          "mean_abs_diff": 0.05508975312113762
+        }
+      }
+    },
+    "ccm": {
+      "no_ccm_delta_e": 10.55762004852295,
+      "ccm_delta_e": 10.924423217773438,
+      "no_ccm": {
+        "psnr": 18.283157597799665,
+        "ssim": 0.8562209010124207,
+        "mean_abs_diff": 0.09732772409915924
+      },
+      "ccm": {
+        "psnr": 18.51613989140882,
+        "ssim": 0.8550744652748108,
+        "mean_abs_diff": 0.08933701366186142
+      }
+    },
+    "tone": {
+      "reinhard_pow_gamma": {
+        "psnr": 18.51613989140882,
+        "ssim": 0.8550744652748108,
+        "mean_abs_diff": 0.08933701366186142
+      },
+      "gamma_only": {
+        "psnr": 21.709063354511585,
+        "ssim": 0.8761232495307922,
+        "mean_abs_diff": 0.06594520807266235
+      },
+      "srgb_oetf": {
+        "psnr": 22.018580611892347,
+        "ssim": 0.8843557238578796,
+        "mean_abs_diff": 0.06216996908187866
+      },
+      "s_curve_lut": {
+        "psnr": 19.41476523663606,
+        "ssim": 0.6977465748786926,
+        "mean_abs_diff": 0.08862871676683426
+      }
+    },
+    "roi_iqa": {
+      "center": {
+        "psnr": 15.990037369765457,
+        "ssim": 0.7786391377449036,
+        "mean_abs_diff": 0.1221112310886383,
+        "delta_e": 15.162300109863281,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "dark": {
+        "psnr": 21.832187647204574,
+        "ssim": 0.7477317452430725,
+        "mean_abs_diff": 0.07662889361381531,
+        "delta_e": 7.737462520599365,
+        "subjective_tag": "structure_gap"
+      },
+      "highlight": {
+        "psnr": 12.782452178601096,
+        "ssim": 0.8445097804069519,
+        "mean_abs_diff": 0.213839590549469,
+        "delta_e": 19.988380432128906,
+        "subjective_tag": "luminance_gap, color_shift"
+      },
+      "texture": {
+        "psnr": 16.4638539571374,
+        "ssim": 0.6829537749290466,
+        "mean_abs_diff": 0.11277724802494049,
+        "delta_e": 14.222274780273438,
+        "subjective_tag": "structure_gap, luminance_gap, color_shift"
+      },
+      "corner": {
+        "psnr": 22.37398412967221,
+        "ssim": 0.8810410499572754,
+        "mean_abs_diff": 0.06630823761224747,
+        "delta_e": 8.70195484161377,
+        "subjective_tag": "acceptable"
+      }
+    },
+    "figures": {}
+  }
+]
