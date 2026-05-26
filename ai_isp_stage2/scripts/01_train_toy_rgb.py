@@ -3,7 +3,7 @@
 01_train_toy_rgb.py — Stage 2 训练入口脚本。
 
 用法:
-    python scripts/01_train_toy_rgb.py --config configs/toy_rgb_tiny.yaml
+    python scripts/01_train_toy_rgb.py --config configs/toy_rgb_denoise_tiny.yaml
 
 功能:
     读取 YAML 配置文件，调用 ai_isp.engine.train.train_from_config() 执行完整的
@@ -69,13 +69,20 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     """加载 YAML 配置并启动训练。"""
+    # 第 1 步：读取命令行参数。
+    # 例如：
+    #   --config configs/toy_rgb_denoise_tiny.yaml
+    # 这会告诉脚本“这次实验用哪份配置文件”。
     args = parse_args()
 
-    # 读取 YAML 配置文件
+    # 第 2 步：读取 YAML 配置文件。
+    # 配置文件里写着数据大小、模型类型、训练步数、学习率等实验设置。
     with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    # 启动配置驱动的训练流程
+    # 第 3 步：把配置交给训练引擎。
+    # 真正的 Dataset、DataLoader、Model、Loss、Optimizer、Validation
+    # 都在 train_from_config() 里根据 config 创建和运行。
     train_from_config(config)
 
 

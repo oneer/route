@@ -1,30 +1,87 @@
+# Week 0.5 入门配置：TinyCNN RGB 合成噪声去噪
+#
+# 这份文件不是代码，而是“实验说明书”。
+# 训练脚本会读取这里的参数，决定：
+# 1. 这次实验叫什么；
+# 2. 数据怎么生成；
+# 3. 用哪个模型；
+# 4. 训练多少步、怎么保存结果。
+
 experiment:
+  # 实验名。它会出现在输出目录名里，方便区分不同实验。
   name: toy_rgb_denoise_tiny
+
+  # 随机种子。固定 seed 后，每次生成的数据和训练过程更容易复现。
+  # 初学阶段先不要改它，否则两次实验可能不容易比较。
   seed: 42
+
+  # 输出目录。训练后的 metrics、checkpoint、可视化图都会保存在这里。
   output_dir: runs/toy_rgb_denoise_tiny
 
 data:
+  # patch 是从图像里切出来的小块。
+  # 64 表示每个训练样本是 64x64 的 RGB 小图。
   patch_size: 64
+
+  # 训练集样本数。这里用 256 个合成 patch，足够做入门 sanity check。
   train_size: 256
+
+  # 验证集样本数。验证集不参与训练，只用来检查模型有没有真的变好。
   val_size: 16
+
   noise:
+    # gaussian 表示高斯噪声，也就是最常见的随机颗粒噪声。
     type: gaussian
+
+    # sigma 控制噪声强度。数值越大，图像越脏，去噪任务越难。
+    # 训练时会在 0.03 到 0.12 之间随机选一个噪声强度。
     sigma_min: 0.03
     sigma_max: 0.12
 
 model:
+  # tiny_cnn 是最小模型，用来确认训练闭环能跑通。
+  # 它不是追求最高效果的模型，而是学习入口。
   name: tiny_cnn
+
+  # RGB 输入有 3 个通道：R、G、B。
   in_channels: 3
+
+  # 输出也是 RGB，所以也是 3 个通道。
   out_channels: 3
+
+  # features 是模型内部特征通道数。
+  # 越大模型越强，但也更慢。入门先用 32。
   features: 32
 
 train:
+  # 训练步数。100 表示模型参数会更新 100 次。
+  # 初学时可以先把它改成 50，观察结果会不会变差。
   steps: 100
+
+  # batch_size 表示每次拿多少个 patch 一起训练。
+  # 8 比较小，适合普通电脑快速验证。
   batch_size: 8
+
+  # 学习率。它控制每次参数更新的幅度。
+  # 太大可能不稳定，太小会学得慢。先不要改。
   learning_rate: 0.001
+
+  # 权重衰减，常用于抑制过拟合。
+  # 这里设为 0，表示先不加这类正则化，保持实验简单。
   weight_decay: 0.0
+
+  # l1 表示用平均绝对误差训练：
+  # loss = mean(abs(output - clean))
   loss: l1
+
+  # 每隔多少步打印一次训练 loss。
   log_every: 20
+
+  # 每隔多少步跑一次验证，并保存可视化结果。
   val_every: 50
+
+  # Windows 入门环境先用 0，表示不额外开子进程读取数据。
   num_workers: 0
+
+  # auto 表示自动选择设备；有 GPU 就可能用 GPU，否则用 CPU。
   device: auto
