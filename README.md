@@ -27,7 +27,7 @@ See [soft_isp_stage1/README.md](soft_isp_stage1/README.md) for details.
 
 The second stage shifts from hand-crafted algorithms to learned image restoration. Currently focused on establishing a reliable deep learning training loop with synthetic RGB denoising before moving to real sensor data (SIDD, SID).
 
-**Status:** In progress. Toy RGB denoise baseline with TinyCNN / DnCNN / UNet is running. Training loop, config system, and PSNR/SSIM evaluation pipeline are in place.
+**Status:** In progress. Toy RGB denoise baseline with TinyCNN / DnCNN / UNet is running. Training loop, config system, and PSNR/SSIM evaluation pipeline are in place. A structured neural network foundation learning path (`materials/neural_network_foundation/`) with glossary, checkpoint questions, and CS231n study notes is available for engineers new to deep learning.
 
 See [ai_isp_stage2/README.md](ai_isp_stage2/README.md) for details.
 

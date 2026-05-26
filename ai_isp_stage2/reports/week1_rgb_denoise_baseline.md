@@ -1,5 +1,11 @@
 # Week 1：RGB 合成噪声 Baseline
 
+如果 DnCNN / UNet / residual 这些词看起来太突然，先按下面顺序读：
+
+1. [Week 1A：图像恢复最小直觉](week1a_image_restoration_intuition.md)
+2. [Week 1B：TinyCNN 训练闭环](week1b_training_loop_tinycnn.md)
+3. [Week 1C：DnCNN 和 residual denoise](week1c_dncnn_residual.md)
+
 ## 目标
 
 用合成 RGB denoise 任务建立图像恢复直觉：
