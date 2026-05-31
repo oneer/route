@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure noisy-input quality for one or more toy RGB denoise configs."""
+"""Measure noisy-input quality for one or more RGB denoise configs."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from ai_isp.data.paired_image_dataset import PairedImageDenoiseDataset
 from ai_isp.data.toy_rgb_dataset import ToyRGBDenoiseDataset
 from ai_isp.metrics.psnr_ssim import batch_psnr, batch_ssim
 
@@ -24,7 +25,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_val_dataset(config: dict) -> ToyRGBDenoiseDataset:
+def resolve_project_path(path: str | Path) -> Path:
+    resolved = Path(path)
+    return resolved if resolved.is_absolute() else ROOT / resolved
+
+
+def build_val_dataset(config: dict):
+    if config["data"].get("dataset", "toy_rgb") == "paired_image":
+        val_cfg = config["data"]["val"]
+        return PairedImageDenoiseDataset(
+            noisy_dir=resolve_project_path(val_cfg["noisy_dir"]),
+            clean_dir=resolve_project_path(val_cfg["clean_dir"]),
+            patch_size=config["data"]["patch_size"],
+            size=config["data"]["val_size"],
+            seed=config["experiment"].get("seed", 42) + 10000,
+        )
+
     noise_cfg = config["data"]["noise"]
     return ToyRGBDenoiseDataset(
         size=config["data"]["val_size"],

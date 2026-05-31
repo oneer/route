@@ -50,6 +50,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
+from ai_isp.data.paired_image_dataset import PairedImageDenoiseDataset
 from ai_isp.data.toy_rgb_dataset import ToyRGBDenoiseDataset
 from ai_isp.engine.checkpoint import save_checkpoint
 from ai_isp.engine.logger import CSVLogger, SummaryWriterOrNoop
@@ -74,6 +75,42 @@ def resolve_device(name: str) -> torch.device:
     if name == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(name)
+
+
+def resolve_project_path(project_root: Path, path: str | Path) -> Path:
+    resolved = Path(path)
+    return resolved if resolved.is_absolute() else project_root / resolved
+
+
+def build_dataset(config: dict, project_root: Path, split: str):
+    data_cfg = config["data"]
+    seed = config["experiment"].get("seed", 42)
+    if split == "val":
+        seed += 10000
+
+    if data_cfg.get("dataset", "toy_rgb") == "paired_image":
+        split_cfg = data_cfg[split]
+        return PairedImageDenoiseDataset(
+            noisy_dir=resolve_project_path(project_root, split_cfg["noisy_dir"]),
+            clean_dir=resolve_project_path(project_root, split_cfg["clean_dir"]),
+            patch_size=data_cfg["patch_size"],
+            size=data_cfg[f"{split}_size"],
+            seed=seed,
+        )
+
+    noise_cfg = data_cfg["noise"]
+    return ToyRGBDenoiseDataset(
+        size=data_cfg[f"{split}_size"],
+        patch_size=data_cfg["patch_size"],
+        sigma_min=noise_cfg.get("sigma_min", 0.0),
+        sigma_max=noise_cfg.get("sigma_max", 0.0),
+        seed=seed,
+        noise_type=noise_cfg.get("type", "gaussian"),
+        shot_min=noise_cfg.get("shot_min", 0.0),
+        shot_max=noise_cfg.get("shot_max", 0.0),
+        read_min=noise_cfg.get("read_min", 0.0),
+        read_max=noise_cfg.get("read_max", 0.0),
+    )
 
 
 def train_from_config(config: dict) -> None:
@@ -109,34 +146,8 @@ def train_from_config(config: dict) -> None:
     # ============================================================
     # 1. 数据集构建
     # ============================================================
-    noise_cfg = config["data"]["noise"]
-
-    # 训练集：使用 seed 作为基础种子
-    train_set = ToyRGBDenoiseDataset(
-        size=config["data"]["train_size"],
-        patch_size=config["data"]["patch_size"],
-        sigma_min=noise_cfg.get("sigma_min", 0.0),
-        sigma_max=noise_cfg.get("sigma_max", 0.0),
-        seed=config["experiment"].get("seed", 42),
-        noise_type=noise_cfg.get("type", "gaussian"),
-        shot_min=noise_cfg.get("shot_min", 0.0),
-        shot_max=noise_cfg.get("shot_max", 0.0),
-        read_min=noise_cfg.get("read_min", 0.0),
-        read_max=noise_cfg.get("read_max", 0.0),
-    )
-    # 验证集：使用 seed + 10000 作为基础种子，确保与训练集不同
-    val_set = ToyRGBDenoiseDataset(
-        size=config["data"]["val_size"],
-        patch_size=config["data"]["patch_size"],
-        sigma_min=noise_cfg.get("sigma_min", 0.0),
-        sigma_max=noise_cfg.get("sigma_max", 0.0),
-        seed=config["experiment"].get("seed", 42) + 10000,
-        noise_type=noise_cfg.get("type", "gaussian"),
-        shot_min=noise_cfg.get("shot_min", 0.0),
-        shot_max=noise_cfg.get("shot_max", 0.0),
-        read_min=noise_cfg.get("read_min", 0.0),
-        read_max=noise_cfg.get("read_max", 0.0),
-    )
+    train_set = build_dataset(config, project_root, "train")
+    val_set = build_dataset(config, project_root, "val")
 
     # DataLoader：训练集 shuffle + drop_last，验证集顺序加载
     train_loader = DataLoader(

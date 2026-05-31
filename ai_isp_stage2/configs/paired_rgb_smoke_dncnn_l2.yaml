@@ -1,0 +1,39 @@
+experiment:
+  name: paired_rgb_smoke_dncnn_l2
+  seed: 42
+  output_dir: runs/paired_rgb_smoke_dncnn_l2
+
+data:
+  dataset: paired_image
+  patch_size: 128
+  train_size: 96
+  val_size: 24
+  train:
+    noisy_dir: runs/paired_rgb_smoke/noisy
+    clean_dir: runs/paired_rgb_smoke/clean
+  val:
+    noisy_dir: runs/paired_rgb_smoke/noisy
+    clean_dir: runs/paired_rgb_smoke/clean
+  noise:
+    type: gaussian
+    sigma_min: 0.0
+    sigma_max: 0.0
+
+model:
+  name: dncnn
+  in_channels: 3
+  out_channels: 3
+  features: 32
+  depth: 5
+  residual: true
+
+train:
+  steps: 120
+  batch_size: 4
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: mse
+  log_every: 20
+  val_every: 40
+  num_workers: 0
+  device: auto

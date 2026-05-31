@@ -183,3 +183,42 @@ ai_isp_stage2/
 2. 做 patch size 64 / 128 对比，观察速度、显存和细节。
 3. 把 synthetic Gaussian noise 推进到更接近 sensor 的 noise model。
 4. 再进入 SIDD RGB denoise 或 SID RAW low-light。
+## Current Stage 2 Progress
+
+The original next-step list has now been expanded into concrete experiments:
+
+| Step | Status | Report |
+|---|---|---|
+| L1 vs L2 loss | done | `reports/week1d_l1_l2_loss_compare.md` |
+| Patch size 64 vs 128 | done | `reports/week1e_patch_size_compare.md` |
+| Sensor-like shot/read noise | done | `reports/week1f_sensor_like_noise.md` |
+| Noise strength calibration | done | `reports/week1g_noise_strength_calibration.md` |
+| Paired RGB image-folder adapter | done | `reports/week1h_paired_rgb_dataset_adapter.md` |
+
+The practical training path is now:
+
+```text
+toy procedural RGB
+  -> calibrated synthetic noise
+  -> paired image-folder smoke test
+  -> real SIDD-style paired RGB subset
+```
+
+Useful commands:
+
+```bash
+python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2/configs/toy_rgb_denoise_dncnn_l2_shot_read_calibrated.yaml
+python ai_isp_stage2/scripts/03_prepare_paired_rgb_smoke.py --count 12 --size 256 --sigma 0.08
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_smoke_dncnn_l2.yaml
+```
+
+Next target: prepare a tiny SIDD-style paired RGB subset with this folder layout:
+
+```text
+datasets/sidd/train/noisy
+datasets/sidd/train/clean
+datasets/sidd/val/noisy
+datasets/sidd/val/clean
+```
+
+Once that folder layout exists, the existing `paired_image` config path can train on real paired RGB denoise data.
