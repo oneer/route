@@ -1,0 +1,32 @@
+experiment:
+  name: toy_rgb_denoise_dncnn_l1_loss
+  seed: 42
+  output_dir: runs/toy_rgb_denoise_dncnn_l1_loss
+
+data:
+  patch_size: 64
+  train_size: 512
+  val_size: 32
+  noise:
+    type: gaussian
+    sigma_min: 0.03
+    sigma_max: 0.12
+
+model:
+  name: dncnn
+  in_channels: 3
+  out_channels: 3
+  features: 32
+  depth: 5
+  residual: true
+
+train:
+  steps: 300
+  batch_size: 8
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: l1
+  log_every: 25
+  val_every: 50
+  num_workers: 0
+  device: auto
