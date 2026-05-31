@@ -28,7 +28,7 @@ import math
 import torch
 from torch.utils.data import Dataset
 
-from ai_isp.data.degradations import add_gaussian_noise
+from ai_isp.data.degradations import add_gaussian_noise, add_shot_read_noise
 
 
 class ToyRGBDenoiseDataset(Dataset):
@@ -52,12 +52,22 @@ class ToyRGBDenoiseDataset(Dataset):
         sigma_min: float,
         sigma_max: float,
         seed: int,
+        noise_type: str = "gaussian",
+        shot_min: float = 0.0,
+        shot_max: float = 0.0,
+        read_min: float = 0.0,
+        read_max: float = 0.0,
     ) -> None:
         self.size = int(size)
         self.patch_size = int(patch_size)
         self.sigma_min = float(sigma_min)
         self.sigma_max = float(sigma_max)
         self.seed = int(seed)
+        self.noise_type = str(noise_type)
+        self.shot_min = float(shot_min)
+        self.shot_max = float(shot_max)
+        self.read_min = float(read_min)
+        self.read_max = float(read_max)
 
     def __len__(self) -> int:
         """返回数据集总样本数。"""
@@ -79,9 +89,20 @@ class ToyRGBDenoiseDataset(Dataset):
         clean = self._make_clean_patch(generator)
 
         # 加噪（sigma 在 [sigma_min, sigma_max] 内随机采样）
-        noisy, sigma = add_gaussian_noise(
-            clean, self.sigma_min, self.sigma_max, generator=generator
-        )
+        if self.noise_type == "shot_read":
+            noisy, noise_meta = add_shot_read_noise(
+                clean,
+                self.shot_min,
+                self.shot_max,
+                self.read_min,
+                self.read_max,
+                generator=generator,
+            )
+            sigma = noise_meta["read"]
+        else:
+            noisy, sigma = add_gaussian_noise(
+                clean, self.sigma_min, self.sigma_max, generator=generator
+            )
 
         return {
             "noisy": noisy,                                       # 加噪后的输入图像

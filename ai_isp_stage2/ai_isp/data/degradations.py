@@ -19,6 +19,34 @@ from __future__ import annotations
 import torch
 
 
+def add_shot_read_noise(
+    clean: torch.Tensor,
+    shot_min: float,
+    shot_max: float,
+    read_min: float,
+    read_max: float,
+    generator: torch.Generator | None = None,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """Add signal-dependent shot noise plus signal-independent read noise."""
+    shot = (
+        torch.rand((), generator=generator, dtype=clean.dtype)
+        .mul_(shot_max - shot_min)
+        .add_(shot_min)
+    )
+    read = (
+        torch.rand((), generator=generator, dtype=clean.dtype)
+        .mul_(read_max - read_min)
+        .add_(read_min)
+    )
+
+    shot_noise = torch.randn(clean.shape, generator=generator, dtype=clean.dtype)
+    shot_noise = shot_noise * torch.sqrt(torch.clamp(clean * shot, min=0.0))
+    read_noise = torch.randn(clean.shape, generator=generator, dtype=clean.dtype) * read
+    noisy = torch.clamp(clean + shot_noise + read_noise, 0.0, 1.0)
+
+    return noisy, {"shot": float(shot.item()), "read": float(read.item())}
+
+
 def add_gaussian_noise(
     clean: torch.Tensor,
     sigma_min: float,

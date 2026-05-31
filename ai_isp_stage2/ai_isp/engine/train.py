@@ -115,17 +115,27 @@ def train_from_config(config: dict) -> None:
     train_set = ToyRGBDenoiseDataset(
         size=config["data"]["train_size"],
         patch_size=config["data"]["patch_size"],
-        sigma_min=noise_cfg["sigma_min"],
-        sigma_max=noise_cfg["sigma_max"],
+        sigma_min=noise_cfg.get("sigma_min", 0.0),
+        sigma_max=noise_cfg.get("sigma_max", 0.0),
         seed=config["experiment"].get("seed", 42),
+        noise_type=noise_cfg.get("type", "gaussian"),
+        shot_min=noise_cfg.get("shot_min", 0.0),
+        shot_max=noise_cfg.get("shot_max", 0.0),
+        read_min=noise_cfg.get("read_min", 0.0),
+        read_max=noise_cfg.get("read_max", 0.0),
     )
     # 验证集：使用 seed + 10000 作为基础种子，确保与训练集不同
     val_set = ToyRGBDenoiseDataset(
         size=config["data"]["val_size"],
         patch_size=config["data"]["patch_size"],
-        sigma_min=noise_cfg["sigma_min"],
-        sigma_max=noise_cfg["sigma_max"],
+        sigma_min=noise_cfg.get("sigma_min", 0.0),
+        sigma_max=noise_cfg.get("sigma_max", 0.0),
         seed=config["experiment"].get("seed", 42) + 10000,
+        noise_type=noise_cfg.get("type", "gaussian"),
+        shot_min=noise_cfg.get("shot_min", 0.0),
+        shot_max=noise_cfg.get("shot_max", 0.0),
+        read_min=noise_cfg.get("read_min", 0.0),
+        read_max=noise_cfg.get("read_max", 0.0),
     )
 
     # DataLoader：训练集 shuffle + drop_last，验证集顺序加载
