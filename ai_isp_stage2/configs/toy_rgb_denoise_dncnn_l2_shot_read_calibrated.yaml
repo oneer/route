@@ -1,0 +1,34 @@
+experiment:
+  name: toy_rgb_denoise_dncnn_l2_shot_read_calibrated
+  seed: 42
+  output_dir: runs/toy_rgb_denoise_dncnn_l2_shot_read_calibrated
+
+data:
+  patch_size: 64
+  train_size: 512
+  val_size: 32
+  noise:
+    type: shot_read
+    shot_min: 0.002
+    shot_max: 0.011
+    read_min: 0.007
+    read_max: 0.028
+
+model:
+  name: dncnn
+  in_channels: 3
+  out_channels: 3
+  features: 32
+  depth: 5
+  residual: true
+
+train:
+  steps: 300
+  batch_size: 8
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: mse
+  log_every: 25
+  val_every: 50
+  num_workers: 0
+  device: auto
