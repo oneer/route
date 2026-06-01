@@ -5,6 +5,7 @@
 1. [Week 1A：图像恢复最小直觉](week1a_image_restoration_intuition.md)
 2. [Week 1B：TinyCNN 训练闭环](week1b_training_loop_tinycnn.md)
 3. [Week 1C：DnCNN 和 residual denoise](week1c_dncnn_residual.md)
+4. [Week 1D：L1 vs L2 Loss 对比](week1d_l1_l2_loss.md)
 
 ## 目标
 
@@ -24,6 +25,8 @@
 | DnCNN direct | `configs/toy_rgb_denoise_dncnn_direct.yaml` | 对比直接预测 clean 的收敛难度 |
 | DnCNN residual long | `configs/toy_rgb_denoise_dncnn_long.yaml` | 观察 residual 训练到 1000 step 后是否继续提升 |
 | DnCNN direct long | `configs/toy_rgb_denoise_dncnn_direct_long.yaml` | 观察 direct clean 训练到 1000 step 后能否追上 residual |
+| DnCNN L1 | `configs/toy_rgb_denoise_dncnn_l1.yaml` | Week 1D：L1 loss 对比 |
+| DnCNN L2 | `configs/toy_rgb_denoise_dncnn_l2.yaml` | Week 1D：L2/MSE loss 对比 |
 | UNet | `configs/toy_rgb_denoise_unet.yaml` | 学 encoder-decoder 和 skip connection |
 
 ## 数据退化
@@ -149,9 +152,8 @@ residual：让模型回答“输入里哪些东西像噪声，应该减掉”
 
 ## 小实验清单
 
-1. L1 vs L2，对比输出平滑程度和 PSNR。
-2. patch size 64 / 128，对比速度、显存和细节。
-3. sigma 训练范围和测试范围错开，观察泛化下降。
+1. patch size 64 / 128，对比速度、显存和细节。
+2. sigma 训练范围和测试范围错开，观察泛化下降。
 
 ## 面试复述要点
 

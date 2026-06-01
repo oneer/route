@@ -71,8 +71,9 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 - `reports/week1a_image_restoration_intuition.md` — noisy / clean / output / patch 直觉
 - `reports/week1b_training_loop_tinycnn.md` — TinyCNN 训练闭环
 - `reports/week1c_dncnn_residual.md` — DnCNN 和 residual denoise
+- `reports/week1d_l1_l2_loss.md` — L1 / L2 loss 如何影响指标和可视化
 
-这三份笔记用更慢的节奏进入 Week 1，把训练闭环的每个零件讲清楚。
+这些笔记用更慢的节奏进入 Week 1，把训练闭环、residual learning 和 loss 对比讲清楚。
 
 ### 学完前置路线后的检查
 
@@ -150,6 +151,8 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/toy_rgb_denoise_dncnn_direct.yaml
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/toy_rgb_denoise_dncnn_long.yaml
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/toy_rgb_denoise_dncnn_direct_long.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/toy_rgb_denoise_dncnn_l1.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/toy_rgb_denoise_dncnn_l2.yaml
 ```
 
 **UNet：**
@@ -194,6 +197,7 @@ The original next-step list has now been expanded into concrete experiments:
 | Sensor-like shot/read noise | done | `reports/week1f_sensor_like_noise.md` |
 | Noise strength calibration | done | `reports/week1g_noise_strength_calibration.md` |
 | Paired RGB image-folder adapter | done | `reports/week1h_paired_rgb_dataset_adapter.md` |
+| Tiny SIDD-style paired subset entry | ready to run with external data | `reports/week1i_sidd_tiny_subset.md` |
 
 The practical training path is now:
 
@@ -222,3 +226,11 @@ datasets/sidd/val/clean
 ```
 
 Once that folder layout exists, the existing `paired_image` config path can train on real paired RGB denoise data.
+
+Prepare a tiny external paired RGB subset:
+
+```bash
+python ai_isp_stage2/scripts/04_prepare_paired_rgb_subset.py --source-noisy-dir path/to/noisy --source-clean-dir path/to/clean --output-dir ai_isp_stage2/datasets/sidd_tiny --train-count 80 --val-count 20 --size 512
+python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2.yaml
+```
