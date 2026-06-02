@@ -71,6 +71,8 @@ Week 3 一共做四组核心实验。
 
 ![Week 3 真实 RGB 实验矩阵](figures/week3_real_rgb_experiment_matrix.png)
 
+> 图说明：这张图把 Week3 的实验变量排成矩阵。读图时注意一次只改一个核心变量，比如 loss、patch size 或模型结构，这样结果变化才知道是谁造成的。
+
 | 实验 | 配置 | 主要变量 | 目的 |
 |---|---|---|---|
 | A | `paired_rgb_sidd_tiny_dncnn_l2_2000.yaml` | 训练步数从 500 到 2000 | 看 DnCNN L2 长训练趋势 |

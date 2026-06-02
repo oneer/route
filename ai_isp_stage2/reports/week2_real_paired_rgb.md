@@ -68,6 +68,8 @@ clean patch -> 人工加噪 -> noisy patch
 
 ![Week 2 paired RGB 数据管线](figures/week2_paired_rgb_data_pipeline.png)
 
+> 图说明：这张图展示 Week2 的真实 paired RGB 数据如何进入训练流程。重点看 noisy 和 clean 必须成对进入同一个 dataset，经过裁剪和 dataloader 后，模型输出 output，再和 clean 计算 loss。
+
 ### 1.1 本周建议怎么学
 
 Week 2 不建议一口气跑完命令。更好的学习顺序是：
@@ -304,6 +306,8 @@ reports/figures/week2_smoke_dataset_inspection/paired_samples_grid.png
 ```
 
 ![Week2 paired smoke 数据检查图](figures/week2_smoke_dataset_inspection/paired_samples_grid.png)
+
+> 图说明：这张图把 noisy 和 clean 样本成对摆出来，用来检查文件名、内容和尺寸是否真的对齐。如果某一列 noisy 和 clean 不是同一个场景，后面的训练指标再好也没有意义。
 
 看这张图时要确认：
 
@@ -561,6 +565,8 @@ Week 2 的优先级是：
 ## 12. 常见失败排查
 
 ![Week 2 真实数据排错清单](figures/week2_real_data_debug_checklist.png)
+
+> 图说明：这张图是 Week2 的排错顺序。遇到训练异常时，先查路径和文件名配对，再查图片尺寸和 RGB 通道，最后再看 patch size、baseline 和训练配置。
 
 ### 找不到 paired 图片
 
