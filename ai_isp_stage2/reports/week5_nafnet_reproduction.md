@@ -465,7 +465,101 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 
 如果真实数据集还没准备好，先回到 Week2，用 `04_prepare_paired_rgb_subset.py` 建立 `datasets/sidd_tiny`。
 
-## 13. 面试复述
+## 13. 真实 SIDD Tiny 结果
+
+这次已经在真实 SIDD Tiny 子集上跑了一个 CPU 友好的 `NAFNet-lite` 短训版本：
+
+```text
+config: paired_rgb_sidd_tiny_nafnet_lite_l1_300.yaml
+width: 8
+middle_blocks: 1
+steps: 300
+loss: L1
+patch size: 128
+```
+
+对比结果：
+
+| Model | Loss | Steps | Best PSNR | Best SSIM | 观察 |
+|---|---|---:|---:|---:|---|
+| noisy input baseline | 无 | 0 | 26.7302 | 0.52412 | 原始 noisy 水平 |
+| DnCNN residual | L2/MSE | 300 | 32.7717 | 0.77100 | 短训最稳，PSNR 最高 |
+| UNet | L1 | 300 | 28.2856 | 0.85951 | SSIM 最高，但像素误差更大 |
+| NAFNet-lite | L1 | 300 | 26.8194 | 0.73509 | 略高于 noisy baseline，但还没充分训练 |
+
+![SIDD tiny NAFNet 对比图](figures/week4_sidd_tiny_eval/triplet_contact_sheet.png)
+
+> 图说明：这张图里 NAFNet-lite 的 output 比 noisy 有改善，但离 clean 仍有差距。这个结果说明模型和训练管线已经跑通，但不能说明 NAFNet-lite 的最终能力；当前设置是 CPU 轻量短训，不是完整 NAFNet 复现。
+
+### 13.1 为什么 NAFNet-lite 这次没有赢？
+
+不要把这次结果理解成“NAFNet 不如 DnCNN”。更准确的分析是：
+
+| 原因 | 解释 |
+|---|---|
+| 训练太短 | 只有 300 steps，现代 block 可能还没充分收敛 |
+| 模型太窄 | 为了 CPU 速度，`width=8`，表达能力被压低 |
+| 配置不完全公平 | DnCNN 用 L2/MSE，NAFNet-lite 用 L1，loss 不同 |
+| 数据子集小 | 只有 80/20 对，适合学习流程，不适合下最终结论 |
+| 没有 scheduler/EMA | 当前训练器是基础版，没有官方恢复模型常用训练技巧 |
+
+这正是 Week5 要学的重点：复现现代模型时，不能只把结构写出来就期待马上超过 baseline。你要同时考虑数据规模、训练步数、loss、宽度、学习率和评估方式。
+
+### 13.2 下一步怎么改 NAFNet-lite
+
+建议按这个顺序继续：
+
+1. 先把 steps 从 300 提到 1000，看曲线是否继续上升。
+2. 再把 `width=8` 提到 `width=16`，观察 PSNR/SSIM 和训练时间变化。
+3. 保持同一个 SIDD split，不要换数据，否则无法公平比较。
+4. 如果 L1 收敛慢，可以尝试 Charbonnier loss。
+5. 每次只改一个变量，不要同时改 width、loss、steps。
+
+## 14. NAFNet-lite 标准版结果
+
+在 300-step 轻量短训之后，又跑了一轮更标准的 NAFNet-lite：
+
+```text
+config: paired_rgb_sidd_tiny_nafnet_lite_l1_1000.yaml
+width: 16
+middle_blocks: 2
+steps: 1000
+loss: L1
+patch size: 128
+```
+
+结果对比：
+
+| Model | 设置 | Best PSNR | Best SSIM | 结论 |
+|---|---|---:|---:|---|
+| NAFNet-lite 短训 | width=8, 300 steps | 26.8194 | 0.73509 | 刚超过 baseline |
+| NAFNet-lite 标准版 | width=16, 1000 steps | 33.3269 | 0.86223 | 大幅提升，说明短训不足 |
+| DnCNN 标准版 | 2000 steps, L2 | 35.5356 | 0.88367 | 当前最强 baseline |
+
+![SIDD tiny standard NAFNet 对比图](figures/week4_sidd_tiny_standard_eval/triplet_contact_sheet.png)
+
+> 图说明：这张图里可以看到 NAFNet-lite 从早期到 step 1000 的输出逐渐接近 clean。它仍未超过 DnCNN，但已经明显强于 300-step 轻量版，说明现代恢复模型更依赖足够训练和合适宽度。
+
+这次标准版结果让 Week5 的结论更清楚：
+
+```text
+NAFNet-lite 不是不能学；
+300-step width=8 只是太小太短；
+width=16 + 1000 steps 后已经接近可用 baseline；
+但当前数据和训练配置下，DnCNN residual 仍然更稳。
+```
+
+下一步如果继续做 NAFNet-lite，最值得跑的是：
+
+```text
+paired_rgb_sidd_tiny_nafnet_lite_l1_2000.yaml
+或
+NAFNet-lite + Charbonnier loss
+```
+
+这时再和 DnCNN 2000 做比较，才更接近公平。
+
+## 15. 面试复述
 
 学完 Week5 后，你应该能这样讲：
 
@@ -476,7 +570,7 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 分析它相对 DnCNN/UNet 是否真的改善纹理、边缘和噪声。
 ```
 
-## 14. 通过标准
+## 16. 通过标准
 
 学完 Week5 后，至少能回答：
 
@@ -492,4 +586,77 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 
 ```text
 Week5 的目标是从“会用基础 CNN baseline”升级到“能理解并复现一个现代轻量图像恢复 block”。
+```
+
+## 17. Week5 面试题和参考回答
+
+**Q1：NAFNet-lite 和普通 CNN 最大区别是什么？**
+
+普通 CNN baseline 通常是卷积 + ReLU 堆叠，主要靠局部卷积提取特征。NAFNet-lite 仍然用卷积，但引入了更现代的恢复模块：`SimpleGate`、通道注意力、block 内部 residual、多尺度 encoder-decoder。它不是完全不同的范式，而是在 CNN 基础上做更适合图像恢复的结构设计。
+
+**Q2：NAFNet 说 activation free，是不是没有非线性？**
+
+不是。它不用传统 ReLU/GELU 这类激活函数，但 `SimpleGate` 里的乘法仍然提供非线性：
+
+```text
+x1, x2 = split(x)
+out = x1 * x2
+```
+
+两个特征相乘不是线性操作，所以网络仍然有表达复杂关系的能力。
+
+**Q3：SimpleGate 为什么可能适合图像恢复？**
+
+图像恢复经常需要“一个特征调制另一个特征”。比如某些通道判断哪里像噪声，另一些通道保存颜色或边缘。`x1 * x2` 可以看成一种门控：一部分特征决定另一部分特征通过多少。
+
+**Q4：block residual 和 DnCNN residual denoise 有什么区别？**
+
+DnCNN residual denoise 是任务输出层面的残差：
+
+```text
+clean = noisy - predicted_noise
+```
+
+NAFBlock 内部 residual 是特征层面的残差：
+
+```text
+feature_out = feature_in + delta_feature
+```
+
+一个发生在图像输出空间，一个发生在网络中间特征空间。名字都叫 residual，但层级不同。
+
+**Q5：为什么这轮 NAFNet-lite 没有超过 DnCNN？**
+
+当前 DnCNN 是 `2000 steps + residual denoise + L2/MSE`，非常适合这个 SIDD tiny 去噪任务。NAFNet-lite 虽然更现代，但当前只跑 `1000 steps + L1`，并且是简化版，没有官方完整训练策略、scheduler、EMA 或更大数据。因此它没赢 DnCNN 不代表结构无效，只说明当前设置下 DnCNN 更稳。
+
+**Q6：那 NAFNet-lite 的实验价值在哪里？**
+
+价值在于它证明了现代恢复 block 已经接入当前训练框架，并且从短训版 `26.8194 PSNR` 提升到标准版 `33.3269 PSNR`。这说明训练设置对现代模型非常关键，也说明后续可以继续做更公平的 ablation。
+
+**Q7：如果继续优化 NAFNet-lite，你会怎么做？**
+
+我会一次只改一个变量：
+
+```text
+1. 固定 width=16，把 steps 提到 2000；
+2. 固定 steps，比较 L1 和 Charbonnier；
+3. 如果仍然欠拟合，再增大 width 或 middle_blocks；
+4. 始终使用同一 SIDD split 和同一评估脚本；
+5. 同时看 PSNR、SSIM、三联图和 error map。
+```
+
+**Q8：这个项目怎么写进简历？**
+
+可以写：
+
+```text
+基于 PyTorch 搭建真实 paired RGB 图像去噪实验闭环，整理 SIDD Small sRGB 子集，完成 noisy baseline、DnCNN residual、UNet、NAFNet-lite 的训练与对比；实现 PSNR/SSIM 评估、三联图可视化和 error map 分析，在 SIDD tiny 上 DnCNN baseline 达到 35.54 dB PSNR / 0.8837 SSIM。
+```
+
+如果面试官继续追问，就讲：
+
+```text
+我没有只跑模型，而是先做数据配对检查和 input baseline；
+再用统一 split 比较不同模型；
+最后用指标曲线、三联图和 error map 分析为什么模型表现不同。
 ```

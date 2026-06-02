@@ -139,10 +139,14 @@ def scale(value: float, min_value: float, max_value: float, low: int, high: int)
 
 def draw_metric_plot(summaries: list[RunSummary], output_dir: Path) -> Path:
     path = output_dir / "metrics_plot.png"
-    width, height = 1200, 680
-    margin_left, margin_right, margin_top, margin_bottom = 90, 40, 80, 90
+    width, height = 1680, 900
+    margin_left, margin_right = 95, 430
+    title_h = 74
+    gap = 56
+    plot_h = 280
     plot_w = width - margin_left - margin_right
-    plot_h = height - margin_top - margin_bottom
+    psnr_top = title_h
+    ssim_top = title_h + plot_h + gap
 
     all_steps = [row.step for s in summaries for row in s.rows]
     all_psnr = [row.val_psnr for s in summaries for row in s.rows]
@@ -153,13 +157,7 @@ def draw_metric_plot(summaries: list[RunSummary], output_dir: Path) -> Path:
 
     image = Image.new("RGB", (width, height), (250, 252, 253))
     draw = ImageDraw.Draw(image)
-    draw.text((40, 28), "Validation Metrics Across Runs", fill=(30, 42, 55), font=font(28, True))
-    draw.rectangle(
-        [margin_left, margin_top, margin_left + plot_w, margin_top + plot_h],
-        outline=(200, 210, 220),
-        width=2,
-        fill=(255, 255, 255),
-    )
+    draw.text((40, 24), "Validation Metrics Across Runs", fill=(30, 42, 55), font=font(30, True))
 
     colors = [
         (66, 133, 244),
@@ -170,23 +168,60 @@ def draw_metric_plot(summaries: list[RunSummary], output_dir: Path) -> Path:
         (0, 150, 136),
     ]
 
-    def xy(step: int, value: float, values_min: float, values_max: float) -> tuple[int, int]:
+    def draw_panel(top: int, title: str, min_value: float, max_value: float) -> None:
+        draw.rectangle(
+            [margin_left, top, margin_left + plot_w, top + plot_h],
+            outline=(200, 210, 220),
+            width=2,
+            fill=(255, 255, 255),
+        )
+        draw.text((margin_left, top - 30), title, fill=(30, 42, 55), font=font(20, True))
+        draw.text(
+            (margin_left + plot_w - 170, top - 28),
+            f"{min_value:.4f} .. {max_value:.4f}",
+            fill=(84, 99, 116),
+            font=font(15),
+        )
+        for i in range(5):
+            y = top + 24 + i * (plot_h - 48) // 4
+            draw.line([margin_left, y, margin_left + plot_w, y], fill=(235, 239, 243), width=1)
+        draw.text((margin_left, top + plot_h + 12), f"step: {x_min} .. {x_max}", fill=(84, 99, 116), font=font(15))
+
+    def xy(step: int, value: float, values_min: float, values_max: float, top: int) -> tuple[int, int]:
         x = scale(step, x_min, x_max, margin_left + 20, margin_left + plot_w - 20)
-        y = scale(value, values_min, values_max, margin_top + plot_h - 30, margin_top + 30)
+        y = scale(value, values_min, values_max, top + plot_h - 30, top + 30)
         return x, y
+
+    draw_panel(psnr_top, "PSNR: pixel error view", psnr_min, psnr_max)
+    draw_panel(ssim_top, "SSIM: structure similarity view", ssim_min, ssim_max)
 
     for idx, summary in enumerate(summaries):
         color = colors[idx % len(colors)]
-        psnr_points = [xy(row.step, row.val_psnr, psnr_min, psnr_max) for row in summary.rows]
-        if len(psnr_points) > 1:
-            draw.line(psnr_points, fill=color, width=4)
-        for point in psnr_points:
-            draw.ellipse([point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4], fill=color)
-        draw.text((margin_left + 20, margin_top + plot_h + 20 + idx * 22), summary.name, fill=color, font=font(16))
+        psnr_points = [xy(row.step, row.val_psnr, psnr_min, psnr_max, psnr_top) for row in summary.rows]
+        ssim_points = [xy(row.step, row.val_ssim, ssim_min, ssim_max, ssim_top) for row in summary.rows]
+        for points in (psnr_points, ssim_points):
+            if len(points) > 1:
+                draw.line(points, fill=color, width=4)
+            for point in points:
+                draw.ellipse([point[0] - 4, point[1] - 4, point[0] + 4, point[1] + 4], fill=color)
 
-    draw.text((margin_left, height - 45), f"step: {x_min} .. {x_max}", fill=(84, 99, 116), font=font(16))
-    draw.text((margin_left, margin_top - 28), f"PSNR: {psnr_min:.2f} .. {psnr_max:.2f}", fill=(84, 99, 116), font=font(16))
-    draw.text((width - 250, margin_top - 28), f"SSIM range: {ssim_min:.4f} .. {ssim_max:.4f}", fill=(84, 99, 116), font=font(16))
+        legend_x = margin_left + plot_w + 28
+        legend_y = psnr_top + 16 + idx * 74
+        draw.rectangle([legend_x, legend_y + 5, legend_x + 20, legend_y + 25], fill=color)
+        draw.text((legend_x + 30, legend_y), summary.name, fill=(30, 42, 55), font=font(15, True))
+        draw.text(
+            (legend_x + 30, legend_y + 24),
+            f"best PSNR {summary.best_psnr.val_psnr:.2f} @ {summary.best_psnr.step}",
+            fill=(84, 99, 116),
+            font=font(14),
+        )
+        draw.text(
+            (legend_x + 30, legend_y + 44),
+            f"best SSIM {summary.best_ssim.val_ssim:.4f} @ {summary.best_ssim.step}",
+            fill=(84, 99, 116),
+            font=font(14),
+        )
+
     image.save(path)
     return path
 

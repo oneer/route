@@ -3,6 +3,7 @@ __pycache__/
 runs/
 datasets/sidd/
 datasets/sid/
+datasets/
 *.pth
 *.pt
 *.ckpt

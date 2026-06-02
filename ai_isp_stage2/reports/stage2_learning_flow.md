@@ -46,14 +46,15 @@ Week 0: 看懂训练为什么能让模型变好
 - Week 4 Loss / Metric / 可视化评估学习指导。
 - Week 4 自动评估脚本：metrics 汇总、三联图、error map。
 - Week 5 NAFNet-lite 复现代码、配置和 smoke 训练结果。
+- 真实 SIDD Tiny 子集：80/20 配对数据、input baseline、DnCNN/UNet/NAFNet-lite 300-step 对比。
 
 也就是说，现在已经不是“刚开始学概念”，而是走到：
 
 ```text
 toy RGB 去噪已经跑通，真实 paired RGB 数据入口已经建立，
 DnCNN smoke baseline、NAFNet-lite smoke 训练和 Week4 自动评估已经跑通。
-下一步是把同一套流程迁移到真实 sidd_tiny 小子集上，
-再做 DnCNN / UNet / NAFNet-lite 的公平对比。
+真实 SIDD Tiny 小子集也已经完成第一轮 DnCNN / UNet / NAFNet-lite 短训对比。
+下一步是基于这些结果做更长训练、更多数据或更公平的 NAFNet-lite 调参。
 ```
 
 ## 推荐学习方式

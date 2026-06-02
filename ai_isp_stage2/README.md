@@ -110,10 +110,24 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 python ai_isp_stage2/scripts/04_prepare_paired_rgb_subset.py --source-noisy-dir path/to/noisy --source-clean-dir path/to/clean --output-dir ai_isp_stage2/datasets/sidd_tiny --train-count 80 --val-count 20 --size 512
 ```
 
+准备 SIDD Small sRGB 小子集：
+
+```bash
+python ai_isp_stage2/scripts/07_prepare_sidd_small_subset.py --source-root ai_isp_stage2/datasets/downloads/SIDD_Small_sRGB_Only/SIDD_Small_sRGB_Only/Data --output-dir ai_isp_stage2/datasets/sidd_tiny --train-count 80 --val-count 20 --crop-size 512
+```
+
+检查 SIDD train / val 配对：
+
+```bash
+python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_stage2/datasets/sidd_tiny/train/noisy --clean-dir ai_isp_stage2/datasets/sidd_tiny/train/clean --output-dir ai_isp_stage2/reports/figures/week2_sidd_tiny_dataset_inspection --max-samples 8
+python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_stage2/datasets/sidd_tiny/val/noisy --clean-dir ai_isp_stage2/datasets/sidd_tiny/val/clean --output-dir ai_isp_stage2/reports/figures/week2_sidd_tiny_val_inspection --max-samples 8
+```
+
 测真实子集 noisy 输入 baseline：
 
 ```bash
 python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2.yaml
+python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml
 ```
 
 训练真实子集：
@@ -150,6 +164,14 @@ UNet baseline：
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_unet_l1_1000.yaml
 ```
 
+CPU 友好的 SIDD Tiny 300-step 对比：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_unet_l1_300.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_nafnet_lite_l1_300.yaml
+```
+
 ## Week 4 常用命令
 
 检查 paired RGB 数据是否对齐，并生成样本图：
@@ -162,6 +184,18 @@ python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_sta
 
 ```bash
 python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_smoke_dncnn_l2 ai_isp_stage2/runs/paired_rgb_smoke_nafnet_lite_l1 --output-dir ai_isp_stage2/reports/figures/week4_smoke_eval --report-md ai_isp_stage2/reports/week4_smoke_eval_results.md --title "Week 4 Smoke Evaluation Results"
+```
+
+真实 SIDD Tiny 三模型评估：
+
+```bash
+python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_300 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_300 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_300 --output-dir ai_isp_stage2/reports/figures/week4_sidd_tiny_eval --report-md ai_isp_stage2/reports/week4_sidd_tiny_eval_results.md --title "Week 4 SIDD Tiny Evaluation Results"
+```
+
+真实 SIDD Tiny 标准版评估：
+
+```bash
+python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_1000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 --output-dir ai_isp_stage2/reports/figures/week4_sidd_tiny_standard_eval --report-md ai_isp_stage2/reports/week4_sidd_tiny_standard_eval_results.md --title "Week 4 SIDD Tiny Standard Evaluation Results"
 ```
 
 ## Week 5 常用命令

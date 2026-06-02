@@ -411,6 +411,89 @@ NAFNet-lite 已经接入并能学习；
 正式比较需要相近 steps、参数量、loss、patch 和真实数据。
 ```
 
+### 8.5 SIDD Tiny 真实数据评估结果
+
+在真实 SIDD 小子集上，已经用同一个评估脚本汇总了 DnCNN、UNet、NAFNet-lite 三组 300-step 结果。
+
+评估命令：
+
+```bash
+python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_300 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_300 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_300 --output-dir ai_isp_stage2/reports/figures/week4_sidd_tiny_eval --report-md ai_isp_stage2/reports/week4_sidd_tiny_eval_results.md --title "Week 4 SIDD Tiny Evaluation Results"
+```
+
+自动报告：
+
+```text
+reports/week4_sidd_tiny_eval_results.md
+```
+
+指标汇总：
+
+| Run | Best PSNR | Best PSNR Step | Best SSIM | Best SSIM Step | Last PSNR | Last SSIM |
+|---|---:|---:|---:|---:|---:|---:|
+| DnCNN residual | 32.7717 | 250 | 0.77100 | 300 | 32.2857 | 0.77100 |
+| UNet | 28.2856 | 300 | 0.85951 | 300 | 28.2856 | 0.85951 |
+| NAFNet-lite | 26.8194 | 250 | 0.73509 | 300 | 26.0998 | 0.73509 |
+
+![SIDD tiny metrics](figures/week4_sidd_tiny_eval/metrics_plot.png)
+
+> 图说明：上图分开画了 PSNR 和 SSIM。DnCNN 的 PSNR 曲线最高，说明像素误差最小；UNet 的 SSIM 曲线最高，说明结构相似度更强；NAFNet-lite 曲线较低，说明当前轻量短训还不充分。
+
+![SIDD tiny triplets](figures/week4_sidd_tiny_eval/triplet_contact_sheet.png)
+
+> 图说明：这张三联图按 `noisy | output | clean` 比较不同模型和不同 step。读图时不要只看输出是否“干净”，还要看颜色是否偏、纹理是否残留、边缘是否被抹掉。
+
+本轮最值得记住的分析：
+
+```text
+PSNR 高：不一定结构最好，但像素级误差小。
+SSIM 高：结构相似度好，但可能仍有颜色或纹理残留。
+三联图：用人眼检查指标有没有骗人。
+error map：定位 output 和 clean 到底差在哪里。
+```
+
+所以 Week4 的真正能力是：当 DnCNN、UNet、NAFNet-lite 给出不同指标时，你能解释“为什么不是一个模型在所有指标上都赢”。
+
+### 8.6 SIDD Tiny 标准版评估结果
+
+为了得到更稳定的结论，又跑了一轮标准版训练：
+
+```text
+DnCNN residual: 2000 steps, L2/MSE
+UNet: 1000 steps, L1
+NAFNet-lite: 1000 steps, width=16, L1
+```
+
+自动报告：
+
+```text
+reports/week4_sidd_tiny_standard_eval_results.md
+```
+
+指标汇总：
+
+| Run | Best PSNR | Best PSNR Step | Best SSIM | Best SSIM Step | Last PSNR | Last SSIM |
+|---|---:|---:|---:|---:|---:|---:|
+| DnCNN residual | 35.5356 | 1800 | 0.88367 | 1800 | 34.7538 | 0.87418 |
+| UNet | 30.4453 | 1000 | 0.88003 | 1000 | 30.4453 | 0.88003 |
+| NAFNet-lite | 33.3269 | 1000 | 0.86223 | 1000 | 33.3269 | 0.86223 |
+
+![SIDD tiny standard metrics](figures/week4_sidd_tiny_standard_eval/metrics_plot.png)
+
+> 图说明：标准版曲线比短训版更有参考价值。DnCNN 在 step 1800 达到最高点，step 2000 略回落；NAFNet-lite 持续上升到 step 1000，说明它可能还没完全收敛；UNet 的 SSIM 接近 DnCNN，但 PSNR 明显低。
+
+![SIDD tiny standard triplets](figures/week4_sidd_tiny_standard_eval/triplet_contact_sheet.png)
+
+> 图说明：标准版三联图显示，DnCNN 的 output 最接近 clean，NAFNet-lite 比短训版明显改善，UNet 仍保留较多纹理/颜色残留。这里要把数字和图一起看，不能只凭一个指标下结论。
+
+标准版结论：
+
+```text
+DnCNN 是当前真实 SIDD Tiny 的最强 baseline；
+NAFNet-lite 标准训练明显优于短训，值得继续加长训练；
+UNet 的 SSIM 高，但视觉和 PSNR 说明它不一定是最佳去噪输出。
+```
+
 ## 9. 本周输出
 
 建议最终产出：

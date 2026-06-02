@@ -720,3 +720,121 @@ Week 2 看起来步骤少，是因为它不是模型结构课，而是数据入�
 ```
 
 只要这条链路跑通，阶段二就不再只是 toy 实验，而是正式进入真实图像去噪实验。
+
+## 16. 本机真实 SIDD 小子集准备记录
+
+这次已经把你下载的 `SIDD_Small_sRGB_Only.zip` 解压后整理成了本项目可训练的数据格式。
+
+原始数据结构：
+
+```text
+SIDD_Small_sRGB_Only/Data/<scene>/
+  -> NOISY_SRGB_010.PNG
+  -> GT_SRGB_010.PNG
+```
+
+整理命令：
+
+```bash
+python ai_isp_stage2/scripts/07_prepare_sidd_small_subset.py --source-root ai_isp_stage2/datasets/downloads/SIDD_Small_sRGB_Only/SIDD_Small_sRGB_Only/Data --output-dir ai_isp_stage2/datasets/sidd_tiny --train-count 80 --val-count 20 --crop-size 512
+```
+
+输出结果：
+
+```text
+found_pairs = 160
+train = 80 pairs
+val = 20 pairs
+crop_size = 512
+```
+
+整理后的训练目录：
+
+```text
+ai_isp_stage2/datasets/sidd_tiny/train/noisy
+ai_isp_stage2/datasets/sidd_tiny/train/clean
+ai_isp_stage2/datasets/sidd_tiny/val/noisy
+ai_isp_stage2/datasets/sidd_tiny/val/clean
+```
+
+训练集配对检查图：
+
+![SIDD tiny train 配对检查图](figures/week2_sidd_tiny_dataset_inspection/paired_samples_grid.png)
+
+> 图说明：这张图展示真实 SIDD 训练子集里的 noisy/clean 配对。每一列应该是同一个场景的 noisy 和 GT 裁剪块；如果出现场景不一致、颜色明显不对应或尺寸不一致，就不能进入训练。
+
+验证集配对检查图：
+
+![SIDD tiny val 配对检查图](figures/week2_sidd_tiny_val_inspection/paired_samples_grid.png)
+
+> 图说明：这张图展示验证集配对。validation 不参与参数更新，只用来检查模型是否真的学会了去噪规律，所以它的 noisy/clean 对齐同样重要。
+
+真实 SIDD noisy input baseline：
+
+```text
+input PSNR = 26.7302
+input SSIM = 0.52412
+```
+
+这个 baseline 是后面所有模型的最低参照。如果模型输出低于这个数字，说明模型把原图处理坏了；如果明显高于它，才说明模型真正改善了 noisy 输入。
+
+### 16.1 `07_prepare_sidd_small_subset.py` 做了什么
+
+这个脚本不是训练模型，而是把官方 SIDD 的原始目录改造成当前训练器能读的结构。
+
+它的处理流程是：
+
+```text
+遍历 SIDD Data/<scene> 文件夹
+  -> 找 NOISY_SRGB_010.PNG
+  -> 找 GT_SRGB_010.PNG
+  -> 检查 noisy 和 GT 尺寸是否一致
+  -> 对两张图做同一个 center crop
+  -> 保存为 pair_00001.png 这种统一命名
+  -> 按 train / val 分开写入 noisy 和 clean 文件夹
+  -> 写 manifest.csv 记录来源
+```
+
+为什么要统一命名：
+
+```text
+官方文件名适合数据发布；
+训练代码更适合稳定、简单、可复用的 pair_XXXXX.png。
+```
+
+为什么要 center crop：
+
+```text
+SIDD 原图很大，直接训练慢；
+center crop 可以保留真实噪声和颜色分布；
+noisy 和 GT 做同一个 crop，仍然保持像素对齐。
+```
+
+为什么要写 `manifest.csv`：
+
+```text
+以后如果发现某张训练图异常，可以从 pair_00037.png 反查它来自哪个 SIDD scene。
+这对真实数据排错很重要。
+```
+
+### 16.2 Week2 面试题和参考回答
+
+**Q1：paired RGB 去噪里的 paired 是什么意思？**
+
+paired 指 noisy 和 clean 是同一个场景、同一个视角、同一个尺寸、像素级对齐的一对图。训练时模型看 noisy，loss 用 output 和 clean 比较。如果 paired 错了，模型会被迫学习错误映射。
+
+**Q2：为什么不能随便找一张干净图当 clean？**
+
+因为 loss 是逐像素计算的。哪怕两张图都拍的是同一个物体，只要位置、曝光、裁剪或颜色不一致，`output - clean` 就不再表示噪声误差，而是混入了错位和内容差异。
+
+**Q3：为什么真实数据训练前一定要测 noisy input baseline？**
+
+baseline 是最低参照。比如本轮 SIDD tiny 的 noisy baseline 是 `26.7302 PSNR / 0.52412 SSIM`。模型只有超过这个值，才说明它真的改善了 noisy 输入；否则可能只是把图处理坏了。
+
+**Q4：为什么先用 SIDD sRGB，而不是 RAW？**
+
+sRGB 图已经经过 ISP，训练器可以直接按 RGB 读取。RAW 会引入 Bayer、黑电平、白平衡、颜色矩阵、曝光和动态范围等问题。阶段二先跑通 sRGB paired 去噪，是为了把深度学习训练链路先稳定下来。
+
+**Q5：如果训练后指标很差，Week2 应该先查什么？**
+
+先查数据，不要先换模型。检查顺序是：路径是否正确、noisy/clean 文件名是否匹配、尺寸是否一致、图像是否同一场景、baseline 是否正常、三联图是否对齐。

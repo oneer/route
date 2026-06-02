@@ -1,0 +1,21 @@
+name,noisy_path,clean_path,noisy_size,clean_size,same_size
+pair_00001.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00001.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00001.png,"(512, 512)","(512, 512)",True
+pair_00002.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00002.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00002.png,"(512, 512)","(512, 512)",True
+pair_00003.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00003.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00003.png,"(512, 512)","(512, 512)",True
+pair_00004.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00004.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00004.png,"(512, 512)","(512, 512)",True
+pair_00005.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00005.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00005.png,"(512, 512)","(512, 512)",True
+pair_00006.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00006.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00006.png,"(512, 512)","(512, 512)",True
+pair_00007.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00007.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00007.png,"(512, 512)","(512, 512)",True
+pair_00008.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00008.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00008.png,"(512, 512)","(512, 512)",True
+pair_00009.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00009.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00009.png,"(512, 512)","(512, 512)",True
+pair_00010.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00010.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00010.png,"(512, 512)","(512, 512)",True
+pair_00011.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00011.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00011.png,"(512, 512)","(512, 512)",True
+pair_00012.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00012.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00012.png,"(512, 512)","(512, 512)",True
+pair_00013.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00013.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00013.png,"(512, 512)","(512, 512)",True
+pair_00014.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00014.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00014.png,"(512, 512)","(512, 512)",True
+pair_00015.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00015.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00015.png,"(512, 512)","(512, 512)",True
+pair_00016.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00016.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00016.png,"(512, 512)","(512, 512)",True
+pair_00017.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00017.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00017.png,"(512, 512)","(512, 512)",True
+pair_00018.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00018.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00018.png,"(512, 512)","(512, 512)",True
+pair_00019.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00019.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00019.png,"(512, 512)","(512, 512)",True
+pair_00020.png,ai_isp_stage2\datasets\sidd_tiny\val\noisy\pair_00020.png,ai_isp_stage2\datasets\sidd_tiny\val\clean\pair_00020.png,"(512, 512)","(512, 512)",True

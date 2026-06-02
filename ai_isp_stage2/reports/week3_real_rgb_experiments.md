@@ -659,3 +659,209 @@ Week 3 的核心不是“多跑几个配置”，而是学会做真实图像恢�
 ```
 
 如果这些能讲清楚，Week 3 就不是机械跑实验，而是从“真实数据能跑”进入“真实数据实验会分析”。
+
+## 14. 本机 SIDD Tiny 真实数据短训实验
+
+这次已经在真实 SIDD 小子集上跑完三组 300-step 短训，用来建立 Week3 的真实 RGB baseline。
+
+共同设置：
+
+```text
+数据：SIDD Small sRGB
+训练集：80 对 512x512 center crop
+验证集：20 对 512x512 center crop
+patch size：128
+设备：CPU
+训练步数：300
+验证间隔：50 steps
+```
+
+input baseline：
+
+| 输入 | PSNR | SSIM | 含义 |
+|---|---:|---:|---|
+| noisy image | 26.7302 | 0.52412 | 不经过模型时，noisy 与 clean 的差距 |
+
+模型结果：
+
+| Model | Config | Loss | Best PSNR | Best PSNR Step | Best SSIM | Best SSIM Step | 结论 |
+|---|---|---|---:|---:|---:|---:|---|
+| DnCNN residual | `paired_rgb_sidd_tiny_dncnn_l2_300.yaml` | L2/MSE | 32.7717 | 250 | 0.77100 | 300 | PSNR 最强，短训 baseline 最稳 |
+| UNet | `paired_rgb_sidd_tiny_unet_l1_300.yaml` | L1 | 28.2856 | 300 | 0.85951 | 300 | SSIM 最高，但 PSNR 不如 DnCNN |
+| NAFNet-lite | `paired_rgb_sidd_tiny_nafnet_lite_l1_300.yaml` | L1 | 26.8194 | 250 | 0.73509 | 300 | 刚超过 noisy baseline，短训还不充分 |
+
+这张表要重点学会三件事：
+
+1. `DnCNN` 虽然结构简单，但在这个 300-step CPU 短训里最稳，说明 baseline 不一定要复杂。
+2. `UNet` 的 SSIM 高于 DnCNN，但 PSNR 低很多，说明不同指标看的是不同侧面。
+3. `NAFNet-lite` 跑通不等于跑好，现代结构需要合适宽度、训练步数和调参。
+
+本轮训练命令：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_unet_l1_300.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_nafnet_lite_l1_300.yaml
+```
+
+实验产物：
+
+```text
+ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_300
+ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_300
+ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_300
+```
+
+每个 run 里都有：
+
+```text
+metrics.csv
+checkpoints/last.pth
+checkpoints/best_psnr.pth
+vis/step_0050.png ... step_0300.png
+```
+
+这些文件就是 Week3 学习的核心证据：指标曲线告诉你趋势，checkpoint 保存模型，三联图告诉你视觉上到底有没有变好。
+
+## 15. 本机 SIDD Tiny 标准版实验
+
+在 300-step 短训之后，又跑了一轮更接近标准设置的实验：
+
+| Model | Config | Loss | Steps | Best PSNR | Best SSIM | 结论 |
+|---|---|---|---:|---:|---:|---|
+| DnCNN residual | `paired_rgb_sidd_tiny_dncnn_l2_2000.yaml` | L2/MSE | 2000 | 35.5356 | 0.88367 | 当前最强 baseline |
+| UNet | `paired_rgb_sidd_tiny_unet_l1_1000.yaml` | L1 | 1000 | 30.4453 | 0.88003 | SSIM 接近 DnCNN，但 PSNR 低 |
+| NAFNet-lite | `paired_rgb_sidd_tiny_nafnet_lite_l1_1000.yaml` | L1 | 1000 | 33.3269 | 0.86223 | 比短训版大幅提升，说明 300 steps 不足 |
+
+标准版和短训版对比：
+
+| Model | 300-step Best PSNR | 标准版 Best PSNR | 300-step Best SSIM | 标准版 Best SSIM |
+|---|---:|---:|---:|---:|
+| DnCNN | 32.7717 | 35.5356 | 0.77100 | 0.88367 |
+| UNet | 28.2856 | 30.4453 | 0.85951 | 0.88003 |
+| NAFNet-lite | 26.8194 | 33.3269 | 0.73509 | 0.86223 |
+
+这里能学到一个很关键的实验原则：
+
+```text
+短训只能说明“能不能跑、有没有学习趋势”；
+标准训才更适合比较模型能力。
+```
+
+尤其是 NAFNet-lite：300-step 版本刚超过 noisy baseline，但 1000-step width=16 版本已经追到 33.3269 PSNR。这说明现代模型不能只看最小 smoke 结果，训练设置会极大影响结论。
+
+### 15.1 标准训练怎么操作
+
+完整操作顺序如下：
+
+```bash
+# 1. 准备 SIDD tiny 数据
+python ai_isp_stage2/scripts/07_prepare_sidd_small_subset.py --source-root ai_isp_stage2/datasets/downloads/SIDD_Small_sRGB_Only/SIDD_Small_sRGB_Only/Data --output-dir ai_isp_stage2/datasets/sidd_tiny --train-count 80 --val-count 20 --crop-size 512
+
+# 2. 检查 train / val 是否配对
+python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_stage2/datasets/sidd_tiny/train/noisy --clean-dir ai_isp_stage2/datasets/sidd_tiny/train/clean --output-dir ai_isp_stage2/reports/figures/week2_sidd_tiny_dataset_inspection --max-samples 8
+python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_stage2/datasets/sidd_tiny/val/noisy --clean-dir ai_isp_stage2/datasets/sidd_tiny/val/clean --output-dir ai_isp_stage2/reports/figures/week2_sidd_tiny_val_inspection --max-samples 8
+
+# 3. 测 noisy baseline
+python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml
+
+# 4. 跑标准训练
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_2000.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_unet_l1_1000.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000.yaml
+```
+
+不要跳过第 2 步。真实数据最常见的问题不是模型不够强，而是 noisy/clean 配错、裁剪不一致或路径写错。
+
+### 15.2 训练代码里发生了什么
+
+训练入口是：
+
+```text
+scripts/01_train_toy_rgb.py
+  -> ai_isp.engine.train.train_from_config(config)
+```
+
+核心流程：
+
+```text
+读取 YAML config
+  -> 根据 data.dataset 创建 PairedImageDenoiseDataset
+  -> 根据 model.name 创建 DnCNN / UNet / NAFNet-lite
+  -> 根据 train.loss 创建 L1Loss 或 MSELoss
+  -> 循环读取 noisy / clean patch
+  -> output = model(noisy)
+  -> loss = criterion(output, clean)
+  -> loss.backward()
+  -> optimizer.step()
+  -> 每 val_every steps 做 validation
+  -> 写 metrics.csv、保存 checkpoint、保存三联图
+```
+
+`PairedImageDenoiseDataset` 每次返回：
+
+```text
+{
+  "noisy": noisy_patch,
+  "clean": clean_patch,
+  "sigma": 0.0
+}
+```
+
+这里 `sigma=0.0` 不是说真实数据没有噪声，而是说真实 paired RGB 数据没有一个人工设定的 Gaussian sigma。噪声已经存在于真实 noisy 图里。
+
+### 15.3 为什么 DnCNN 这轮这么强
+
+DnCNN 的任务设定非常适合去噪：
+
+```text
+模型预测 noise residual
+clean = noisy - predicted_noise
+```
+
+这比直接生成整张 clean 图更容易，因为真实 noisy 和 clean 大部分内容相同，差异主要是噪声。标准版 DnCNN 跑到：
+
+```text
+Best PSNR = 35.5356
+Best SSIM = 0.88367
+```
+
+说明它在这个 SIDD tiny split 上已经是很强的 baseline。
+
+### 15.4 为什么 UNet SSIM 高但 PSNR 低
+
+UNet 有 encoder-decoder 和 skip connection，更容易保留结构信息，所以 SSIM 很高：
+
+```text
+Best SSIM = 0.88003
+```
+
+但它的 PSNR 只有：
+
+```text
+Best PSNR = 30.4453
+```
+
+这说明它虽然结构相似度不错，但像素级颜色、纹理或局部残留误差仍然比较大。面试时不要说“UNet 更好”或“UNet 更差”，要说：
+
+```text
+UNet 在结构指标上接近 DnCNN，但像素误差明显更高。
+```
+
+### 15.5 Week3 面试题和参考回答
+
+**Q1：为什么短训和标准训结论不同？**
+
+短训主要验证训练管线能跑、loss 能下降、模型有学习趋势。标准训更接近模型能力比较。NAFNet-lite 在 300 steps 只有 `26.8194 PSNR`，但标准版到 `33.3269 PSNR`，说明短训不足会低估现代模型。
+
+**Q2：为什么要固定同一个 SIDD split？**
+
+如果每次换 train/val 数据，指标变化可能来自数据难度不同，而不是模型不同。公平比较要求同一数据 split、同一 patch size、相近训练设置。
+
+**Q3：为什么 DnCNN 2000 step 的 last PSNR 低于 best PSNR？**
+
+因为训练更久不一定让验证指标单调上升。DnCNN 在 step 1800 达到 `35.5356`，step 2000 变成 `34.7538`，说明后期可能有波动或轻微过拟合，所以要保存 `best_psnr.pth`，不能只看最后一步。
+
+**Q4：如果只能选一个 baseline 写进简历，选哪个？**
+
+选 DnCNN residual。它结构清楚、结果稳定、PSNR/SSIM 都强，而且能讲清 residual denoise 的动机。UNet 和 NAFNet-lite 可以作为后续模型对比。
