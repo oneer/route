@@ -14,6 +14,8 @@ noisy -> model -> output -> loss -> backward -> optimizer -> better model
 
 ![Week 0 训练 step 流程图](figures/week0_training_step_flow.png)
 
+> 图说明：这张图把一次训练 step 拆成 `noisy -> model -> output -> loss -> backward -> optimizer`。重点看箭头方向：前半段是在生成输出，后半段是在根据错误更新模型参数。
+
 对应到 RGB 去噪任务：
 
 - `noisy`：带噪声的输入图；
@@ -101,6 +103,8 @@ optimizer.step()
 如果只看训练集，模型可能只是记住了训练样本；验证集更像小测验，能检查模型有没有泛化能力。
 
 ![train 和 validation 分工](figures/week0_train_validation_split.png)
+
+> 图说明：这张图说明 train 和 validation 的分工。train 数据会参与 `backward` 和参数更新；validation 数据只负责检查模型在没见过的数据上表现如何，不能拿来改参数。
 
 ## 7. 图像为什么用 patch
 
@@ -417,6 +421,8 @@ toy RGB -> calibrated synthetic noise -> paired RGB smoke -> real paired RGB
 ## 13. PSNR 和 SSIM 的直觉
 
 ![loss、PSNR、SSIM 和三联图分别看什么](figures/week0_metrics_visual_roles.png)
+
+> 图说明：这张图把四种观察角度放在一起。loss 看训练误差是否下降，PSNR 看像素级误差，SSIM 看结构相似度，三联图用人眼检查 noisy、output、clean 之间的真实差别。
 
 ### 13.1 PSNR
 

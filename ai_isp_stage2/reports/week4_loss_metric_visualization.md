@@ -383,7 +383,11 @@ reports/figures/week4_smoke_eval/error_maps/
 
 ![Week4 smoke metrics](figures/week4_smoke_eval/metrics_plot.png)
 
+> 图说明：这张图画出不同 run 的 PSNR 和 SSIM 随 step 的变化。曲线越往上通常越好；如果 train loss 下降但这里不升，说明模型可能没有真正提升验证集效果。
+
 ![Week4 smoke triplets](figures/week4_smoke_eval/triplet_contact_sheet.png)
+
+> 图说明：这张三联图把 noisy、output、clean 放在一起比较。观察时重点看 output 是否比 noisy 更干净，同时有没有把 clean 里的边缘、颜色和纹理抹掉。
 
 本次 smoke input baseline：
 

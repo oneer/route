@@ -75,6 +75,8 @@ noisy 输入 | output 模型输出 | clean 标准答案
 
 ![TinyCNN step 10/50/100 真实输出对比](figures/week1_tinycnn_10_50_100_real_compare.png)
 
+> 图说明：这张图按训练步数对比 TinyCNN 的输出。每行通常是 noisy、output、clean；step 10 的 output 颜色偏绿，说明模型刚开始还没学会正确重建 RGB 三个通道，step 50 变灰说明它学到了一些平均化去噪但颜色还不稳定，step 100 才明显接近 clean。
+
 这一段要理解的是：
 
 ```text
@@ -139,6 +141,8 @@ RGB noisy 图
 
 ![TinyCNN 每层作用示意图](figures/week1_tinycnn_layer_flow.png)
 
+> 图说明：这张图展示 TinyCNN 的三层卷积如何流动。输入是 `[B, 3, H, W]` 的 RGB 图，第一层把 3 个颜色通道变成更多特征通道，中间层继续组合局部特征，最后一层再压回 3 个 RGB 通道作为输出。
+
 第一层卷积：
 
 ```text
@@ -174,6 +178,8 @@ ReLU(x) = max(0, x)
 可以把 ReLU 理解成一个逐像素、逐通道的开关函数：负响应关掉，正响应保留。
 
 ![ReLU 激活函数示意图](figures/week1_relu_activation_explained.png)
+
+> 图说明：左边是 ReLU 的表达式 `max(0, x)`，右边是函数曲线。横轴是输入响应，纵轴是输出响应；小于 0 的值会被压成 0，大于 0 的值原样保留，所以它像一个“负值关掉、正值通过”的开关。
 
 如果没有 ReLU，多层卷积叠起来本质上仍然接近一个线性变换，表达能力会很弱。
 
@@ -278,6 +284,8 @@ padding 还有一个边界问题。卷积在图像中心很自然，因为中心
 
 ![ReLU 和 padding 直观对比](figures/week1_relu_padding_visual_compare.png)
 
+> 图说明：这张图把 ReLU 和 padding 两个容易混的概念分开。ReLU 改的是数值，把负响应变成 0；padding 改的是卷积时图像边界怎么补，让卷积后空间尺寸不至于不断变小。
+
 ### 3.5 TinyCNN 为什么适合做第一个模型？
 
 TinyCNN 的优点是简单、快、容易定位问题。
@@ -363,6 +371,8 @@ TinyCNN 适合教学，但表达能力有限。接下来使用更深一点的 Dn
 - `DnCNN` 是一个更适合去噪的 CNN，通常更深，并且常用 residual denoise。
 
 ![CNN / TinyCNN / DnCNN 关系对比图](figures/week1_cnn_tinycnn_dncnn_compare.png)
+
+> 图说明：这张图说明 CNN 是一类模型，TinyCNN 和 DnCNN 都是 CNN 的具体版本。TinyCNN 用很少的卷积层帮助你看懂基本流程；DnCNN 更深，通常学习噪声残差，再用 `clean = noisy - noise_pred` 得到去噪结果。
 
 所以问题不是“DnCNN 和 CNN 有什么区别”。更准确地说：
 
@@ -521,6 +531,8 @@ output = 0.75 - 0.05 = 0.70
 先看图，再看下面的解释：
 
 ![Direct clean 和 residual denoise 的直觉对比](figures/week1_direct_vs_residual_intuition.png)
+
+> 图说明：上半部分是 direct clean：模型直接从 noisy 预测 clean。下半部分是 residual denoise：模型先预测 noise，再用 noisy 减去 noise 得到 clean。去噪任务里 noise 往往比整张 clean 图更简单，所以 residual denoise 通常更容易学。
 
 去噪任务里有一个很重要的前提：
 
@@ -1423,6 +1435,8 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 
 ![Week 1 实验产物关系图](figures/week1_experiment_outputs_map.png)
 
+> 图说明：这张图整理 Week1 训练后会产生哪些文件。重点看 `runs/` 下面的 `metrics.csv`、checkpoint 和可视化图片：它们分别用来记录指标、保存模型参数、观察输出图像。
+
 ### 13.1 模型 baseline
 
 | 模型 | steps | final train loss | final val PSNR | final val SSIM | 结论 |
@@ -1496,6 +1510,8 @@ noisy | output | clean
 
 ![TinyCNN training progress](figures/week1_tinycnn_progress_compare.png)
 
+> 图说明：这张图把 TinyCNN 不同步数的可视化结果放在一起。阅读时不要只看“像不像”，还要看颜色、噪声、边缘是否逐步接近 clean，这能帮助你理解训练 step 增加带来的变化。
+
 TinyCNN 的 step 50 和 step 100 对比，重点不是“最终图像多漂亮”，而是看训练闭环是否有效。
 
 从指标看：
@@ -1522,6 +1538,8 @@ TinyCNN 能证明训练管线有效，但它不是最终去噪 baseline。
 #### 13.7.2 TinyCNN / DnCNN / UNet：模型能力不是只看名字
 
 ![Model final comparison](figures/week1_model_final_compare.png)
+
+> 图说明：这张图比较不同模型或不同训练设置的最终输出。看图时按 noisy、output、clean 的顺序观察：好的模型应该减少噪声，同时尽量不把边缘、颜色和纹理抹掉。
 
 这张图把 TinyCNN、DnCNN residual、UNet 的本地可见最终可视化放在一起。
 
@@ -1551,6 +1569,8 @@ UNet 在这个小实验里指标反而差，不代表 UNet 这个架构没用。
 #### 13.7.3 L1 vs L2：指标偏向和视觉差异要分开看
 
 ![L1 L2 visual comparison](figures/week1_l1_l2_visual_compare.png)
+
+> 图说明：这张图用于直观看 L1 和 L2/MSE loss 的差别。L2 对大误差惩罚更重，可能更偏向平滑；L1 对异常大误差没那么敏感，视觉上有时更能保留边缘和纹理。
 
 L1 和 L2/MSE 使用同样的 DnCNN residual，只改 loss。
 
@@ -1587,6 +1607,8 @@ PSNR + SSIM + 三联图
 #### 13.7.4 Paired RGB smoke：文件夹成对数据链路已经能训练
 
 ![Paired RGB smoke progress](figures/week1_paired_rgb_smoke_progress.png)
+
+> 图说明：这张图展示 paired RGB smoke 数据上的训练进展。它不是最终真实数据结果，而是用一个可控小数据集确认数据读取、训练、验证和可视化整条管线都能跑通。
 
 Paired RGB smoke 的重点不是数据多真实，而是验证训练器能从 noisy/clean 文件夹读取成对图片。
 

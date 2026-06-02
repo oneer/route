@@ -26,6 +26,8 @@ Week 0: 看懂训练为什么能让模型变好
 
 ![阶段二整体路线图](figures/stage2_overall_learning_flow.png)
 
+> 图说明：这张图是阶段二的学习地图。阅读时从 Week0 往 Week5 顺着箭头走：先理解训练闭环，再跑通 toy RGB 去噪，然后进入真实 paired RGB、评估体系和 NAFNet-lite 复现。
+
 ## 现在学到哪
 
 当前已经完成：
