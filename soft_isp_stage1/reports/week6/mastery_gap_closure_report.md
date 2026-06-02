@@ -271,3 +271,95 @@ DeltaE 仍然是相对 rawpy reference 的近似评价，不是色卡标准答�
 5. CCM 已经有 DeltaE 和差异放大图，能回答“视觉上不明显但数值上如何评价”。
 6. Gamma/Tone 已经补上 sRGB OETF 和 S-curve LUT，和 OpenISP GAC 的 LUT 思路接上了。
 7. IQA 已经从全图指标推进到 ROI 指标 + 主观标签，后续可以手工固定更有语义的肤色、天空、高光、暗部 ROI。
+
+## 11. 深度补强：Week6 之后还差什么
+
+Week6 已经补了很多短板，但它仍然是学习版补强，不是产品级验证闭环。下面这些限制必须明确写出来。
+
+### 11.1 合成 flat-field 不能替代真实标定
+
+当前 LSC mesh 实验使用 synthetic flat-field，因此所有样张上的 mesh gain MAE 相同。这说明它验证的是：
+
+```text
+mesh gain 估计流程能跑通
+```
+
+而不是：
+
+```text
+真实镜头 shading 已被准确校正
+```
+
+产品级 LSC 仍需要：
+
+- 真实均匀光源；
+- 多帧平均；
+- R/Gr/Gb/B 四通道独立 mesh；
+- 中心、边缘、四角残差验证；
+- 噪声放大检查。
+
+### 11.2 DeltaE 仍然不是标准色卡 DeltaE
+
+Week6 的 DeltaE 是相对 rawpy reference 的学习版评价。它有价值，但必须说明边界：
+
+| 当前 DeltaE | 标准 DeltaE |
+|---|---|
+| 输出图 vs rawpy reference | 色卡实测值 vs 标准 Lab |
+| 衡量是否接近 rawpy | 衡量颜色是否准确 |
+| 适合学习趋势 | 适合产品色彩标定 |
+
+后续如果要真正评价 CCM，需要 ColorChecker：
+
+```text
+拍色卡 -> 提取 24 色块 -> 转 Lab -> 计算 CIEDE2000 DeltaE
+```
+
+### 11.3 主观标签需要定义标准
+
+当前标签如 `acceptable`、`color_shift`、`structure_gap`、`luminance_gap` 已经比只看指标更好，但还需要固定判定标准。
+
+建议：
+
+| 标签 | 建议定义 |
+|---|---|
+| acceptable | 无明显偏色、结构破坏或亮度错误 |
+| color_shift | 中性区域明显偏色，或 DeltaE 明显偏高 |
+| structure_gap | 边缘/纹理相对 reference 明显模糊或错位 |
+| luminance_gap | 局部亮度与 reference 差异明显 |
+| artifact | 可见假彩、拉链、摩尔纹、halo 或坏点残留 |
+
+### 11.4 时序稳定性暂未覆盖
+
+当前所有实验都是单帧图像。视频或连拍 ISP 还需要考虑：
+
+- AWB gain 是否帧间跳动；
+- DPC 动态检测是否忽隐忽现；
+- tone mapping 是否闪烁；
+- LSC / CCM 参数是否随场景异常变化。
+
+这部分不是 Stage1 必须完成，但报告中应说明：单帧 IQA 不能代表视频稳定性。
+
+### 11.5 性能基准还没有建立
+
+产品级 ISP 还关心运行时间和内存。
+
+建议后续增加 per-module benchmark：
+
+| 模块 | 运行时间 ms | 内存 MB | 是否易并行 | 备注 |
+|---|---:|---:|---|---|
+| BLC | 待填写 | 待填写 | 是 | 像素级操作 |
+| DPC | 待填写 | 待填写 | 部分 | 邻域操作 |
+| LSC | 待填写 | 待填写 | 是 | gain map 乘法 |
+| Demosaic | 待填写 | 待填写 | 是 | 卷积/插值 |
+| AWB | 待填写 | 待填写 | 是 | 统计 + gain |
+| CCM | 待填写 | 待填写 | 是 | 3x3 矩阵 |
+
+## 12. 下一轮最值得做的三个实验
+
+如果继续完善 Stage1，建议优先做：
+
+1. **DPC 注入坏点参数扫描。** 现有数据即可做，能补 recall / false positive。
+2. **Demosaic 伪影 crop 库。** 选斜边、纹理、树枝、文字区域，专门看 zipper / false color / moire。
+3. **语义 ROI IQA。** 手工固定 skin / sky / dark / highlight / texture crop，替代完全自动 ROI。
+
+ColorChecker 和真实 flat-field 也非常重要，但它们需要额外标准数据。没有数据时，报告应写清楚流程和需求，不要把 synthetic 或 rawpy reference 包装成产品级 ground truth。

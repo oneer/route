@@ -61,6 +61,21 @@ RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> s
 
 当前仍然是学习版 pipeline。下一阶段如果继续向产品级靠近，优先顺序应是：真实 flat-field 标定版 LSC、ColorChecker CCM / DeltaE、Malvar/AHD Demosaic、RAW 域 AAF/BNF 消融、语义 ROI 主观评价、局部 tone、假彩抑制/锐化和后端 IQ 模块。
 
+对现有报告的更细缺陷分析和后续补强路线，已整理到 [Stage 1 ISP 学习报告深度复盘与改进计划](stage1_deep_review_improvement_plan.md)。这份计划把 Week1-Week6 的不足拆成“可立即补的报告说明”“可用现有数据补的实验”和“需要 ColorChecker / flat-field 等真实标定数据才能完成的产品级验证”三类，后续可以按优先级逐项推进。
+
+根据这轮深度复盘，Week1-Week6 报告已经补充了以下内容：
+
+| 周次 | 已补强内容 |
+|---|---|
+| Week1 | Sensor 差异、噪声模型、动态范围估计、ROI 选择透明度 |
+| Week2 | BLC 误差传播、DPC 注入坏点验证思路、参数敏感性、真实 LSC 标定流程 |
+| Week3 | Demosaic 伪影检查框架、AWB ROI / 色卡评估、Gray World 失败案例 |
+| Week4 | ColorChecker CCM 标定路径、sRGB OETF、Tone 参数、色域外处理 |
+| Week5 | 局部 IQA、主观评价量表、参数敏感性、rawpy reference 边界 |
+| Week6 | synthetic flat-field / rawpy DeltaE 的限制、标签定义、时序稳定性、性能基准 |
+
+这些补充主要增强“解释和验证框架”。其中 DPC 注入坏点、Demosaic 伪影 crop、语义 ROI IQA 可以用现有数据继续落地；ColorChecker CCM 和真实 flat-field LSC 仍需要额外标准数据。
+
 ## 8. 面试复述笔记
 
 可以这样介绍本阶段：

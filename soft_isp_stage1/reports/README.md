@@ -8,6 +8,7 @@
 |---|---|
 | `stage1_report.md` | 阶段一总报告 |
 | `module_mastery_matrix.md` | ISP 模块入门 / 掌握 / 面试可讲标准对照 |
+| `stage1_deep_review_improvement_plan.md` | Stage1 深度复盘、缺陷分析和后续补强路线 |
 | `openisp_reference_notes.md` | OpenISP 模块参考和后续升级点 |
 | `figures/` | 所有生成图片、对比图和模块 JSON |
 | `raw_stats/` | RAW metadata 和统计 JSON |

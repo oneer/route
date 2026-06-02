@@ -122,9 +122,13 @@ skin / sky / edge / dark / highlight / texture
 
 如果按“最补短板”的顺序，建议接下来这样做：
 
-1. **真实标定数据。** 用真实 flat-field 做 LSC，用 ColorChecker 做 CCM / DeltaE。
-2. **更强 demosaic。** 把 OpenISP Malvar 或 AHD 接进 Week6 的 demosaic 对比框架。
+1. **DPC 注入坏点参数扫描。** 用现有 RAW 人工注入 hot/dead pixel，统计召回和误检。
+2. **Demosaic 伪影 crop 库。** 固定斜边、树枝、文字、细密纹理，观察 zipper、false color、moire。
 3. **语义 ROI。** 手动固定肤色、天空、高光、暗部、纹理 crop，替代自动 ROI。
-4. **局部 tone 和后端 IQ。** 接入 FCS / EE / BCC / HSC 这类 OpenISP 后端模块。
+4. **真实标定数据。** 用真实 flat-field 做 LSC，用 ColorChecker 做 CCM / DeltaE。
+5. **更强 demosaic。** 把 OpenISP Malvar 或 AHD 接进 Week6 的 demosaic 对比框架。
+6. **局部 tone 和后端 IQ。** 接入 FCS / EE / BCC / HSC 这类 OpenISP 后端模块。
+
+根据深度审阅意见，Week1-Week6 的 summary 和主报告已经补入更详细的验证框架，包括 Sensor 噪声/动态范围、BLC 误差传播、DPC 参数敏感性、真实 LSC 标定路径、Demosaic 伪影分析、AWB 失败案例、CCM 色卡标定、局部 IQA 和主观评价量表。下一步重点应从“继续写解释”转向“补可复现实验”。
 
 一句话总结：当前报告已经能支撑“我搭过一个可解释 Soft-ISP，并知道每个模块的输入输出、验证方法和失败场景”。如果要进一步接近“面试可讲得很扎实”，下一步不是继续堆模块，而是把 CCM、Demosaic、Tone/IQA 这几个弱项做成可量化、可局部观察的对比实验。

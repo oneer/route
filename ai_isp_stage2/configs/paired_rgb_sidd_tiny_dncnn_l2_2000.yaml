@@ -1,0 +1,39 @@
+experiment:
+  name: paired_rgb_sidd_tiny_dncnn_l2_2000
+  seed: 42
+  output_dir: runs/paired_rgb_sidd_tiny_dncnn_l2_2000
+
+data:
+  dataset: paired_image
+  patch_size: 128
+  train_size: 1000
+  val_size: 200
+  train:
+    noisy_dir: datasets/sidd_tiny/train/noisy
+    clean_dir: datasets/sidd_tiny/train/clean
+  val:
+    noisy_dir: datasets/sidd_tiny/val/noisy
+    clean_dir: datasets/sidd_tiny/val/clean
+  noise:
+    type: real_paired_rgb
+    sigma_min: 0.0
+    sigma_max: 0.0
+
+model:
+  name: dncnn
+  in_channels: 3
+  out_channels: 3
+  features: 32
+  depth: 5
+  residual: true
+
+train:
+  steps: 2000
+  batch_size: 4
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: mse
+  log_every: 50
+  val_every: 200
+  num_workers: 0
+  device: auto

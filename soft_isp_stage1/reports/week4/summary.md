@@ -113,6 +113,83 @@ Week4 已经跑通显示输出，但还不是产品级渲染。当前 CCM 来自
 
 因此 Week4 的正确理解是：它完成了“线性 RGB 如何走向可显示图”的学习闭环，而不是复刻 rawpy/Lightroom 的完整渲染策略。Week5 的 IQA 和消融会专门用指标说明这些差异。
 
+## 深度补强：标准颜色、显示曲线和色域外处理
+
+Week4 的三个模块最容易被误解成“调好看”。更准确地说：CCM 是颜色空间映射，Tone Mapping 是动态范围映射，Gamma / OETF 是显示编码。
+
+### 1. CCM 应该有标准标定路径
+
+当前 CCM 来自 DNG/rawpy metadata 的简化使用，只适合学习颜色矩阵位置和作用。
+
+产品级 CCM 标定流程应写清楚：
+
+```text
+标准光源下拍 ColorChecker
+  -> 提取 24 个色块的线性 RGB
+  -> 准备标准色块 XYZ/Lab/sRGB
+  -> 最小二乘拟合 3x3 CCM
+  -> 用 DeltaE 验证颜色误差
+```
+
+报告里应明确区分：
+
+| 项目 | 当前学习版 | 产品级 |
+|---|---|---|
+| 矩阵来源 | DNG/rawpy metadata 方向性对齐 | 色卡标定 |
+| 评价参考 | rawpy reference | 标准 Lab / DeltaE |
+| 适用结论 | 理解 CCM 位置和效果 | 判断颜色准确性 |
+
+### 2. Gamma 2.2 和 sRGB OETF 不是完全一样
+
+简化 power law：
+
+```text
+V_out = V_in^(1/2.2)
+```
+
+sRGB OETF 是分段曲线：
+
+```text
+低亮度：线性段
+中高亮度：近似幂函数段
+```
+
+建议 Week4 或 Week6 保留这张对比表：
+
+| 曲线 | 用途 | 风险 |
+|---|---|---|
+| Power 1/2.2 | 教学简单、容易理解 | 暗部和标准 sRGB 有差异 |
+| sRGB OETF | 标准 sRGB 输出 | 需要分段实现 |
+| S-curve LUT | 风格化和产品 tuning | 参数需要按场景调 |
+| PQ / HLG | HDR 显示 | 不适合当前 SDR baseline |
+
+### 3. Tone Mapping 参数不能只凭感觉
+
+Reinhard 是全局 tone mapping baseline。它能压高光，但可能让全图偏灰。
+
+参数选择应该观察：
+
+| 观察项 | 问题 |
+|---|---|
+| 高光区域 | 是否保住层次，还是整体压平 |
+| 中间调 | 是否变灰或反差不足 |
+| 暗部 | 是否被抬起导致噪声明显 |
+| 与 rawpy 差异 | 是 tone curve 差异，还是颜色/曝光差异 |
+
+### 4. CCM 后要讨论色域外处理
+
+CCM 矩阵乘法后可能出现小于 0 或大于 1 的值。
+
+处理策略：
+
+| 方法 | 优点 | 风险 |
+|---|---|---|
+| hard clip | 简单 | 丢失颜色层次，可能 hue shift |
+| soft clip | 过渡平滑 | 参数需要 tuning |
+| hue-preserving compression | 尽量保色相 | 实现更复杂 |
+
+这部分能把报告从“应用矩阵”提升到“理解颜色映射后的工程问题”。
+
 OpenISP 还补充了几个 Week4 之后才会出现的传统模块：`gac.py` 用 LUT 做 Gamma，`eeh.py` 做边缘增强，`fcs.py` 做假彩抑制，`bcc.py` / `hsc.py` 做亮度、对比度、色相和饱和度控制。这些模块提醒我们：Tone/Gamma 后并不意味着 ISP 结束，最终 IQ 还依赖锐化、假彩控制和风格化参数。
 
 结合 OpenISP 后，Week4 可以从“显示映射”扩展成“后端 IQ 链路”：

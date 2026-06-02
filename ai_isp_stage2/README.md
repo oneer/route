@@ -12,6 +12,7 @@
 | 1 | `reports/week0_foundation.md` | 神经网络训练基础 |
 | 2 | `reports/week1_toy_rgb_denoise.md` | Toy RGB 去噪完整闭环 |
 | 3 | `reports/week2_real_paired_rgb.md` | 真实成对 RGB 数据入口 |
+| 4 | `reports/week3_real_rgb_experiments.md` | 真实 RGB 去噪小规模实验 |
 
 推荐阅读顺序：
 
@@ -20,6 +21,7 @@ stage2_learning_flow.md
   -> week0_foundation.md
   -> week1_toy_rgb_denoise.md
   -> week2_real_paired_rgb.md
+  -> week3_real_rgb_experiments.md
 ```
 
 ## 当前进度
@@ -37,14 +39,17 @@ stage2_learning_flow.md
 - noisy 输入 baseline 测量；
 - 成对 RGB 图片文件夹数据适配；
 - SIDD-style 小型子集准备脚本。
+- Week 3 真实 RGB 实验配置。
 
-下一步是 Week 2：
+下一步是 Week 3：
 
 ```text
-准备真实 noisy/clean RGB 小子集
-  -> 测 noisy 输入 baseline
-  -> 跑 500 step DnCNN residual
-  -> 对比 output 和 noisy 输入是否真的改善
+在真实 paired RGB 小子集上
+  -> 跑 DnCNN 长训练
+  -> 比较 L1 / L2
+  -> 比较 patch 64 / 128
+  -> 建立 UNet baseline
+  -> 根据 metrics 和三联图决定下一步
 ```
 
 ## 环境
@@ -109,6 +114,34 @@ python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2.yaml
 ```
 
+## Week 3 常用命令
+
+DnCNN L2 长训练：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_2000.yaml
+```
+
+DnCNN L1 / L2 对比：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_2000.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l1_2000.yaml
+```
+
+patch 64 / 128 对比：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_2000.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_patch64_2000.yaml
+```
+
+UNet baseline：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_unet_l1_1000.yaml
+```
+
 ## 项目结构
 
 ```text
@@ -123,7 +156,7 @@ ai_isp_stage2/
 
 ## 学习检查点
 
-进入 Week 2 前，最好能说清楚：
+进入 Week 3 前，最好能说清楚：
 
 1. noisy、clean、output 分别是什么；
 2. loss、backward、optimizer 各自负责什么；
@@ -132,5 +165,7 @@ ai_isp_stage2/
 5. patch size 为什么影响速度和指标；
 6. 为什么比较模型前要先测 noisy 输入 baseline；
 7. paired RGB 数据为什么必须保证 noisy/clean 对齐。
+8. Week 2 为什么先做真实 paired RGB 数据入口，而不是直接上 RAW / SID。
 
-如果这些还不清楚，先回到 `reports/week1_toy_rgb_denoise.md`。
+如果 1-6 还不清楚，先回到 `reports/week1_toy_rgb_denoise.md`。
+如果 7-8 还不清楚，先回到 `reports/week2_real_paired_rgb.md`。

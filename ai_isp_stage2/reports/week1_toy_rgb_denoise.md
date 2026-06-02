@@ -67,6 +67,14 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 | 50 | 0.083647 | 18.19 | 0.7377 | 学到一点 |
 | 100 | 0.034625 | 26.73 | 0.8526 | 明显变好 |
 
+对应的真实三联图如下。每一行都是：
+
+```text
+noisy 输入 | output 模型输出 | clean 标准答案
+```
+
+![TinyCNN step 10/50/100 真实输出对比](figures/week1_tinycnn_10_50_100_real_compare.png)
+
 这一段要理解的是：
 
 ```text
@@ -374,6 +382,124 @@ noisy = clean + noise
 
 结论：direct clean 训练久了也能变好，但 residual 在去噪任务里更容易优化。
 
+### 4.1 DnCNN residual 和 direct clean 的核心区别
+
+这两个实验用的都是 DnCNN 这个网络骨架，区别不在“卷积层长什么样”，而在“网络输出被解释成什么”。
+
+#### Direct clean：网络直接输出干净图
+
+direct clean 的形式是：
+
+```text
+output = net(noisy)
+loss = distance(output, clean)
+```
+
+这里 `net(noisy)` 被直接当成去噪后的图像。
+
+模型要学的是完整映射：
+
+```text
+noisy -> clean
+```
+
+也就是说，它必须自己决定整张干净图应该长什么样，包括：
+
+- 原图颜色；
+- 边缘；
+- 纹理；
+- 平滑区域；
+- 噪声应该消失的位置。
+
+这当然能学，但任务比较大。因为 clean 的大部分内容其实已经在 noisy 里了，direct clean 仍然让模型重新输出整张图。
+
+#### Residual denoise：网络输出噪声，再从 noisy 里减掉
+
+residual 的形式是：
+
+```text
+noise_pred = net(noisy)
+output = noisy - noise_pred
+loss = distance(output, clean)
+```
+
+这里 `net(noisy)` 不再被解释成干净图，而是被解释成“预测出来的噪声”。
+
+模型要学的是：
+
+```text
+noisy -> noise
+```
+
+然后用：
+
+```text
+denoised = noisy - noise
+```
+
+得到最终输出。
+
+这个写法更适合去噪，因为去噪的本质往往就是：
+
+```text
+clean = noisy - noise
+```
+
+#### 两者对比
+
+| 对比项 | direct clean | residual denoise |
+|---|---|---|
+| 网络输出含义 | 干净图 `clean_pred` | 噪声 `noise_pred` |
+| 最终输出 | `output = net(noisy)` | `output = noisy - net(noisy)` |
+| 学习目标 | 从 noisy 直接生成 clean | 从 noisy 估计 noise |
+| 是否利用 noisy 本来接近 clean | 利用得不明显 | 显式利用 |
+| 优化难度 | 相对更难 | 通常更容易 |
+| 保留原图结构 | 需要模型自己学会 | 更自然，因为从 noisy 上减噪声 |
+
+#### 一个直观例子
+
+假设某个像素位置：
+
+```text
+clean = 0.70
+noise = 0.05
+noisy = 0.75
+```
+
+direct clean 要学：
+
+```text
+0.75 -> 0.70
+```
+
+residual 要学：
+
+```text
+0.75 -> 0.05
+output = 0.75 - 0.05 = 0.70
+```
+
+在去噪任务里，预测“该减掉多少”通常比“重新生成最终答案”更贴近问题。
+
+#### 为什么 residual 不是永远无敌？
+
+Residual 更适合当前去噪任务，但不是所有图像恢复任务都一定选 residual。
+
+如果输入和目标差异很大，比如：
+
+- 极端低光增强；
+- 大幅颜色映射；
+- 风格转换；
+- 从 RAW 到 sRGB 的复杂变换；
+
+那么目标不一定只是“从输入里减掉一部分”。这时 direct 或更复杂的映射可能更合理。
+
+所以这里的结论要限定在当前任务：
+
+```text
+在 toy RGB denoise 里，noisy 本来接近 clean，因此 DnCNN residual 比 direct clean 更自然。
+```
+
 ## 5. 第四步：比较 L1 和 L2/MSE loss
 
 同一个 DnCNN residual，只改 loss。
@@ -516,14 +642,259 @@ data:
 
 Week 1 完成后，你应该能说清楚：
 
-1. toy RGB denoise 的输入、答案和输出是什么；
-2. TinyCNN 为什么适合先验证训练闭环；
-3. DnCNN residual 为什么比 direct clean 更自然；
-4. L1 和 L2/MSE loss 的差异；
-5. patch size 为什么影响效果和速度；
-6. Gaussian noise 和 shot/read noise 的区别；
-7. 为什么比较模型前要先测 noisy 输入 baseline；
-8. paired image dataset 为什么是进入真实数据前的关键接口。
+### 10.1 toy RGB denoise 的输入、答案和输出是什么？
+
+toy RGB denoise 是一个监督学习任务。它的核心是：
+
+```text
+noisy RGB patch -> model -> output RGB patch
+```
+
+其中：
+
+- 输入是 `noisy`，也就是带噪声的 RGB 小图块；
+- 答案是 `clean`，也就是没有加噪声的干净 RGB 小图块；
+- 输出是 `output`，也就是模型当前预测出来的去噪结果。
+
+在 toy 数据里，noisy 通常由 clean 人工加噪声得到：
+
+```text
+noisy = clean + synthetic noise
+```
+
+所以 noisy 和 clean 天然对齐。模型训练时要做的是让：
+
+```text
+output 接近 clean
+```
+
+这也是为什么三联图总是按下面顺序看：
+
+```text
+noisy 输入 | output 模型输出 | clean 标准答案
+```
+
+这个任务虽然是 toy，但它已经包含图像恢复训练最核心的结构：有输入、有答案、有模型输出、有 loss、有验证指标。
+
+### 10.2 TinyCNN 为什么适合先验证训练闭环？
+
+TinyCNN 适合做第一个模型，不是因为它强，而是因为它简单。
+
+它只有 3 层卷积和 2 个 ReLU，没有下采样、上采样、skip connection、BatchNorm 或复杂多尺度结构。这样一来，如果训练失败，问题更容易定位。
+
+先跑 TinyCNN 可以检查：
+
+- 数据能不能加载；
+- noisy / clean shape 是否正确；
+- model forward 是否能跑；
+- loss 是否能计算；
+- backward 是否能回传梯度；
+- optimizer 是否能更新参数；
+- validation 是否能正常输出 PSNR / SSIM；
+- 三联图是否能保存。
+
+TinyCNN probe 的核心目的不是刷分，而是确认训练闭环真的活着：
+
+```text
+step 增加 -> 参数被更新 -> output 更接近 clean -> validation 指标提高
+```
+
+如果 TinyCNN 都跑不通，直接上 DnCNN、UNet 或更强模型，只会让排查范围变大。
+
+### 10.3 DnCNN residual 为什么比 direct clean 更自然？
+
+去噪任务里，noisy 和 clean 的关系通常可以近似理解成：
+
+```text
+noisy = clean + noise
+```
+
+也就是说，noisy 不是完全错误的图。它里面大部分结构、颜色和边缘本来就来自 clean，只是多了噪声。
+
+direct clean 的写法是：
+
+```text
+denoised = net(noisy)
+```
+
+模型要直接生成整张 clean 图。
+
+residual denoise 的写法是：
+
+```text
+noise_pred = net(noisy)
+denoised = noisy - noise_pred
+```
+
+模型只需要学习 noisy 里哪些部分像噪声，然后减掉。
+
+这更符合去噪任务本质：
+
+- noisy 本来接近 clean；
+- noise 是 noisy 和 clean 之间的差值；
+- 预测差值通常比重建整张图更容易；
+- 原图结构更容易被保留。
+
+所以在当前 toy RGB denoise 中，DnCNN residual 比 direct clean 更自然，也更容易优化。
+
+### 10.4 L1 和 L2/MSE loss 的差异是什么？
+
+L1 和 L2/MSE 都衡量 output 和 clean 的差距，但惩罚方式不同。
+
+L1：
+
+```text
+loss = mean(abs(output - clean))
+```
+
+L2/MSE：
+
+```text
+loss = mean((output - clean)^2)
+```
+
+直觉上：
+
+- L1 对误差的惩罚更线性；
+- L2/MSE 会放大较大的误差；
+- PSNR 和 MSE 直接相关，所以 L2/MSE 往往更利于 PSNR；
+- L1 有时对结构和边缘更友好，但不是绝对规律。
+
+当前实验里：
+
+| Loss | val PSNR | val SSIM | 倾向 |
+|---|---:|---:|---|
+| L1 | 31.1442 | 0.90096 | SSIM 略高 |
+| L2/MSE | 31.7001 | 0.89731 | PSNR 略高 |
+
+所以不能简单说 L1 或 L2 谁永远更好。正确做法是同时看：
+
+```text
+loss + PSNR + SSIM + 三联图
+```
+
+### 10.5 patch size 为什么影响效果和速度？
+
+patch size 决定模型一次看到多大的图像区域。
+
+patch 64：
+
+- 小；
+- 快；
+- 省显存；
+- 适合快速检查训练链路。
+
+patch 128：
+
+- 面积是 64 的 4 倍；
+- 模型看到更多空间上下文；
+- 可能更有利于恢复纹理和结构；
+- 训练更慢，也更吃显存。
+
+当前 toy 实验里：
+
+| Patch size | wall time | val PSNR | val SSIM |
+|---:|---:|---:|---:|
+| 64 | 15.86s | 31.5874 | 0.89452 |
+| 128 | 51.40s | 33.4745 | 0.93176 |
+
+这说明 patch 128 在这个设置下效果更好，但代价明显更高。
+
+实际使用时要根据目标选择：
+
+```text
+快速验证 -> patch 64
+更正式比较 -> patch 128
+真实数据训练 -> 根据显存和速度再定
+```
+
+### 10.6 Gaussian noise 和 shot/read noise 的区别是什么？
+
+Gaussian noise 是最简单的合成噪声：
+
+```text
+noisy = clean + gaussian_noise
+```
+
+它通常假设噪声和图像内容关系不大，每个位置都按类似规则加随机扰动。
+
+shot/read noise 更接近相机传感器噪声的直觉：
+
+```text
+noisy = clean + shot_noise(clean) + read_noise
+```
+
+其中：
+
+- shot noise 和信号强度有关，亮暗区域的噪声表现可能不同；
+- read noise 更像传感器读出过程中的电子噪声底；
+- 它比纯 Gaussian 多了一层“噪声和成像过程有关”的假设。
+
+但要注意：这里的 shot/read 仍然是简化模型，不等于真实相机噪声。它只是从 toy Gaussian 向 sensor-like noise 迈了一步。
+
+### 10.7 为什么比较模型前要先测 noisy 输入 baseline？
+
+因为不同实验的输入难度可能不同。
+
+如果一个实验的 noisy 输入本来就更干净，它训练后的 PSNR / SSIM 更高，不一定说明模型更强。
+
+所以训练前先测：
+
+```text
+input PSNR = PSNR(noisy, clean)
+input SSIM = SSIM(noisy, clean)
+```
+
+这样可以判断输入本身有多难。
+
+比如当前校准里：
+
+| 噪声 | Input PSNR | Input SSIM |
+|---|---:|---:|
+| Gaussian | 24.2068 | 0.46247 |
+| 校准后 shot/read | 24.2036 | 0.45582 |
+
+两者 input PSNR 很接近，说明输入难度接近。之后再比较训练后的模型输出，结论才更公平。
+
+核心原则是：
+
+```text
+先比较输入难度，再比较模型能力。
+```
+
+### 10.8 paired image dataset 为什么是进入真实数据前的关键接口？
+
+toy 数据是在代码里生成的：
+
+```text
+clean patch -> synthetic noise -> noisy patch
+```
+
+真实数据通常不是这样。真实 RGB 去噪数据更像：
+
+```text
+noisy image file + clean image file
+```
+
+所以训练器必须能读取成对图片文件夹：
+
+```text
+train/noisy/pair_00001.png
+train/clean/pair_00001.png
+val/noisy/pair_00001.png
+val/clean/pair_00001.png
+```
+
+paired image dataset 的意义是把“数据格式问题”和“训练逻辑问题”分开。
+
+有了它以后：
+
+- dataset 负责读图、配对、裁剪；
+- model 继续负责从 noisy 预测 output；
+- loss 继续比较 output 和 clean；
+- validation、checkpoint、三联图都不用重写。
+
+这就是为什么它是进入真实数据前的关键接口。没有这一步，后面接 SIDD-style 数据时就会把训练代码和数据格式搅在一起，难以维护和排错。
 
 ## 11. Week 1 到 Week 2 的过渡
 
@@ -532,6 +903,17 @@ Week 1 完成后，你应该能说清楚：
 ```text
 准备真实 noisy/clean 小子集 -> 测输入 baseline -> 小步训练 -> 看模型是否真的改善真实图片
 ```
+
+到这里，Week 1 已经完成了三件关键准备：
+
+| Week 1 已经学会 | Week 2 会继续用在哪里 |
+|---|---|
+| TinyCNN 验证训练闭环 | 真实数据训练前，先确认 pipeline 能跑通 |
+| DnCNN residual 做去噪 | Week 2 继续固定这个模型，减少变量 |
+| L1 / L2、patch、baseline、metrics、三联图 | Week 2 用同一套方法判断真实数据训练是否有效 |
+| Paired RGB smoke | Week 2 从“合成 smoke 数据”升级到“真实 noisy/clean 文件” |
+
+所以 Week 2 不是另起炉灶，而是把 Week 1 的训练方法接到真实 paired RGB 数据上。
 
 ## 12. 实验命令总表
 

@@ -86,6 +86,71 @@ Gr 和 Gb 理论上应比较接近。如果 Gr/Gb 差异明显，可能要检查
 3. Histogram 只能说明数值分布，不能单独判断图像质量。
 4. ROI 是自动选择的，仍需要人工检查是否落在合理区域。
 
+## 深度补强：从统计值走向 Sensor 分析
+
+现有 Week1 已经能回答“RAW 里有什么”，但如果要让报告更接近工程分析，还需要把 metadata、噪声和动态范围连接起来。
+
+### 1. Sensor 差异不能被平均掉
+
+T01-T14 来自不同相机和不同场景。不同 sensor 的 black level、white level、ISO、CFA 响应和 ADC 位深可能不同，所以四通道均值不能简单横向比较。
+
+建议后续在 `raw_statistics.md` 增加一张 sensor 对比表：
+
+| 样张 | 相机/机型 | ISO | black level | white level | Bayer pattern | 分析备注 |
+|---|---|---:|---:|---:|---|---|
+| T01 | 待从 DNG metadata 读取 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+
+这张表的作用不是追求 metadata 好看，而是提醒自己：
+
+```text
+RAW 统计首先属于某个 sensor + 某次曝光条件，不是脱离设备的绝对图像质量分数。
+```
+
+### 2. 噪声分析要从 mean/std 继续往前走
+
+当前报告主要记录均值和标准差。更深入时，应区分三类噪声：
+
+| 噪声 | 来源 | 可用现有数据怎么近似观察 |
+|---|---|---|
+| read noise | 读出电路和 ADC 底噪 | 暗部 ROI 的标准差 |
+| shot noise | 光子计数随机性 | 不同亮度 ROI 的 mean/std 关系 |
+| quantization noise | ADC 量化 | 结合 bit depth 估计理论下限 |
+
+一个可落地的分析方式是按亮度分桶：
+
+```text
+把 RAW 像素按亮度分成多个 bin
+  -> 统计每个 bin 的 mean 和 std
+  -> 如果 std 随 mean 增大，说明噪声具有 signal-dependent 特征
+```
+
+这比只看全图标准差更有意义，因为全图 std 同时混入了场景纹理、曝光差异和真实噪声。
+
+### 3. 动态范围要结合 noise floor
+
+学习版可用动态范围可以先用近似公式：
+
+```text
+usable_signal = white_level - black_level
+noise_floor ≈ dark_roi_std
+DR_dB = 20 * log10(usable_signal / noise_floor)
+```
+
+注意这个 DR 不是厂商标定值。没有专门 dark frame 时，暗部 ROI 仍可能包含真实纹理和压暗细节，所以它只能作为“当前样张可用动态范围”的估计。
+
+### 4. ROI 选择要写清楚选择标准
+
+自动 ROI 需要说明它的选择依据和失败条件：
+
+| ROI | 推荐选择标准 | 需要人工检查什么 |
+|---|---|---|
+| dark | 低亮度、非饱和、尽量低纹理 | 是否误选到黑色物体纹理 |
+| midtone | 中间亮度、结构稳定 | 是否代表主体区域 |
+| highlight | 高亮但未饱和 | 是否已经 clipping |
+| texture | 梯度较高但不过曝 | 是否适合看 demosaic 伪影 |
+
+后续每次引用 ROI 指标时，都应该配一张 ROI preview。否则 ROI 指标可能看起来客观，实际选区却不代表想分析的问题。
+
 ## 结合 OpenISP 后的补充理解
 
 OpenISP 的模块不是从“读 RAW”开始讲，而是默认你已经知道 RAW 的 Bayer pattern、clip 范围、黑电平、通道位置和后续模块顺序。这反过来说明 Week1 的意义：它不是可有可无的准备工作，而是所有传统 ISP 模块的坐标系。
