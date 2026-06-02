@@ -55,7 +55,7 @@ low-light RAW -> network -> enhanced RGB
 
 读完本讲后，看：
 
-- `ai_isp_stage2/reports/week0_6_neural_network_foundation.md`
+- `ai_isp_stage2/reports/week0_foundation.md`
 - `ai_isp_stage2/README.md`
 
 问题：你能不能用一句话说清 Stage 2 和 Stage 1 的区别？

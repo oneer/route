@@ -455,7 +455,7 @@ loss 衡量模型输出和目标之间的不满意程度
 - `ai_isp_stage2/ai_isp/data/toy_rgb_dataset.py`
 - `ai_isp_stage2/ai_isp/models/tiny_cnn.py`
 - `ai_isp_stage2/ai_isp/engine/train.py`
-- `ai_isp_stage2/reports/week1b_training_loop_tinycnn.md`
+- `ai_isp_stage2/reports/week1_toy_rgb_denoise.md`
 
 问题：
 

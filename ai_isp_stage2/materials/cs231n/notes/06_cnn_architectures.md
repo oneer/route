@@ -76,7 +76,7 @@ AI-ISP 最终常要部署到端侧。模型要考虑：
 
 看：
 
-- `ai_isp_stage2/reports/week1_rgb_denoise_baseline.md`
+- `ai_isp_stage2/reports/week1_toy_rgb_denoise.md`
 - `ai_isp_stage2/ai_isp/models/dncnn.py`
 - `ai_isp_stage2/ai_isp/models/unet.py`
 
