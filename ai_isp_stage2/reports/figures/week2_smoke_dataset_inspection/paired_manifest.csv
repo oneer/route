@@ -1,0 +1,13 @@
+name,noisy_path,clean_path,noisy_size,clean_size,same_size
+pair_001.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_001.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_001.png,"(256, 256)","(256, 256)",True
+pair_002.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_002.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_002.png,"(256, 256)","(256, 256)",True
+pair_003.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_003.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_003.png,"(256, 256)","(256, 256)",True
+pair_004.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_004.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_004.png,"(256, 256)","(256, 256)",True
+pair_005.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_005.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_005.png,"(256, 256)","(256, 256)",True
+pair_006.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_006.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_006.png,"(256, 256)","(256, 256)",True
+pair_007.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_007.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_007.png,"(256, 256)","(256, 256)",True
+pair_008.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_008.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_008.png,"(256, 256)","(256, 256)",True
+pair_009.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_009.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_009.png,"(256, 256)","(256, 256)",True
+pair_010.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_010.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_010.png,"(256, 256)","(256, 256)",True
+pair_011.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_011.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_011.png,"(256, 256)","(256, 256)",True
+pair_012.png,ai_isp_stage2\runs\paired_rgb_smoke\noisy\pair_012.png,ai_isp_stage2\runs\paired_rgb_smoke\clean\pair_012.png,"(256, 256)","(256, 256)",True

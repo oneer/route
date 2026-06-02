@@ -68,6 +68,57 @@ clean patch -> 人工加噪 -> noisy patch
 
 ![Week 2 paired RGB 数据管线](figures/week2_paired_rgb_data_pipeline.png)
 
+### 1.1 本周建议怎么学
+
+Week 2 不建议一口气跑完命令。更好的学习顺序是：
+
+```text
+先看数据长什么样
+  -> 再看目录结构为什么要统一
+  -> 再跑数据准备脚本
+  -> 再测 noisy input baseline
+  -> 最后小步训练并看三联图
+```
+
+每一步都有一个明确的通过标准：
+
+| 步骤 | 你要确认什么 | 通过标准 |
+|---|---|---|
+| 看源数据 | noisy / clean 是否真的是同一场景 | 随机打开几对图，内容能对上 |
+| 整理目录 | 训练器是否能稳定找到 pair | `train/noisy` 和 `train/clean` 里同名文件数量一致 |
+| 统一尺寸 | output 和 clean 能否逐像素算 loss | noisy / clean shape 一致 |
+| 测 baseline | 输入本身离 clean 有多远 | 记录 input PSNR / input SSIM |
+| 小步训练 | 真实数据链路是否跑通 | 生成 `metrics.csv`、checkpoint、三联图 |
+| 看结果 | 模型是否真的改善 noisy | 指标和视觉都不能比 input baseline 更差 |
+
+本周最重要的学习目标不是记命令，而是能说清：
+
+```text
+真实 paired RGB 数据进入训练器之前，必须先解决配对、尺寸、对齐、baseline 四件事。
+```
+
+### 1.2 这周和代码怎么对应
+
+Week 2 用到的代码模块可以这样理解：
+
+| 模块 | 位置 | 本周作用 |
+|---|---|---|
+| 数据准备脚本 | `scripts/04_prepare_paired_rgb_subset.py` | 把外部 noisy/clean 图片整理成标准 train/val 目录 |
+| paired dataset | `ai_isp/data/paired_image_dataset.py` | 从标准目录里读取 noisy/clean pair，并随机裁 patch |
+| 训练入口 | `scripts/01_train_toy_rgb.py` | 读取 config，调用训练引擎 |
+| 训练引擎 | `ai_isp/engine/train.py` | forward、loss、backward、validation、checkpoint |
+| 验证逻辑 | `ai_isp/engine/validate.py` | 计算 PSNR/SSIM，并取首个 batch 保存三联图 |
+| 可视化 | `ai_isp/utils/visualization.py` | 保存 noisy/output/clean 对比图 |
+
+所以虽然训练脚本名字仍然叫 `01_train_toy_rgb.py`，但只要 config 里写的是：
+
+```yaml
+data:
+  dataset: paired_image
+```
+
+训练器就会切换到真实 paired image dataset。脚本名字不是重点，config 才是实验定义。
+
 ## 2. 为什么这一步很重要
 
 图像恢复训练最怕的不是模型小，而是数据错。
@@ -221,6 +272,45 @@ GT_SRGB_0001.png
 train/noisy/pair_00001.png
 train/clean/pair_00001.png
 ```
+
+## 6.1 数据检查脚本
+
+为了避免“数据看起来整理好了，但其实 pair 不对”的问题，新增了一个检查脚本：
+
+```text
+ai_isp_stage2/scripts/06_inspect_paired_dataset.py
+```
+
+用途：
+
+```text
+读取 noisy_dir 和 clean_dir
+  -> 按同名文件匹配 pair
+  -> 输出 paired_manifest.csv
+  -> 生成 noisy/clean 抽样对比网格图
+```
+
+命令示例：
+
+```bash
+python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_stage2/runs/paired_rgb_smoke/noisy --clean-dir ai_isp_stage2/runs/paired_rgb_smoke/clean --output-dir ai_isp_stage2/reports/figures/week2_smoke_dataset_inspection --max-samples 6
+```
+
+本地 smoke 数据已经生成检查结果：
+
+```text
+reports/figures/week2_smoke_dataset_inspection/paired_manifest.csv
+reports/figures/week2_smoke_dataset_inspection/paired_samples_grid.png
+```
+
+![Week2 paired smoke 数据检查图](figures/week2_smoke_dataset_inspection/paired_samples_grid.png)
+
+看这张图时要确认：
+
+- noisy 和 clean 是否是同一场景；
+- 两列内容是否对齐；
+- clean 是否确实更干净；
+- 是否存在明显裁剪错位或颜色域不一致。
 
 ## 7. 这里最容易误会的地方
 
@@ -417,6 +507,56 @@ val PSNR / val SSIM > input PSNR / input SSIM
 | output 很糊 | 可能过度平滑，MSE 常见现象 |
 | output 颜色偏 | 数据归一化或配对可能要查 |
 | output 和 clean 内容对不上 | 优先怀疑 noisy/clean 没配对 |
+
+### 11.1 Week 2 实验记录模板
+
+真实数据实验一定要留下记录。建议每次跑完都填下面这张表：
+
+| 项目 | 记录 |
+|---|---|
+| 数据来源 | 例如 SIDD tiny / 自己整理的 noisy-clean pair |
+| train pair 数量 | 待填写 |
+| val pair 数量 | 待填写 |
+| 统一裁剪尺寸 | 例如 512 |
+| 训练 patch size | 例如 128 |
+| 模型 | DnCNN residual |
+| loss | MSE / L2 |
+| steps | 500 |
+| input PSNR / SSIM | 待填写 |
+| best val PSNR / SSIM | 待填写 |
+| 是否超过 input baseline | 是 / 否 |
+| 三联图观察 | output 是否更干净、是否变糊、是否偏色、是否错位 |
+| 下一步判断 | 扩数据 / 长训练 / 查数据 / 换 loss / 暂不继续 |
+
+写记录时不要只写“效果不错”。要尽量写成可复查的判断：
+
+```text
+val PSNR 是否超过 input PSNR？
+val SSIM 是否超过 input SSIM？
+output 比 noisy 干净在哪里？
+output 是否牺牲了边缘和纹理？
+clean 和 output 有没有错位？
+```
+
+### 11.2 三个最容易误判的点
+
+第一，**PSNR 上升不等于一定好看**。
+
+如果 output 变得很平滑，PSNR 可能上升，但纹理和边缘会损失。真实图像恢复必须同时看三联图。
+
+第二，**train loss 下降不等于数据没问题**。
+
+即使 noisy/clean 配错，loss 也可能下降，因为模型可以学到某种平均化输出。配对问题要靠三联图、input baseline 和人工抽查一起确认。
+
+第三，**模型没超过 baseline 时，不要急着换大模型**。
+
+Week 2 的优先级是：
+
+```text
+先确认数据正确
+再确认训练链路正确
+最后才考虑模型能力不够
+```
 
 ## 12. 常见失败排查
 

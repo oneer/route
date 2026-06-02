@@ -13,6 +13,8 @@
 | 2 | `reports/week1_toy_rgb_denoise.md` | Toy RGB 去噪完整闭环 |
 | 3 | `reports/week2_real_paired_rgb.md` | 真实成对 RGB 数据入口 |
 | 4 | `reports/week3_real_rgb_experiments.md` | 真实 RGB 去噪小规模实验 |
+| 5 | `reports/week4_loss_metric_visualization.md` | Loss / Metric / 可视化评估体系 |
+| 6 | `reports/week5_nafnet_reproduction.md` | NAFNet / 轻量图像恢复模型复现 |
 
 推荐阅读顺序：
 
@@ -22,6 +24,8 @@ stage2_learning_flow.md
   -> week1_toy_rgb_denoise.md
   -> week2_real_paired_rgb.md
   -> week3_real_rgb_experiments.md
+  -> week4_loss_metric_visualization.md
+  -> week5_nafnet_reproduction.md
 ```
 
 ## 当前进度
@@ -40,8 +44,10 @@ stage2_learning_flow.md
 - 成对 RGB 图片文件夹数据适配；
 - SIDD-style 小型子集准备脚本。
 - Week 3 真实 RGB 实验配置。
+- Week 4 Loss / Metric / 可视化评估学习指导。
+- Week 5 NAFNet-lite 复现学习指导。
 
-下一步是 Week 3：
+下一步先完成 Week 3 的真实 RGB 实验结果表：
 
 ```text
 在真实 paired RGB 小子集上
@@ -50,6 +56,8 @@ stage2_learning_flow.md
   -> 比较 patch 64 / 128
   -> 建立 UNet baseline
   -> 根据 metrics 和三联图决定下一步
+  -> 进入 Week 4 评估复盘
+  -> 再进入 Week 5 NAFNet-lite
 ```
 
 ## 环境
@@ -140,6 +148,34 @@ UNet baseline：
 
 ```bash
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_unet_l1_1000.yaml
+```
+
+## Week 4 常用命令
+
+检查 paired RGB 数据是否对齐，并生成样本图：
+
+```bash
+python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_stage2/runs/paired_rgb_smoke/noisy --clean-dir ai_isp_stage2/runs/paired_rgb_smoke/clean --output-dir ai_isp_stage2/reports/figures/week2_smoke_dataset_inspection --max-samples 6
+```
+
+汇总多个训练 run 的 PSNR / SSIM、三联图和 error map：
+
+```bash
+python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_smoke_dncnn_l2 ai_isp_stage2/runs/paired_rgb_smoke_nafnet_lite_l1 --output-dir ai_isp_stage2/reports/figures/week4_smoke_eval --report-md ai_isp_stage2/reports/week4_smoke_eval_results.md --title "Week 4 Smoke Evaluation Results"
+```
+
+## Week 5 常用命令
+
+NAFNet-lite smoke 训练：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_smoke_nafnet_lite_l1.yaml
+```
+
+NAFNet-lite 真实 paired RGB 小子集训练：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000.yaml
 ```
 
 ## 项目结构

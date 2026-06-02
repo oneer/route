@@ -82,6 +82,48 @@ Week 3 一共做四组核心实验。
 
 例如比较 L1 / L2 时，模型、patch size、训练步数、数据 split 都保持一致。这样结果才容易解释。
 
+### 2.1 Week 3 的实验纪律
+
+Week 3 开始就要像做算法实验，而不是像试命令。每组实验都要遵守三条纪律：
+
+```text
+一组实验只问一个问题；
+每次只改一个主要变量；
+每个结论都必须同时有指标和图像证据。
+```
+
+如果一次同时改了模型、loss、patch size 和训练步数，最后即使结果变好，也很难回答：
+
+```text
+到底是哪个改变带来的提升？
+```
+
+所以 Week 3 的四组实验分别对应四个问题：
+
+| 实验 | 只问什么问题 | 固定什么 |
+|---|---|---|
+| A 长训练 | 训练更久是否继续变好 | 模型、loss、patch、数据 |
+| B L1/L2 | loss 改变是否影响指标和视觉 | 模型、patch、steps、数据 |
+| C patch | patch size 是否影响上下文和速度 | 模型、loss、steps、数据 |
+| D UNet | 换模型结构是否值得继续 | 数据和大致训练流程 |
+
+其中 D 不是严格单变量，因为 UNet 当前是 direct output，而 DnCNN 是 residual denoise。报告里要明确这一点，不能把它说成完全公平的结构对比。
+
+### 2.2 实验前检查清单
+
+跑 Week 3 前，先检查：
+
+| 检查项 | 为什么重要 |
+|---|---|
+| `datasets/sidd_tiny` 是否存在 | 没数据就不要跑训练 |
+| train/val noisy-clean 数量是否一致 | 避免 pair 缺失 |
+| input baseline 是否已记录 | 没 baseline 就不知道模型是否真的改进 |
+| Week2 500 step 是否能生成三联图 | 确认训练链路可用 |
+| 每个 config 的 output_dir 是否不同 | 避免覆盖上一次实验结果 |
+| patch size 和 batch size 是否匹配显存 | 避免训练中途 OOM |
+
+如果这些没有确认，Week 3 跑出来的数字很可能无法解释。
+
 ## 3. 第一步：重新确认 input baseline
 
 Week 3 开始前，先重新测 noisy 输入 baseline。
@@ -383,6 +425,59 @@ runs/<experiment_name>/metrics.csv
 | val SSIM 低但 PSNR 高 | 像素误差小，但结构可能恢复不好 |
 | 指标低于 input baseline | 模型没有真正改善 noisy 输入 |
 
+### 8.1 每个 run 都要做的小复盘
+
+每跑完一个实验，不要只看最后一行指标。建议固定做一次小复盘：
+
+| 问题 | 记录 |
+|---|---|
+| 这个 run 的 config 是什么 | 待填写 |
+| 这个 run 只改变了哪个变量 | 待填写 |
+| input baseline 是多少 | 待填写 |
+| best PSNR 出现在第几步 | 待填写 |
+| best SSIM 是否和 best PSNR 同一步 | 待填写 |
+| 最后一步是否比 best step 变差 | 待填写 |
+| train loss 是否持续下降 | 待填写 |
+| val PSNR 是否超过 input baseline | 待填写 |
+| 三联图里 output 是否更干净 | 待填写 |
+| 有没有过平滑、偏色、错位 | 待填写 |
+
+尤其要注意：
+
+```text
+best_psnr.pth 不一定是视觉最好的一步；
+最后一步也不一定是指标最好的一步。
+```
+
+所以建议同时看：
+
+```text
+metrics.csv 里的 best step
+vis/step_*.png 里的可视化趋势
+```
+
+如果 best PSNR 和最好看的三联图不一致，要在报告里写出来。这不是坏事，反而说明你在认真分析指标和视觉的分歧。
+
+### 8.2 一个 run 的复盘写法示例
+
+可以用下面这种句式：
+
+```text
+本实验使用 DnCNN residual + L2，训练 2000 step，主要变量是训练步数。
+input baseline 为 ___ dB / ___ SSIM。
+训练后 best PSNR 为 ___ dB，出现在 step ___，相比 input baseline 提升 ___ dB。
+三联图显示 output 的平坦区噪声减少，但纹理区域略有平滑。
+因此当前结论是：长训练有效，但后续需要比较 L1 或 Charbonnier 来检查视觉细节。
+```
+
+这比只写：
+
+```text
+PSNR 提升，效果变好。
+```
+
+要可靠得多。
+
 ## 9. 怎么读三联图
 
 三联图一般是：
@@ -403,6 +498,30 @@ noisy 输入 | output 模型输出 | clean 标准答案
 
 如果 output 和 clean 内容明显错位，优先回到 Week 2 检查 paired 数据，而不是继续调模型。
 
+### 9.1 三联图观察模板
+
+每张三联图可以按下面表格记录：
+
+| 区域 | noisy | output | clean | 判断 |
+|---|---|---|---|---|
+| 平坦区 | 待填写 | 待填写 | 待填写 | 噪声是否减少 |
+| 边缘 | 待填写 | 待填写 | 待填写 | 是否变糊 |
+| 纹理 | 待填写 | 待填写 | 待填写 | 是否被抹掉 |
+| 暗部 | 待填写 | 待填写 | 待填写 | 是否残留噪声或偏色 |
+| 高光 | 待填写 | 待填写 | 待填写 | 是否 clipping 或发灰 |
+
+如果暂时没有手动 crop 工具，也可以先用肉眼在同一张三联图里找这些区域。关键是训练自己从“看起来还行”变成“具体哪里变好了、哪里变差了”。
+
+### 9.2 真实 RGB 实验的常见视觉现象
+
+| 现象 | 可能原因 | 下一步 |
+|---|---|---|
+| output 比 noisy 干净，但整体发糊 | L2/MSE 平均化、模型容量不足、patch 太小 | 比较 L1 / patch128 / UNet |
+| output 颜色偏绿或偏红 | RGB/BGR、归一化、数据 pair 域不一致 | 查 dataset 读取和图片来源 |
+| output 和 clean 边缘错开 | noisy/clean 未对齐或裁剪位置不同 | 回到 Week2 查 pair |
+| 暗部噪声仍明显 | 真实噪声复杂、训练不足、loss 不敏感 | 增加数据、长训练、局部 crop |
+| 纹理被当成噪声抹掉 | 模型无法区分细节和噪声 | 更大 patch、多尺度模型、视觉 loss 对照 |
+
 ## 10. Week 3 的最终结果表
 
 跑完后建议把结果整理成一张表：
@@ -418,6 +537,42 @@ noisy 输入 | output 模型输出 | clean 标准答案
 
 ```text
 下一步该扩大数据，还是换模型，还是先修数据？
+```
+
+### 10.1 怎么从结果做决定
+
+可以按下面这张决策表看：
+
+| 观察到的结果 | 优先判断 | 下一步 |
+|---|---|---|
+| 所有模型都低于 input baseline | 当前训练没有真正改善输入 | 回到 Week2 查配对、裁剪、baseline |
+| DnCNN L2 长训练持续上升 | 当前模型还没到瓶颈 | 继续长训练或扩大数据 |
+| DnCNN L2 早早停住 | 当前配置可能到瓶颈 | 比较 L1、patch、UNet |
+| L2 PSNR 高但图像糊 | 指标和视觉冲突 | 保留 L1/Charbonnier 对照 |
+| L1 PSNR 低但边缘更自然 | 视觉可能更好 | 后续报告同时列 PSNR/SSIM/三联图 |
+| patch128 明显好但很慢 | 上下文有价值 | 正式实验用 128，快速排查用 64 |
+| patch64 接近 patch128 且快很多 | 小 patch 足够 | 先用 64 做更多 ablation |
+| UNet 明显更好 | 多尺度结构有价值 | Week4/5 可继续 UNet/NAFNet-lite |
+| UNet 不如 DnCNN | 当前数据量或训练设置不适合更复杂模型 | 先稳住 DnCNN baseline |
+
+不要把“最佳 PSNR”当成唯一结论。Week 3 的真正产出应该是一句话决策：
+
+```text
+基于当前小子集，下一步最值得做的是 _____ ，因为指标显示 _____ ，三联图显示 _____ 。
+```
+
+例如：
+
+```text
+下一步先扩大真实 RGB 数据，而不是立刻上 NAFNet，
+因为 DnCNN L2 已经超过 input baseline，但长训练曲线还没有明显饱和。
+```
+
+或者：
+
+```text
+下一步先回到 Week2 查数据，
+因为所有模型都没有超过 noisy baseline，并且三联图里 output/clean 存在错位。
 ```
 
 ## 11. Week 3 的通过标准
@@ -481,8 +636,9 @@ Week 3 完成后，再根据结果选择方向。
 
 ```text
 Week 3: 真实 RGB 小规模实验
-  -> Week 4: 扩大真实 RGB 数据 + 更强模型或更长训练
-  -> Week 5: 再进入 RAW / low-light / SID
+  -> Week 4: 建立 loss / metric / 可视化 / failure case 的评价体系
+  -> Week 5: 复现 NAFNet-lite，和 DnCNN / UNet baseline 对比
+  -> 后续: 再进入 RAW / low-light / SID
 ```
 
 ## 13. 本周总结

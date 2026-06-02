@@ -1,0 +1,41 @@
+experiment:
+  name: paired_rgb_smoke_nafnet_lite_l1
+  seed: 42
+  output_dir: runs/paired_rgb_smoke_nafnet_lite_l1
+
+data:
+  dataset: paired_image
+  patch_size: 128
+  train_size: 96
+  val_size: 24
+  train:
+    noisy_dir: runs/paired_rgb_smoke/noisy
+    clean_dir: runs/paired_rgb_smoke/clean
+  val:
+    noisy_dir: runs/paired_rgb_smoke/noisy
+    clean_dir: runs/paired_rgb_smoke/clean
+  noise:
+    type: real_paired_rgb
+    sigma_min: 0.0
+    sigma_max: 0.0
+
+model:
+  name: nafnet_lite
+  in_channels: 3
+  out_channels: 3
+  width: 8
+  middle_blocks: 1
+  encoder_blocks: [1, 1]
+  decoder_blocks: [1, 1]
+  residual: false
+
+train:
+  steps: 80
+  batch_size: 2
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: l1
+  log_every: 20
+  val_every: 40
+  num_workers: 0
+  device: auto
