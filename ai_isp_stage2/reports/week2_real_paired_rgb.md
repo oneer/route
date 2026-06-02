@@ -16,6 +16,8 @@ Week 1 已经证明训练链路能工作：
 dataset -> model -> loss -> validation -> checkpoint -> visualization
 ```
 
+![Week 2 paired RGB 数据管线](figures/week2_paired_rgb_data_pipeline.png)
+
 如果直接上真实数据，最容易乱的是数据格式，而不是模型。
 
 所以 Week 2 先固定一个简单规范：
@@ -130,6 +132,8 @@ Week 2 的成功标准不是“模型很强”，而是下面几件事成立：
 6. 可视化里 output 确实比 noisy 更接近 clean。
 
 ## 7. 如果失败，先查什么
+
+![Week 2 真实数据排错清单](figures/week2_real_data_debug_checklist.png)
 
 ### 找不到 paired 图片
 

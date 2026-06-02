@@ -73,6 +73,269 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 step 变多 -> 参数被更多次修正 -> output 有机会更接近 clean
 ```
 
+### 3.1 TinyCNN 到底是什么？
+
+TinyCNN 是本项目里最小的 CNN 去噪模型。它不是为了追求最高指标，而是为了让你第一次看清楚：
+
+```text
+一张 noisy RGB 图像，怎么经过几个可学习卷积层，变成一张 output 图像。
+```
+
+它可以先理解成一个函数：
+
+```text
+output = TinyCNN(noisy)
+```
+
+输入和输出形状保持一致：
+
+```text
+noisy:  [B, 3, H, W]
+output: [B, 3, H, W]
+clean:  [B, 3, H, W]
+```
+
+这里：
+
+- `B` 是 batch size；
+- `3` 是 RGB 三个通道；
+- `H/W` 是 patch 的高和宽，比如 64x64；
+- output 要和 clean 对齐，才能计算 loss。
+
+### 3.2 TinyCNN 的结构
+
+当前 TinyCNN 是 3 层卷积：
+
+```text
+Conv2d(3 -> features, 3x3, padding=1)
+  -> ReLU
+  -> Conv2d(features -> features, 3x3, padding=1)
+  -> ReLU
+  -> Conv2d(features -> 3, 3x3, padding=1)
+```
+
+用更直观的话说：
+
+```text
+RGB noisy 图
+  -> 提取局部特征
+  -> 组合局部特征
+  -> 输出 RGB denoised 图
+```
+
+`padding=1` 的作用是保持图像大小不变。否则 3x3 卷积会让图像边缘变小，output 就无法和 clean 直接对齐。
+
+### 3.3 每一层在做什么？
+
+第一层卷积：
+
+```text
+Conv2d(3 -> features)
+```
+
+把 RGB 输入变成一组特征图。你可以把它理解成从原图里提取局部模式，比如边缘、颜色变化、局部纹理和噪声模式。
+
+第二层卷积：
+
+```text
+Conv2d(features -> features)
+```
+
+继续组合这些局部特征。第一层看到的是比较原始的局部变化，第二层可以把这些变化组合成稍微复杂一点的判断。
+
+第三层卷积：
+
+```text
+Conv2d(features -> 3)
+```
+
+把中间特征重新映射回 RGB 图像，所以输出又变成 3 个通道。
+
+### 3.4 ReLU 是什么作用？
+
+ReLU 是非线性激活：
+
+```text
+ReLU(x) = max(0, x)
+```
+
+如果没有 ReLU，多层卷积叠起来本质上仍然接近一个线性变换，表达能力会很弱。
+
+ReLU 让模型能表达更复杂的规则，比如：
+
+```text
+如果这个局部变化像噪声，就抑制；
+如果这个局部变化像边缘，就保留。
+```
+
+它不是显式写死这些规则，而是训练后参数学出来的。
+
+更直观地说，卷积层会产生很多中间特征。有些特征响应是正的，表示“这个局部模式比较像我正在找的东西”；有些响应是负的，表示“不像”或者方向相反。
+
+ReLU 做了一件很简单的事：
+
+```text
+正响应保留；
+负响应压成 0。
+```
+
+这样做有几个好处。
+
+第一，它引入非线性。没有 ReLU 时，多个卷积层连续叠加，整体仍然接近一个线性变换。线性模型表达能力有限，很难学会复杂的图像恢复规则。
+
+第二，它让特征更稀疏。很多不重要或不匹配的响应被压成 0，后续卷积层可以更专注地组合有用特征。
+
+第三，它计算简单，训练稳定，是 CNN 里最常见的基础激活函数之一。
+
+在 TinyCNN 里，ReLU 出现在前两层卷积后面：
+
+```text
+Conv -> ReLU -> Conv -> ReLU -> Conv
+```
+
+最后一层后面没有 ReLU，是因为最后输出要回到 RGB 图像空间。输出值可能需要通过后续 clamp 或 loss 来约束，而不是在模型内部直接把负值全部截断。否则模型输出的表达会被过早限制。
+
+如果去掉 ReLU，TinyCNN 仍然能跑，但表达能力会弱很多。它更像一个简单的线性滤波器，而不是一个能学习复杂局部规则的神经网络。
+
+### 3.4.1 padding 是什么作用？
+
+TinyCNN 每一层卷积都用了：
+
+```text
+kernel size = 3x3
+padding = 1
+```
+
+3x3 卷积的意思是：每个输出像素会看输入里一个 3x3 的局部邻域。
+
+如果不加 padding，图像会越卷越小。比如输入是 64x64：
+
+```text
+64x64 --3x3 conv, no padding--> 62x62
+62x62 --3x3 conv, no padding--> 60x60
+60x60 --3x3 conv, no padding--> 58x58
+```
+
+这样 output 就变成 58x58，而 clean 还是 64x64。它们尺寸不一致，loss 就不能直接算。
+
+`padding=1` 会在图像四周补一圈像素，让 3x3 卷积后空间尺寸保持不变：
+
+```text
+64x64 --3x3 conv, padding=1--> 64x64
+```
+
+这对图像恢复非常重要，因为我们通常希望：
+
+```text
+输入 noisy 是多大；
+输出 denoised 就是多大；
+clean target 也是多大。
+```
+
+也就是：
+
+```text
+noisy:  [B, 3, H, W]
+output: [B, 3, H, W]
+clean:  [B, 3, H, W]
+```
+
+padding 还有一个边界问题。卷积在图像中心很自然，因为中心像素周围有完整邻域；但图像边缘没有完整 3x3 邻域。padding 相当于给边缘补出可计算的邻域，让边缘也能参与卷积输出。
+
+不过 padding 不是完全没有代价。补出来的边界像素不是真实图像内容，所以边缘区域的预测可能更容易受影响。当前 toy 实验里 patch 较小，主要目的是跑通训练闭环，所以使用最常见、最简单的 `padding=1`。
+
+### 3.4.2 ReLU 和 padding 分别解决什么问题？
+
+可以简单记成：
+
+| 概念 | 解决的问题 | 对 TinyCNN 的意义 |
+|---|---|---|
+| ReLU | 让模型有非线性表达能力 | 不只是线性滤波，能学习更复杂的去噪规则 |
+| padding | 保持图像尺寸不变 | output 能和 clean 对齐计算 loss |
+
+它们不是同一类东西：
+
+- ReLU 改的是特征数值的表达方式；
+- padding 改的是卷积计算时图像边界和尺寸的处理方式。
+
+在 TinyCNN 里，两者一起让模型既能训练，又能保持输入输出尺寸一致。
+
+![ReLU 和 padding 直观对比](figures/week1_relu_padding_visual_compare.png)
+
+### 3.5 TinyCNN 为什么适合做第一个模型？
+
+TinyCNN 的优点是简单、快、容易定位问题。
+
+它没有：
+
+- 下采样；
+- 上采样；
+- skip connection；
+- BatchNorm；
+- 多尺度结构；
+- residual output 设计。
+
+这意味着如果训练失败，排查范围很小。你只需要先问：
+
+```text
+数据对吗？
+loss 对吗？
+梯度能回传吗？
+optimizer 在更新吗？
+validation 能跑吗？
+图能保存吗？
+```
+
+所以 TinyCNN 的学习价值不是“它强”，而是“它能帮我们确认管线是活的”。
+
+### 3.6 TinyCNN 的局限是什么？
+
+TinyCNN 只有 3 层卷积，表达能力有限。
+
+它的局限包括：
+
+- 能看到的空间上下文比较小；
+- 很难处理复杂纹理；
+- 对真实 sensor noise 的表达能力有限；
+- 没有 residual denoise 的任务先验；
+- 没有多尺度结构，不能很好利用大范围信息。
+
+所以 TinyCNN 跑通后，不应该停在 TinyCNN，而应该换到 DnCNN residual 做更合理的 denoise baseline。
+
+### 3.7 怎么看 TinyCNN probe 的结果？
+
+TinyCNN probe 的重点不是最终分数，而是趋势。
+
+你应该看三个东西：
+
+1. `metrics.csv`
+2. `vis/step_*.png`
+3. 终端里的 loss / validation 输出
+
+理想趋势是：
+
+```text
+step 10: output 还比较差
+step 50: output 开始变干净
+step 100: output 明显接近 clean
+```
+
+已观察结果：
+
+| steps | train loss | val PSNR | val SSIM | 说明 |
+|---:|---:|---:|---:|---|
+| 10 | 0.170468 | 13.49 | 0.6601 | 刚开始学，输出还不稳定 |
+| 50 | 0.083647 | 18.19 | 0.7377 | 已经学到一些去噪规律 |
+| 100 | 0.034625 | 26.73 | 0.8526 | 输出明显接近 clean |
+
+这说明训练闭环在工作：
+
+```text
+参数不是随机不变的；
+loss 能指导参数更新；
+更新后的模型确实让 output 更接近 clean。
+```
+
 ## 4. 第三步：换成 DnCNN residual
 
 TinyCNN 适合教学，但表达能力有限。接下来使用更深一点的 DnCNN。
@@ -358,6 +621,10 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 
 ## 13. 结果总表
 
+一次实验会留下多种产物。先看整体关系，再看后面的结果表和对比图。
+
+![Week 1 实验产物关系图](figures/week1_experiment_outputs_map.png)
+
 ### 13.1 模型 baseline
 
 | 模型 | steps | final train loss | final val PSNR | final val SSIM | 结论 |
@@ -416,6 +683,163 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 | 40 | 0.003541 | 24.6943 | 0.40882 |
 | 80 | 0.001015 | 30.2105 | 0.73756 |
 | 120 | 0.000558 | 32.9381 | 0.89218 |
+
+### 13.7 结果详细分析与可视化对比
+
+这一节把数字结果和可视化放在一起读。图里的每一行都是：
+
+```text
+noisy | output | clean
+```
+
+也就是左边看输入问题，中间看模型输出，右边看标准答案。
+
+#### 13.7.1 TinyCNN：先确认模型真的在学
+
+![TinyCNN training progress](figures/week1_tinycnn_progress_compare.png)
+
+TinyCNN 的 step 50 和 step 100 对比，重点不是“最终图像多漂亮”，而是看训练闭环是否有效。
+
+从指标看：
+
+| steps | train loss | val PSNR | val SSIM |
+|---:|---:|---:|---:|
+| 50 | 0.112161 | 17.6088 | 0.73656 |
+| 100 | 0.034434 | 26.7033 | 0.84572 |
+
+这说明三件事：
+
+1. train loss 从 `0.112161` 降到 `0.034434`，模型确实在减少 output 和 clean 的差距。
+2. val PSNR 从 `17.61` 提到 `26.70`，说明不是只在训练集上变好，验证集也变好。
+3. val SSIM 从 `0.73656` 提到 `0.84572`，说明结构相似度也在改善。
+
+图上应该重点看 output 是否从“仍然带明显噪声”变成“更接近 clean”。如果图像也同步变好，才说明训练闭环可信。
+
+TinyCNN 的结论：
+
+```text
+TinyCNN 能证明训练管线有效，但它不是最终去噪 baseline。
+```
+
+#### 13.7.2 TinyCNN / DnCNN / UNet：模型能力不是只看名字
+
+![Model final comparison](figures/week1_model_final_compare.png)
+
+这张图把 TinyCNN、DnCNN residual、UNet 的本地可见最终可视化放在一起。
+
+指标对比：
+
+| 模型 | steps | final val PSNR | final val SSIM |
+|---|---:|---:|---:|
+| TinyCNN | 100 | 26.7033 | 0.84572 |
+| DnCNN residual | 300 | 31.1442 | 0.90096 |
+| UNet | 300 | 21.1749 | 0.79869 |
+
+DnCNN residual 明显比 TinyCNN 更好，原因是 DnCNN 更深，能组合更多局部特征，也更适合 denoise baseline。
+
+UNet 在这个小实验里指标反而差，不代表 UNet 这个架构没用。更合理的解释是：
+
+- 当前 UNet 配置可能不适合这么小的 toy 设置；
+- 训练步数、学习率、模型容量可能没有调好；
+- encoder-decoder 结构更复杂，未必在小规模 toy probe 上马上占优；
+- 当前阶段目标是学习训练链路，不是调出最强 UNet。
+
+这一组实验的学习点是：
+
+```text
+模型名字不等于效果。必须结合任务、配置、训练步数、指标和可视化判断。
+```
+
+#### 13.7.3 L1 vs L2：指标偏向和视觉差异要分开看
+
+![L1 L2 visual comparison](figures/week1_l1_l2_visual_compare.png)
+
+L1 和 L2/MSE 使用同样的 DnCNN residual，只改 loss。
+
+本地可见结果：
+
+| Loss | step | train loss | val PSNR | val SSIM |
+|---|---:|---:|---:|---:|
+| L1 | 300 | 0.019765 | 31.1442 | 0.90096 |
+| L2/MSE | 300 | 0.000719 | 31.7001 | 0.89731 |
+
+这里有两个重点。
+
+第一，L1 和 L2 的 train loss 数值不能直接比较。`0.019765` 和 `0.000719` 是不同 loss 定义下的数字，不是同一把尺子。
+
+第二，PSNR 和 SSIM 给出的倾向不同：
+
+- L2/MSE 的 PSNR 更高，因为 PSNR 和 MSE 更一致；
+- L1 的 SSIM 略高，说明结构相似度略占优；
+- 从可视化看，两者差异不一定非常明显。
+
+这说明图像恢复不能只看一个指标。比较 loss 时要同时看：
+
+```text
+PSNR + SSIM + 三联图
+```
+
+本阶段结论：
+
+```text
+如果目标是 PSNR，L2/MSE 是合理默认；
+如果关心结构和视觉质感，L1 仍然值得保留作对照。
+```
+
+#### 13.7.4 Paired RGB smoke：文件夹成对数据链路已经能训练
+
+![Paired RGB smoke progress](figures/week1_paired_rgb_smoke_progress.png)
+
+Paired RGB smoke 的重点不是数据多真实，而是验证训练器能从 noisy/clean 文件夹读取成对图片。
+
+输入 baseline：
+
+| Dataset | Input PSNR | Input SSIM |
+|---|---:|---:|
+| paired RGB smoke | 22.1273 | 0.28203 |
+
+训练结果：
+
+| Step | Train loss | Val PSNR | Val SSIM |
+|---:|---:|---:|---:|
+| 40 | 0.003541 | 24.6943 | 0.40882 |
+| 80 | 0.001015 | 30.2105 | 0.73756 |
+| 120 | 0.000558 | 32.9381 | 0.89218 |
+
+这个结果非常重要，因为它说明：
+
+1. noisy/clean 文件夹能正确配对；
+2. dataset 能裁剪并返回 paired patch；
+3. 训练主循环不需要为 paired data 重写；
+4. 模型输出明显超过 noisy 输入 baseline；
+5. 三联图能显示 output 逐步接近 clean。
+
+这一步是 Week 1 通往 Week 2 的关键证据。
+
+#### 13.7.5 怎么读这些图，而不是只看热闹
+
+每张对比图都按同一个顺序读：
+
+1. 先看 noisy：输入噪声有多强，是否合理。
+2. 再看 output：模型有没有去掉噪声。
+3. 再看 clean：output 离答案还有多远。
+4. 回头看指标：PSNR / SSIM 的变化是否能在图上解释。
+5. 最后看副作用：边缘、纹理、颜色有没有被破坏。
+
+如果出现下面情况，要谨慎：
+
+- PSNR 提升，但图像明显过度平滑；
+- SSIM 提升，但颜色偏了；
+- output 看起来干净，但细节也被抹掉；
+- 指标很好，但 noisy/clean 其实没有正确配对。
+
+所以 Week 1 的正确读法是：
+
+```text
+表格给趋势；
+三联图给直觉；
+两者一致时，结论才更可信。
+```
 
 ## 14. 每个实验到底在学什么
 
@@ -502,17 +926,343 @@ SSIM(noisy, clean)
 
 ## 16. Week 1 的通过标准
 
-学完 Week 1 后，你应该能独立解释：
+学完 Week 1 后，不只是“跑过命令”，而是要能把每一步为什么做讲清楚。下面是参考回答。
 
-1. 为什么先跑 TinyCNN；
-2. 为什么 DnCNN residual 更适合去噪；
-3. 为什么 direct clean 更难；
-4. L1 和 L2/MSE 分别偏向什么；
-5. patch 64 和 128 的取舍；
-6. 为什么 shot/read noise 更接近 sensor；
-7. 为什么要先测 noisy 输入 baseline；
-8. paired RGB 文件夹数据为什么是通往真实数据的关键一步；
-9. `metrics.csv`、checkpoint、三联图分别有什么用；
-10. 为什么当前还不急着上 NAFNet / SID / RAW low-light。
+### 16.1 为什么先跑 TinyCNN？
 
-如果这些能讲清楚，Week 1 就不是“跑了一堆实验”，而是完成了从训练基础到真实数据入口前的完整准备。
+因为 TinyCNN 足够简单，适合先验证训练链路，而不是追求最终效果。
+
+在图像恢复项目里，一开始最容易出问题的不是模型不够强，而是基础链路没有跑通：
+
+```text
+dataset -> dataloader -> model -> loss -> backward -> optimizer -> validation -> visualization
+```
+
+TinyCNN 的价值在于：
+
+- 结构简单，出问题时容易定位；
+- 训练快，适合做 10 / 50 / 100 step probe；
+- 能检查 loss 是否下降；
+- 能检查 validation 是否正常；
+- 能检查 noisy / output / clean 三联图是否生成；
+- 能先建立“step 变多，output 逐渐接近 clean”的直觉。
+
+所以 TinyCNN 不是最终目标，而是第一块试金石。
+
+如果 TinyCNN 都跑不通，直接上 DnCNN、UNet 或 NAFNet 只会让问题更难定位。
+
+### 16.2 为什么 DnCNN residual 更适合去噪？
+
+去噪任务里，noisy 和 clean 的关系通常可以近似理解为：
+
+```text
+noisy = clean + noise
+```
+
+也就是说，noisy 本来就包含大部分正确图像内容，和 clean 并不是完全不同的东西。模型真正需要处理的是“哪些部分是噪声，应该去掉”。
+
+Residual denoise 的写法是：
+
+```text
+noise_pred = net(noisy)
+denoised = noisy - noise_pred
+```
+
+这让模型学习的是 noisy 和 clean 之间的差值，也就是 noise。
+
+相比直接生成整张 clean 图，预测噪声更贴近任务本质：
+
+- 输入 noisy 已经接近 clean；
+- 噪声通常是较小的残差；
+- 模型只需要学习该减掉什么；
+- 优化难度更低；
+- 输出更容易保留原图结构。
+
+所以 DnCNN residual 在当前 toy RGB 去噪里比 direct clean 更自然。
+
+### 16.3 为什么 direct clean 更难？
+
+Direct clean 的形式是：
+
+```text
+denoised = net(noisy)
+```
+
+模型要直接回答：
+
+```text
+这张干净图应该长什么样？
+```
+
+这比 residual 更难，因为模型不仅要去掉噪声，还要重建整张 clean 图的颜色、边缘、纹理和结构。
+
+从任务角度看，direct clean 没有显式利用这个事实：
+
+```text
+noisy 已经很接近 clean
+```
+
+它把问题变成“从 noisy 生成 clean”，而 residual 把问题变成“从 noisy 里估计 noise 并减掉”。
+
+实验里也能看到这个差异：
+
+| 模型 | steps | final val PSNR | final val SSIM |
+|---|---:|---:|---:|
+| DnCNN residual | 300 | 31.15 | 0.8985 |
+| DnCNN direct clean | 300 | 28.23 | 0.8876 |
+| DnCNN residual long | 1000 | 33.13 | 0.9355 |
+| DnCNN direct clean long | 1000 | 31.23 | 0.9144 |
+
+direct clean 训练久了也会变好，但在这个任务里 residual 更容易优化。
+
+### 16.4 L1 和 L2/MSE 分别偏向什么？
+
+L1 和 L2/MSE 都是在衡量 output 和 clean 的差距，但惩罚方式不同。
+
+L1：
+
+```text
+loss = mean(abs(output - clean))
+```
+
+L2/MSE：
+
+```text
+loss = mean((output - clean)^2)
+```
+
+直觉上：
+
+- L1 对误差的惩罚更线性；
+- L2/MSE 会更重地惩罚较大的误差；
+- PSNR 和 MSE 直接相关，所以 L2/MSE 往往更利于 PSNR；
+- L1 有时更容易保留结构和边缘，但不是绝对规律。
+
+当前 toy 结果：
+
+| Loss | final val PSNR | final val SSIM | 解读 |
+|---|---:|---:|---|
+| L1 | 31.1470 | 0.89850 | SSIM 略高 |
+| L2/MSE | 31.5874 | 0.89452 | PSNR 略高 |
+
+注意：L1 loss 和 L2 loss 的数值不能直接比较，因为它们不是同一把尺子。
+
+### 16.5 patch 64 和 128 的取舍是什么？
+
+Patch 是从图像里切出来的小块。patch size 决定模型一次看到多大的局部区域。
+
+Patch 64 的优点：
+
+- 训练快；
+- 显存占用少；
+- 适合快速 sanity check；
+- 适合先确认代码、loss、验证和可视化都能跑通。
+
+Patch 128 的优点：
+
+- 模型看到的上下文更多；
+- 能包含更多结构信息；
+- 在当前 toy 实验里最终 PSNR / SSIM 更高。
+
+实验结果：
+
+| Patch size | wall time | final val PSNR | final val SSIM |
+|---:|---:|---:|---:|
+| 64 | 15.86s | 31.5874 | 0.89452 |
+| 128 | 51.40s | 33.4745 | 0.93176 |
+
+结论是：
+
+```text
+patch 64 用来快速检查；
+patch 128 用来做更正式的 toy 对比；
+真实数据上要结合显存、速度和效果决定。
+```
+
+### 16.6 为什么 shot/read noise 更接近 sensor？
+
+Gaussian noise 的形式比较简单：
+
+```text
+noisy = clean + gaussian_noise
+```
+
+它默认噪声强度和图像内容关系不大。但真实 sensor 噪声不完全是这样。
+
+更接近 sensor 的简化模型是：
+
+```text
+noisy = clean + shot_noise(clean) + read_noise
+```
+
+其中：
+
+- shot noise 和信号强度有关，亮的地方可能噪声更明显；
+- read noise 更像传感器读出过程中的固定电子噪声底；
+- 这比纯 Gaussian 更接近相机成像里的噪声来源。
+
+这一步不是说 shot/read 已经等于真实相机噪声，而是比固定 Gaussian 多了一层物理直觉。
+
+所以它是从 toy synthetic noise 走向真实 sensor noise 的中间台阶。
+
+### 16.7 为什么要先测 noisy 输入 baseline？
+
+因为如果两个实验的输入噪声强度不同，直接比较训练后 PSNR / SSIM 是不公平的。
+
+比如：
+
+```text
+模型 A 的输入本来很脏
+模型 B 的输入本来比较干净
+```
+
+最后模型 B 指标更高，不一定代表模型 B 更强，也可能只是输入更容易。
+
+所以训练前要先测：
+
+```text
+input PSNR = PSNR(noisy, clean)
+input SSIM = SSIM(noisy, clean)
+```
+
+当前校准结果：
+
+| 配置 | 噪声 | Input PSNR | Input SSIM |
+|---|---|---:|---:|
+| Gaussian | Gaussian | 24.2068 | 0.46247 |
+| 校准后 shot/read | shot/read | 24.2036 | 0.45582 |
+
+这样输入难度接近，后面比较模型输出才更有意义。
+
+核心原则：
+
+```text
+先比较输入难度，再比较模型能力。
+```
+
+### 16.8 paired RGB 文件夹数据为什么是通往真实数据的关键一步？
+
+toy RGB 数据是在代码里生成的：
+
+```text
+clean patch -> synthetic noise -> noisy patch
+```
+
+但真实数据通常是文件：
+
+```text
+noisy image file + clean image file
+```
+
+所以如果训练代码只能用 toy dataset，后面接 SIDD 这类真实数据时就会卡住。
+
+paired RGB 文件夹数据的目标结构是：
+
+```text
+train/noisy/pair_00001.png
+train/clean/pair_00001.png
+val/noisy/pair_00001.png
+val/clean/pair_00001.png
+```
+
+这一步的关键意义是把数据格式和训练逻辑分开：
+
+- dataset 负责读 noisy/clean pair；
+- training loop 继续负责 model、loss、optimizer、validation；
+- 模型代码不用因为换真实数据而重写。
+
+所以 paired RGB dataset adapter 是从 toy 任务走向真实数据的工程入口。
+
+### 16.9 `metrics.csv`、checkpoint、三联图分别有什么用？
+
+这三个产物回答的是不同问题。
+
+`metrics.csv` 记录训练过程里的数字：
+
+```text
+step, train_loss, val_psnr, val_ssim
+```
+
+它用来观察：
+
+- loss 是否下降；
+- PSNR / SSIM 是否提升；
+- 哪一步开始变慢或停滞；
+- 不同实验之间如何对比。
+
+checkpoint 保存模型参数：
+
+```text
+checkpoints/last.pth
+checkpoints/best_psnr.pth
+```
+
+它用来：
+
+- 恢复训练；
+- 保存当前最好模型；
+- 后续做推理或比较；
+- 避免训练完模型却没有留下参数。
+
+三联图通常是：
+
+```text
+noisy | output | clean
+```
+
+它用来判断：
+
+- output 是否真的比 noisy 干净；
+- output 是否接近 clean；
+- 是否过度平滑；
+- 是否有颜色偏移；
+- 指标提升是否能在视觉上解释。
+
+简单说：
+
+```text
+metrics.csv 看数字；
+checkpoint 留模型；
+三联图看图像质量。
+```
+
+三个都要看，不能只看其中一个。
+
+### 16.10 为什么当前还不急着上 NAFNet / SID / RAW low-light？
+
+因为当前阶段的目标不是追最强模型，而是建立可靠的学习和实验链路。
+
+NAFNet、SID、RAW low-light 都更复杂：
+
+- NAFNet 是更强的图像恢复模型，但结构和训练细节更复杂；
+- SID 是 RAW low-light 数据，涉及 RAW 格式、曝光、黑电平、颜色处理等问题；
+- RAW low-light 不只是去噪，还包含低光增强、动态范围、颜色映射等问题；
+- 真实数据的配对、裁剪、归一化、评估都更容易出错。
+
+如果还不能清楚解释 TinyCNN、DnCNN residual、loss、patch、baseline 和 paired RGB dataset，直接上这些会变成“模型名堆叠”，很难判断问题出在哪里。
+
+当前更合理的顺序是：
+
+```text
+Toy RGB denoise
+  -> paired RGB smoke
+  -> tiny real paired RGB subset
+  -> larger real RGB denoise
+  -> stronger models
+  -> RAW / low-light
+```
+
+所以不是不学 NAFNet / SID / RAW low-light，而是现在还没到最合适的位置。
+
+## 17. Week 1 的最终通过标准
+
+如果你能用自己的话讲清楚上面 10 个问题，Week 1 就不是“跑了一堆实验”，而是完成了从训练基础到真实数据入口前的完整准备。
+
+真正通过 Week 1 的标志是：
+
+```text
+你知道每个实验为什么做；
+你知道每个指标怎么看；
+你知道每个产物有什么用；
+你知道下一步为什么该进入真实 paired RGB 数据。
+```

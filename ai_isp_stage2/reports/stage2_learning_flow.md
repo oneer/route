@@ -18,6 +18,8 @@ Week 0: 看懂训练为什么能让模型变好
   -> Week 2: 接入真实 paired RGB 图片，开始从 toy 任务走向真实数据
 ```
 
+![阶段二整体路线图](figures/stage2_overall_learning_flow.png)
+
 ## 现在学到哪
 
 当前已经完成：

@@ -12,6 +12,8 @@ Week 0 的目标是补齐最小必要基础。这里不追求系统学完整机�
 noisy -> model -> output -> loss -> backward -> optimizer -> better model
 ```
 
+![Week 0 训练 step 流程图](figures/week0_training_step_flow.png)
+
 对应到 RGB 去噪任务：
 
 - `noisy`：带噪声的输入图；
@@ -97,6 +99,8 @@ optimizer.step()
 验证集不参与更新，只用来检查模型是否真的学到了规律。
 
 如果只看训练集，模型可能只是记住了训练样本；验证集更像小测验，能检查模型有没有泛化能力。
+
+![train 和 validation 分工](figures/week0_train_validation_split.png)
 
 ## 7. 图像为什么用 patch
 
@@ -411,6 +415,8 @@ toy RGB -> calibrated synthetic noise -> paired RGB smoke -> real paired RGB
 阶段二先用 TinyCNN 和小 DnCNN，是为了把问题看清楚，而不是一开始就堆模型。
 
 ## 13. PSNR 和 SSIM 的直觉
+
+![loss、PSNR、SSIM 和三联图分别看什么](figures/week0_metrics_visual_roles.png)
 
 ### 13.1 PSNR
 
