@@ -15,6 +15,10 @@
 | 4 | `reports/week3_real_rgb_experiments.md` | 真实 RGB 去噪小规模实验 |
 | 5 | `reports/week4_loss_metric_visualization.md` | Loss / Metric / 可视化评估体系 |
 | 6 | `reports/week5_nafnet_reproduction.md` | NAFNet / 轻量图像恢复模型复现 |
+| 7 | `reports/week6_pseudo_raw_isp_bridge.md` | Pseudo RAW / ISP bridge |
+| 8 | `reports/week7_low_light_rgb_enhancement.md` | 低光 RGB 增强小实验 |
+| 9 | `reports/week8_failure_case_analysis.md` | Failure case 和局部 crop 分析 |
+| 10 | `reports/week9_stage2_project_summary.md` | 阶段二项目总结、简历和面试表达 |
 
 推荐阅读顺序：
 
@@ -26,6 +30,10 @@ stage2_learning_flow.md
   -> week3_real_rgb_experiments.md
   -> week4_loss_metric_visualization.md
   -> week5_nafnet_reproduction.md
+  -> week6_pseudo_raw_isp_bridge.md
+  -> week7_low_light_rgb_enhancement.md
+  -> week8_failure_case_analysis.md
+  -> week9_stage2_project_summary.md
 ```
 
 ## 当前进度
@@ -46,18 +54,20 @@ stage2_learning_flow.md
 - Week 3 真实 RGB 实验配置。
 - Week 4 Loss / Metric / 可视化评估学习指导。
 - Week 5 NAFNet-lite 复现学习指导。
+- Week 6 Pseudo RAW / ISP bridge。
+- Week 7 synthetic low-light enhancement。
+- Week 8 failure case crop 分析。
+- Week 9 阶段二项目总结、简历和面试题库。
 
-下一步先完成 Week 3 的真实 RGB 实验结果表：
+当前阶段二已经形成完整闭环：
 
 ```text
-在真实 paired RGB 小子集上
-  -> 跑 DnCNN 长训练
-  -> 比较 L1 / L2
-  -> 比较 patch 64 / 128
-  -> 建立 UNet baseline
-  -> 根据 metrics 和三联图决定下一步
-  -> 进入 Week 4 评估复盘
-  -> 再进入 Week 5 NAFNet-lite
+toy RGB denoise
+  -> real SIDD paired RGB denoise
+  -> DnCNN / UNet / NAFNet-lite comparison
+  -> metric / triplet / error map / crop analysis
+  -> pseudo RAW / low-light bridge
+  -> portfolio and interview summary
 ```
 
 ## 环境
@@ -210,6 +220,46 @@ NAFNet-lite 真实 paired RGB 小子集训练：
 
 ```bash
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000.yaml
+```
+
+## Week 6 常用命令
+
+生成 pseudo RAW / ISP bridge 图：
+
+```bash
+python ai_isp_stage2/scripts/08_pseudo_raw_isp_bridge.py --input ai_isp_stage2/datasets/sidd_tiny/val/clean/pair_00001.png --output-dir ai_isp_stage2/reports/figures/week6_pseudo_raw_isp --crop-size 256
+```
+
+## Week 7 常用命令
+
+准备 synthetic low-light RGB 数据：
+
+```bash
+python ai_isp_stage2/scripts/09_prepare_low_light_rgb_subset.py --source-root ai_isp_stage2/datasets/sidd_tiny --output-dir ai_isp_stage2/datasets/sidd_low_light_tiny --figure-dir ai_isp_stage2/reports/figures/week7_low_light_rgb --exposure 0.28 --read-noise 0.015 --shot-noise 0.025 --seed 123 --max-figure-samples 8
+```
+
+训练和评估低光增强 UNet：
+
+```bash
+python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2/configs/low_light_sidd_tiny_unet_l1_300.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/low_light_sidd_tiny_unet_l1_300.yaml
+python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/low_light_sidd_tiny_unet_l1_300 --output-dir ai_isp_stage2/reports/figures/week7_low_light_eval --report-md ai_isp_stage2/reports/week7_low_light_eval_results.md --title "Week 7 Low-Light RGB Evaluation Results"
+```
+
+## Week 8 常用命令
+
+生成局部 crop failure case 图：
+
+```bash
+python ai_isp_stage2/scripts/10_make_failure_case_crops.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_1000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 ai_isp_stage2/runs/low_light_sidd_tiny_unet_l1_300 --output-dir ai_isp_stage2/reports/figures/week8_failure_case_crops --crop-size 96 --zoom 3
+```
+
+## Week 9 常用命令
+
+导出阶段二总榜：
+
+```bash
+python ai_isp_stage2/scripts/11_export_stage2_summary.py --metric-csvs ai_isp_stage2/reports/figures/week4_sidd_tiny_standard_eval/metrics_summary.csv ai_isp_stage2/reports/figures/week7_low_light_eval/metrics_summary.csv --output-dir ai_isp_stage2/reports/figures/week9_stage2_summary
 ```
 
 ## 项目结构

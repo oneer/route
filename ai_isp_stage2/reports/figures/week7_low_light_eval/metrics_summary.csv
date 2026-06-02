@@ -1,0 +1,2 @@
+run,best_psnr,best_psnr_step,best_ssim,best_ssim_step,last_psnr,last_ssim,last_step
+low_light_sidd_tiny_unet_l1_300,24.7821,300,0.81468,300,24.7821,0.81468,300

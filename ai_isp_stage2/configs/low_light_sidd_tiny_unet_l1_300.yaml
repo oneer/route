@@ -1,0 +1,37 @@
+experiment:
+  name: low_light_sidd_tiny_unet_l1_300
+  seed: 42
+  output_dir: runs/low_light_sidd_tiny_unet_l1_300
+
+data:
+  dataset: paired_image
+  patch_size: 128
+  train_size: 600
+  val_size: 200
+  train:
+    noisy_dir: datasets/sidd_low_light_tiny/train/noisy
+    clean_dir: datasets/sidd_low_light_tiny/train/clean
+  val:
+    noisy_dir: datasets/sidd_low_light_tiny/val/noisy
+    clean_dir: datasets/sidd_low_light_tiny/val/clean
+  noise:
+    type: synthetic_low_light
+    sigma_min: 0.0
+    sigma_max: 0.0
+
+model:
+  name: unet
+  in_channels: 3
+  out_channels: 3
+  base_channels: 16
+
+train:
+  steps: 300
+  batch_size: 4
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: l1
+  log_every: 25
+  val_every: 50
+  num_workers: 0
+  device: auto
