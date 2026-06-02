@@ -135,6 +135,10 @@ RGB noisy 图
 
 ### 3.3 每一层在做什么？
 
+先用图建立直觉：TinyCNN 不是一下子“凭空生成”干净图，而是先把 RGB 图变成一组中间特征图，再把这些特征图映射回 RGB 输出。
+
+![TinyCNN 每层作用示意图](figures/week1_tinycnn_layer_flow.png)
+
 第一层卷积：
 
 ```text
@@ -166,6 +170,10 @@ ReLU 是非线性激活：
 ```text
 ReLU(x) = max(0, x)
 ```
+
+可以把 ReLU 理解成一个逐像素、逐通道的开关函数：负响应关掉，正响应保留。
+
+![ReLU 激活函数示意图](figures/week1_relu_activation_explained.png)
 
 如果没有 ReLU，多层卷积叠起来本质上仍然接近一个线性变换，表达能力会很弱。
 
@@ -348,6 +356,33 @@ loss 能指导参数更新；
 
 TinyCNN 适合教学，但表达能力有限。接下来使用更深一点的 DnCNN。
 
+先把三个名字的关系分清楚：
+
+- `CNN` 是一类网络，核心是用卷积层处理图像；
+- `TinyCNN` 是一个很小的 CNN，用来验证训练闭环；
+- `DnCNN` 是一个更适合去噪的 CNN，通常更深，并且常用 residual denoise。
+
+![CNN / TinyCNN / DnCNN 关系对比图](figures/week1_cnn_tinycnn_dncnn_compare.png)
+
+所以问题不是“DnCNN 和 CNN 有什么区别”。更准确地说：
+
+```text
+CNN 是大类；
+TinyCNN 和 DnCNN 都是 CNN；
+DnCNN 是专门为 denoise 设计得更合理的一种 CNN。
+```
+
+更细的区别可以这样看：
+
+| 对比项 | CNN | TinyCNN | DnCNN residual |
+|---|---|---|---|
+| 是什么 | 卷积神经网络这一大类 | 一个最小 CNN baseline | 一个去噪 CNN baseline |
+| 层数 | 不固定 | 当前 3 层卷积 | 当前配置更深，默认 5 层卷积 |
+| 输出含义 | 看具体任务 | 直接输出 clean RGB | 默认输出 noise，再做 `noisy - noise_pred` |
+| 学习重点 | 图像局部特征 | 训练链路是否跑通 | 去噪任务表达是否更自然 |
+| 优点 | 适合图像局部模式 | 简单、快、容易排查 | 更强、更适合 denoise |
+| 局限 | 只是类别名，不是具体模型 | 表达能力有限 | 比 TinyCNN 多一些结构和变量 |
+
 直接预测 clean：
 
 ```text
@@ -481,6 +516,234 @@ output = 0.75 - 0.05 = 0.70
 
 在去噪任务里，预测“该减掉多少”通常比“重新生成最终答案”更贴近问题。
 
+#### 为什么 residual denoise 通常更容易优化？
+
+先看图，再看下面的解释：
+
+![Direct clean 和 residual denoise 的直觉对比](figures/week1_direct_vs_residual_intuition.png)
+
+去噪任务里有一个很重要的前提：
+
+```text
+noisy 通常不是一张完全错误的图；
+noisy 是一张已经接近 clean、但多了噪声的图。
+```
+
+也就是说，大部分图像内容已经在 noisy 里了：
+
+- 物体大致在哪里；
+- 边缘大致在哪里；
+- 颜色大致是什么；
+- 亮度结构大致是什么；
+- 纹理主体大致还在。
+
+direct clean 的学习目标是：
+
+```text
+noisy -> clean
+```
+
+这等于让模型重新输出整张干净图。哪怕 clean 的大部分内容已经在 noisy 里，模型仍然要自己决定整张图每个像素应该是多少。
+
+residual denoise 的学习目标是：
+
+```text
+noisy -> noise
+output = noisy - noise
+```
+
+这等于让模型只回答一个更小的问题：
+
+```text
+这张 noisy 图里，哪些东西像噪声？每个位置应该减掉多少？
+```
+
+所以 residual 的优势不是“数学上一定更强”，而是它把任务改得更贴近去噪本质：
+
+```text
+direct clean: 重新生成完整答案
+residual denoise: 学会从已有答案里扣掉错误部分
+```
+
+如果噪声很弱，最理想的输出本来就接近：
+
+```text
+output ≈ noisy
+```
+
+这时 residual 网络只要预测一个接近 0 的 `noise_pred`，就已经不会严重破坏原图：
+
+```text
+noise_pred ≈ 0
+output = noisy - 0 ≈ noisy
+```
+
+而 direct clean 即使在噪声很弱时，也仍然必须直接输出一张完整 RGB 图。如果训练初期输出偏灰、偏绿或亮度不对，整张图都会受影响。
+
+从优化角度看，residual 往往更容易，是因为它学习的是“小改动”：
+
+```text
+clean 和 noisy 的差值 = noise
+```
+
+这个差值通常比整张 clean 图更简单、更小、更集中。因此模型更容易先学到“哪里要减一点”，再逐步学细节。
+
+可以把它类比成改作文：
+
+```text
+direct clean: 看着有错的作文，重新写一篇正确作文
+residual denoise: 在原文上标出哪些字句要删改
+```
+
+如果原文大体已经对，第二种任务通常更容易。
+
+#### 从算法和代码角度看，两者到底差在哪里？
+
+从算法上看，direct clean 和 residual denoise 的差异不是“有没有 CNN”，而是**网络输出的物理含义不同**。
+
+direct clean 的算法流程是：
+
+```text
+输入 noisy
+  -> CNN
+  -> 直接得到 clean_pred
+  -> clean_pred 和 clean 算 loss
+```
+
+对应公式：
+
+```text
+clean_pred = net(noisy)
+loss = distance(clean_pred, clean)
+```
+
+代码直觉是：
+
+```python
+pred = net(noisy)
+output = pred
+loss = criterion(output, clean)
+```
+
+这里 `net(noisy)` 本身就被当成最终干净图。也就是说，网络最后一层输出的 3 个通道就是 RGB 图像：
+
+```text
+net(noisy): [B, 3, H, W]  # clean_pred
+```
+
+residual denoise 的算法流程是：
+
+```text
+输入 noisy
+  -> CNN
+  -> 得到 noise_pred
+  -> output = noisy - noise_pred
+  -> output 和 clean 算 loss
+```
+
+对应公式：
+
+```text
+noise_pred = net(noisy)
+output = noisy - noise_pred
+loss = distance(output, clean)
+```
+
+代码直觉是：
+
+```python
+noise_pred = net(noisy)
+output = noisy - noise_pred
+loss = criterion(output, clean)
+```
+
+这里 `net(noisy)` 不再被当成干净图，而是被当成噪声图：
+
+```text
+net(noisy): [B, 3, H, W]  # noise_pred
+```
+
+注意：两者的 CNN 主体可以长得很像，甚至可以完全一样。真正不同的是 forward 末尾怎么解释网络输出：
+
+```python
+# direct clean
+return pred
+
+# residual denoise
+return x - pred
+```
+
+本项目里的 DnCNN 代码就是这样写的：
+
+```python
+pred = self.net(x)
+out = x - pred if self.residual else pred
+return out
+```
+
+所以同一个 DnCNN，如果：
+
+```text
+residual = False
+```
+
+它就是 direct clean：
+
+```text
+output = pred
+```
+
+如果：
+
+```text
+residual = True
+```
+
+它就是 residual denoise：
+
+```text
+output = noisy - pred
+```
+
+从 loss 角度看，两者最后都和 clean 比：
+
+```text
+loss = distance(output, clean)
+```
+
+区别在于 output 怎么来：
+
+| 角度 | direct clean | residual denoise |
+|---|---|---|
+| CNN 输出 | `clean_pred` | `noise_pred` |
+| forward 最后一步 | `output = pred` | `output = noisy - pred` |
+| loss 比较对象 | `pred` vs `clean` | `noisy - pred` vs `clean` |
+| 模型学的内容 | 整张干净图 | noisy 里要减掉的噪声 |
+| 输入结构是否直接保留 | 不显式保留 | 显式从 noisy 继承 |
+
+从梯度/优化角度也可以这样理解：residual denoise 的 loss 虽然仍然约束最终 output，但梯度会推动 `noise_pred` 接近真实噪声：
+
+```text
+真实 noise = noisy - clean
+希望 noise_pred ≈ noisy - clean
+```
+
+因为只要：
+
+```text
+noise_pred = noisy - clean
+```
+
+那么：
+
+```text
+output = noisy - noise_pred
+       = noisy - (noisy - clean)
+       = clean
+```
+
+这就是 residual denoise 的代码含义：**网络不是直接学 clean，而是通过最终 loss，被训练成预测 noisy 和 clean 之间的差值。**
+
 #### 为什么 residual 不是永远无敌？
 
 Residual 更适合当前去噪任务，但不是所有图像恢复任务都一定选 residual。
@@ -504,6 +767,103 @@ Residual 更适合当前去噪任务，但不是所有图像恢复任务都一�
 
 同一个 DnCNN residual，只改 loss。
 
+先解释名字：
+
+```text
+L1 loss = 平均绝对误差 = mean(abs(output - clean))
+L2 loss = 平均平方误差 = mean((output - clean)^2)
+MSE = Mean Squared Error = 平均平方误差
+```
+
+所以在本项目里：
+
+```text
+L2 loss 和 MSE 基本是同一个意思。
+```
+
+假设某个像素位置：
+
+```text
+output = 0.60
+clean  = 0.70
+error  = output - clean = -0.10
+```
+
+L1 看的是误差绝对值：
+
+```text
+abs(error) = abs(-0.10) = 0.10
+```
+
+L2/MSE 看的是误差平方：
+
+```text
+error^2 = (-0.10)^2 = 0.01
+```
+
+如果误差变大，比如：
+
+```text
+error = 0.50
+```
+
+那么：
+
+```text
+L1: abs(0.50) = 0.50
+L2: 0.50^2 = 0.25
+```
+
+再对比小误差：
+
+```text
+error = 0.10
+L1 = 0.10
+L2 = 0.01
+```
+
+可以看到 L2/MSE 会更明显地区分大误差和小误差。误差越大，平方以后惩罚增长越快。
+
+直觉上：
+
+| Loss | 怎么看误差 | 倾向 |
+|---|---|---|
+| L1 | 误差有多大就罚多大 | 更线性，通常对异常大误差没那么敏感 |
+| L2/MSE | 误差先平方再平均 | 大误差罚得更重，更贴近 PSNR |
+
+为什么 L2/MSE 更贴近 PSNR？
+
+因为 PSNR 本身就是从 MSE 推出来的：
+
+```text
+MSE 越小 -> PSNR 越高
+```
+
+所以如果训练目标是 MSE，验证指标又看 PSNR，目标和指标更一致，PSNR 往往更容易高。
+
+为什么 L1 有时视觉上更自然？
+
+因为 L1 不会像 L2 那样特别强烈地惩罚少数大误差。它有时不会那么倾向于把不确定区域平均化，所以边缘、纹理、结构可能看起来更自然。但这不是绝对规律，必须看三联图。
+
+最重要的一点：
+
+```text
+L1 loss 的数字和 L2/MSE loss 的数字不能直接比大小。
+```
+
+比如：
+
+```text
+L1 = 0.02
+L2 = 0.0007
+```
+
+不能说 `0.0007` 比 `0.02` 小很多，所以 L2 一定更好。它们不是同一把尺子。正确比较方式是看：
+
+```text
+val PSNR / val SSIM / 三联图
+```
+
 | Loss | final train loss | final val PSNR | final val SSIM |
 |---|---:|---:|---:|
 | L1 | 0.020152 | 31.1470 | 0.89850 |
@@ -525,6 +885,62 @@ Residual 更适合当前去噪任务，但不是所有图像恢复任务都一�
 ## 6. 第五步：比较 patch size 64 和 128
 
 Patch 更大，模型看到的上下文更多；但像素更多，训练更慢。
+
+`patch size` 指的是训练时从图像里裁出来的小块尺寸。
+
+图像恢复任务通常不会一开始就把整张大图丢进模型训练，而是从图里随机裁小块，比如：
+
+```text
+patch size = 64   -> 裁出 64x64 的小图块
+patch size = 128  -> 裁出 128x128 的小图块
+```
+
+如果是 RGB 图，单张 patch 的形状就是：
+
+```text
+patch 64:  [3, 64, 64]
+patch 128: [3, 128, 128]
+```
+
+加上 batch size 后，训练张量可能是：
+
+```text
+batch 8, patch 64:  [8, 3, 64, 64]
+batch 8, patch 128: [8, 3, 128, 128]
+```
+
+这里的区别很大。因为像素数不是翻 2 倍，而是按面积算：
+
+```text
+64 x 64   = 4096 像素
+128 x 128 = 16384 像素
+```
+
+所以 patch 从 64 变成 128，边长是 2 倍，但面积是 4 倍。模型每一步要处理的像素更多，训练时间和显存都会明显增加。
+
+为什么 patch 128 可能效果更好？
+
+因为模型看到的局部范围更大。去噪时，一个像素是不是噪声，不能只看它自己，还要看周围：
+
+- 周围是不是平坦区域；
+- 周围有没有边缘；
+- 周围纹理是不是连续；
+- 这个亮点是噪声，还是图像里的真实细节。
+
+patch 64 看到的上下文少一些，适合快速验证；patch 128 看到的上下文多一些，有时更利于恢复结构和纹理。
+
+但 patch size 不是越大越好：
+
+- patch 越大，训练越慢；
+- patch 越大，占用显存越多；
+- 小数据上 patch 太大，随机裁剪变化可能减少；
+- 真实数据里还要考虑显卡、batch size 和训练时间。
+
+所以这组实验学的不是“128 永远比 64 好”，而是：
+
+```text
+patch size 是上下文和代价的取舍。
+```
 
 | Patch size | wall time | final train loss | final val PSNR | final val SSIM |
 |---:|---:|---:|---:|---:|

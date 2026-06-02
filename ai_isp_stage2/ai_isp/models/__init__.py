@@ -10,6 +10,7 @@ models 子包 — 神经网络模型定义与构建工厂。
 """
 
 from ai_isp.models.dncnn import DnCNN
+from ai_isp.models.nafnet_lite import NAFNetLite
 from ai_isp.models.tiny_cnn import TinyCNN
 from ai_isp.models.unet import UNet
 
@@ -57,6 +58,17 @@ def build_model(config: dict):
             in_channels=config.get("in_channels", 3),
             out_channels=config.get("out_channels", 3),
             base_channels=config.get("base_channels", 16),  # 基础通道数（每层翻倍）
+        )
+
+    if name == "nafnet_lite":
+        return NAFNetLite(
+            in_channels=config.get("in_channels", 3),
+            out_channels=config.get("out_channels", 3),
+            width=config.get("width", 16),
+            middle_blocks=config.get("middle_blocks", 2),
+            encoder_blocks=tuple(config.get("encoder_blocks", [1, 1])),
+            decoder_blocks=tuple(config.get("decoder_blocks", [1, 1])),
+            residual=config.get("residual", False),
         )
 
     raise ValueError(f"Unknown model: {config['name']}")

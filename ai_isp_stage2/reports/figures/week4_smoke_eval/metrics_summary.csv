@@ -1,0 +1,3 @@
+run,best_psnr,best_psnr_step,best_ssim,best_ssim_step,last_psnr,last_ssim,last_step
+paired_rgb_smoke_dncnn_l2,32.9687,120,0.89384,120,32.9687,0.89384,120
+paired_rgb_smoke_nafnet_lite_l1,25.2235,80,0.62806,80,25.2235,0.62806,80
