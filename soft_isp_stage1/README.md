@@ -49,10 +49,30 @@ soft_isp_stage1/
 │   ├── 03_dump_raw_metadata_table.py    # Build Markdown metadata summary table
 │   ├── 04_plot_raw_histogram.py  # Plot dual-panel RAW + Bayer-channel histograms
 │   ├── 05_analyze_raw_roi.py     # Auto-select dark/midtone/highlight ROIs
+│   ├── 06_apply_blc.py           # Apply Black Level Correction
+│   ├── 07_apply_dpc.py           # Apply Defect Pixel Correction
+│   ├── 08_apply_demosaic.py      # Apply Demosaicing (bilinear / OpenCV)
+│   ├── 09_apply_awb.py           # Apply Auto White Balance
+│   ├── 10_apply_ccm.py           # Apply Color Correction Matrix
+│   ├── 11_apply_gamma.py         # Apply Gamma encoding
+│   ├── 12_apply_tone_mapping.py  # Apply Tone Mapping (Reinhard / percentile)
+│   ├── 13_write_week4_summary.py # Generate Week 4 summary and comparison figures
+│   ├── 14_apply_lsc.py           # Apply Lens Shading Correction (radial / mesh)
+│   ├── 15_evaluate_pipeline.py   # Full pipeline evaluation with IQA metrics
+│   ├── 16_close_mastery_gaps.py  # Week 6 mastery gap closure experiments
+│   ├── week4_common.py           # Shared utilities for Week 4 scripts
 │   └── download_fivek_starter.ps1  # Download 5 MIT-Adobe FiveK starter DNGs
 ├── soft_isp/
 │   ├── __init__.py               # Package init
-│   └── stats.py                  # Core utilities: Bayer inference, stats, splitting
+│   ├── stats.py                  # Core utilities: Bayer inference, stats, splitting
+│   ├── orientation.py            # CFA pattern orientation detection
+│   ├── blc.py                    # Black Level Correction
+│   ├── dpc.py                    # Defect Pixel Correction (static / gradient)
+│   ├── lsc.py                    # Lens Shading Correction (radial / mesh)
+│   ├── demosaic.py               # Demosaicing (bilinear + OpenCV)
+│   ├── awb.py                    # Auto White Balance (Gray World + ROI-based)
+│   ├── ccm.py                    # Color Correction Matrix (least-squares 3×3)
+│   └── tone.py                   # Gamma encoding + Tone Mapping
 ├── requirements.txt
 └── README.md
 ```
@@ -133,16 +153,33 @@ All scripts are in `scripts/` and numbered in recommended execution order.
 | 03 | `dump_raw_metadata_table.py` | All `S*.dng` in `data/raw/` | Markdown table | Quick-reference metadata summary for the dataset |
 | 04 | `plot_raw_histogram.py` | One or more DNG paths | PNGs in `reports/figures/` | Dual-panel log-scale histograms with black/white level markers |
 | 05 | `analyze_raw_roi.py` | One or more DNG paths | PNG + JSON + MD report | Auto-select dark/midtone/highlight ROIs, generate annotated previews and statistics |
+| 06 | `apply_blc.py` | DNG path + config | BLC-corrected RAW + before/after comparison | Apply black level subtraction, histogram comparison |
+| 07 | `apply_dpc.py` | DNG path + config | DPC-corrected RAW + defect mask overlay | Static + gradient-based defect pixel detection and repair |
+| 08 | `apply_demosaic.py` | DNG path + config | RGB image + comparison PNG | Bilinear and OpenCV demosaicing with visual comparison |
+| 09 | `apply_awb.py` | DNG path + config | White-balanced RGB + before/after comparison | Gray World and ROI-based AWB |
+| 10 | `apply_ccm.py` | DNG path + config | Color-corrected RGB + comparison PNG | Least-squares 3×3 CCM with Delta E metrics |
+| 11 | `apply_gamma.py` | DNG path + config | Gamma-encoded RGB + comparison PNG | Standard sRGB gamma and custom gamma curves |
+| 12 | `apply_tone_mapping.py` | DNG path + config | Tone-mapped RGB + comparison PNG | Reinhard and percentile-based tone mapping |
+| 13 | `write_week4_summary.py` | Pipeline output files | Summary Markdown + composite comparison figure | Generate Week 4 comprehensive summary with full pipeline comparison |
+| 14 | `apply_lsc.py` | DNG path + config | LSC-corrected RAW + falloff comparison | Radial and mesh-based lens shading correction |
+| 15 | `evaluate_pipeline.py` | DNG paths + config | IQA metrics table + per-module ablation | Full pipeline PSNR/SSIM/MAE evaluation against rawpy reference |
+| 16 | `close_mastery_gaps.py` | DNG paths + config | Enhanced module outputs + comparison reports | Week 6 mastery gap closure: static DPC, mesh LSC, OpenCV demosaic, ROI AWB, CCM Delta E, sRGB S-curve |
 
 ## Core Library (`soft_isp/`)
 
-The `soft_isp` package provides shared utilities imported by all scripts:
+The `soft_isp` package provides shared utilities and ISP module implementations:
 
-| Function | File | Description |
+| Module | File | Description |
 |---|---|---|
-| `bayer_pattern_from_rawpy()` | `stats.py` | Infer standard Bayer string (RGGB/BGGR/GRBG/GBRG) from rawpy metadata |
-| `describe_array()` | `stats.py` | Compute shape, dtype, min, max, mean, std, p01, p50, p99 for any array |
-| `split_bayer()` | `stats.py` | Split Bayer mosaic into R, Gr, Gb, B sub-arrays via stride slicing |
+| Stats & utilities | `stats.py` | Bayer pattern inference, array statistics, Bayer channel splitting |
+| Orientation | `orientation.py` | CFA pattern orientation detection |
+| BLC | `blc.py` | Black level subtraction with per-channel offset support |
+| DPC | `dpc.py` | Static (threshold) and gradient-based defect pixel correction |
+| LSC | `lsc.py` | Radial falloff and mesh-based lens shading correction |
+| Demosaic | `demosaic.py` | Bilinear interpolation and OpenCV-based demosaicing |
+| AWB | `awb.py` | Gray World and ROI-based auto white balance |
+| CCM | `ccm.py` | Least-squares 3×3 color correction matrix with Delta E evaluation |
+| Gamma / Tone | `tone.py` | sRGB Gamma encoding, Reinhard and percentile tone mapping |
 
 ## Learning Roadmap (6 Weeks)
 
@@ -180,21 +217,26 @@ Each ISP module must answer 7 questions (from `materials/module_study_template.m
 
 | Deliverable | Status | Description |
 |---|---|---|
-| RAW sample download script | Done | PowerShell script for FiveK starter DNGs |
-| RAW metadata inspection | Done | `01_inspect_raw.py` + T01-T14 per-sample JSON dumps |
-| Reference image generation | Done | `02_generate_rawpy_references.py` + T01-T14 reference PNGs |
-| Metadata summary table | Done | `03_dump_raw_metadata_table.py` → Markdown table |
-| Histogram plots | Done | S01, S03, S05 histograms with black/white level annotations |
-| ROI analysis | Done | Dark/midtone/highlight ROIs for S01, S03, S05 with JSON + preview |
-| Week 1 report | Done | `reports/week1/raw_statistics.md` + `reports/week1/roi_analysis.md` |
-| BLC module | Done | `soft_isp/blc.py` + `reports/week2/blc_report.md` |
-| DPC module | Done | `soft_isp/dpc.py` + `reports/week2/dpc_report.md` |
-| LSC module | Done | Learning radial LSC: `soft_isp/lsc.py` + `reports/week2/lsc_report.md` |
-| Demosaic module | Done | Bilinear demosaic: `soft_isp/demosaic.py` |
-| AWB module | Done | Gray World AWB: `soft_isp/awb.py` |
-| CCM module | Done | Learning 3x3 CCM: `soft_isp/ccm.py` |
-| Gamma/Tone module | Done | Gamma + Reinhard/percentile tone: `soft_isp/tone.py` |
-| IQA + final report | Done | `reports/week5/iqa_ablation_report.md` + `reports/stage1_report.md` |
+| RAW sample download script | ✅ Done | PowerShell script for FiveK starter DNGs |
+| RAW metadata inspection | ✅ Done | `01_inspect_raw.py` + T01-T14 per-sample JSON dumps |
+| Reference image generation | ✅ Done | `02_generate_rawpy_references.py` + T01-T14 reference PNGs |
+| Metadata summary table | ✅ Done | `03_dump_raw_metadata_table.py` → Markdown table |
+| Histogram plots | ✅ Done | S01, S03, S05 histograms with black/white level annotations |
+| ROI analysis | ✅ Done | Dark/midtone/highlight ROIs for S01, S03, S05 with JSON + preview |
+| Week 1 report | ✅ Done | `reports/week1/raw_statistics.md` + `reports/week1/roi_analysis.md` |
+| BLC module | ✅ Done | `soft_isp/blc.py` + `scripts/06_apply_blc.py` + `reports/week2/blc_report.md` |
+| DPC module | ✅ Done | `soft_isp/dpc.py` + `scripts/07_apply_dpc.py` + `reports/week2/dpc_report.md` |
+| LSC module | ✅ Done | `soft_isp/lsc.py` + `scripts/14_apply_lsc.py` + `reports/week2/lsc_report.md` |
+| Demosaic module | ✅ Done | `soft_isp/demosaic.py` + `scripts/08_apply_demosaic.py` + `reports/week3/demosaic_report.md` |
+| AWB module | ✅ Done | `soft_isp/awb.py` + `scripts/09_apply_awb.py` + `reports/week3/awb_report.md` |
+| CCM module | ✅ Done | `soft_isp/ccm.py` + `scripts/10_apply_ccm.py` + `reports/week4/ccm_report.md` |
+| Gamma module | ✅ Done | `soft_isp/tone.py` + `scripts/11_apply_gamma.py` + `reports/week4/gamma_report.md` |
+| Tone Mapping module | ✅ Done | `soft_isp/tone.py` + `scripts/12_apply_tone_mapping.py` + `reports/week4/tone_mapping_report.md` |
+| Week 4 summary | ✅ Done | `scripts/13_write_week4_summary.py` + `reports/week4/summary.md` |
+| Pipeline evaluation | ✅ Done | `scripts/15_evaluate_pipeline.py` + `reports/week5/iqa_ablation_report.md` |
+| Mastery gap closure | ✅ Done | `scripts/16_close_mastery_gaps.py` + `reports/week6/mastery_gap_closure_report.md` |
+| Stage 1 final report | ✅ Done | `reports/stage1_report.md` |
+| Interview prep | ✅ Done | `reports/interview/isp_algorithm_questions_week1_3.md` + `reports/interview/isp_interview_deep_notes_week1_4.md` |
 
 ## License
 

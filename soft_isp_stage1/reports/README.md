@@ -7,11 +7,12 @@
 | 文件 | 用途 |
 |---|---|
 | `stage1_report.md` | 阶段一总报告 |
-| `module_mastery_matrix.md` | ISP 模块入门 / 掌握 / 面试可讲标准对照 |
 | `stage1_deep_review_improvement_plan.md` | Stage1 深度复盘、缺陷分析和后续补强路线 |
+| `module_mastery_matrix.md` | ISP 模块入门 / 掌握 / 面试可讲标准对照 |
 | `openisp_reference_notes.md` | OpenISP 模块参考和后续升级点 |
+| `week3_demosaic_report.md` | Week3 去马赛克详细报告（根目录归档版） |
 | `figures/` | 所有生成图片、对比图和模块 JSON |
-| `raw_stats/` | RAW metadata 和统计 JSON |
+| `raw_stats/` | RAW metadata 和统计 JSON（T01–T14） |
 
 ## Week 1：RAW / Sensor 数据直觉
 
@@ -35,8 +36,8 @@
 | 文件 | 内容 |
 |---|---|
 | `week3/summary.md` | Week3 总结 |
-| `week3/demosaic_report.md` | Bilinear Demosaic 原理、公式和实验 |
-| `week3/awb_report.md` | Gray World AWB 原理和实验 |
+| `week3/demosaic_report.md` | Bilinear + OpenCV Demosaic 原理、公式和实验 |
+| `week3/awb_report.md` | Gray World + ROI AWB 原理和实验 |
 
 ## Week 4：CCM / Gamma / Tone Mapping
 
@@ -63,4 +64,5 @@
 
 | 文件 | 内容 |
 |---|---|
-| `interview/isp_algorithm_questions_week1_3.md` | Week1-Week3 ISP 算法工程师面试题与答案 |
+| `interview/isp_algorithm_questions_week1_3.md` | Week1–Week3 ISP 算法工程师面试题与答案 |
+| `interview/isp_interview_deep_notes_week1_4.md` | Week1–Week4 ISP 面试深度笔记 |

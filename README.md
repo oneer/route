@@ -10,6 +10,7 @@ A self-directed, project-driven learning repository for mastering the full Image
 route/
 ├── soft_isp_stage1/       # Stage 1: Traditional ISP pipeline (Python)
 ├── ai_isp_stage2/         # Stage 2: AI-ISP image restoration (PyTorch)
+├── isp_tutorial_study/    # ISP tutorial study area (35 chapters, algorithm to RTL)
 ├── study-roadmap/         # 10-month AI-ISP career learning roadmap
 ├── README.md
 └── README_CN.md
@@ -27,9 +28,17 @@ See [soft_isp_stage1/README.md](soft_isp_stage1/README.md) for details.
 
 The second stage shifts from hand-crafted algorithms to learned image restoration. Currently focused on establishing a reliable deep learning training loop with synthetic RGB denoising before moving to real sensor data (SIDD, SID).
 
-**Status:** In progress. Toy RGB denoise baseline with TinyCNN / DnCNN / UNet is running. Training loop, config system, and PSNR/SSIM evaluation pipeline are in place. A structured neural network foundation learning path (`materials/neural_network_foundation/`) with glossary, checkpoint questions, and CS231n study notes is available for engineers new to deep learning.
+**Status:** Complete (Week 0–9). The full pipeline from toy RGB denoise → real SIDD paired RGB → model comparison (DnCNN / UNet / NAFNet-lite) → pseudo RAW / ISP bridge → low-light enhancement → failure case analysis has been executed and documented. Training loop, config system, PSNR/SSIM evaluation pipeline, triplet visualizations, error maps, and a comprehensive stage-2 project summary (including resume and interview talking points) are all in place.
 
 See [ai_isp_stage2/README.md](ai_isp_stage2/README.md) for details.
+
+### [isp_tutorial_study/](isp_tutorial_study/) — ISP Tutorial Study Area
+
+An independent, structured study area for the [ISP IP Design Tutorial: From Algorithm to RTL](https://zsc.github.io/isp_tutorial/) (35 chapters). Each chapter is expanded with beginner-friendly explanations, principle breakdowns, engineering considerations, experiment suggestions, self-test questions, and reference materials — going far beyond the original web content.
+
+**Coverage:** Traditional ISP fundamentals (Ch. 1–16), industry architectures (Ch. 17–27, covering mobile, automotive, professional, consumer, surveillance, and video ISPs), AI-ISP fusion (Ch. 28–31), verification and deployment (Ch. 32–35).
+
+See [isp_tutorial_study/README.md](isp_tutorial_study/README.md) for the study workflow.
 
 ### [study-roadmap/](study-roadmap/) — Career Learning Roadmap
 
@@ -90,7 +99,7 @@ If you don't have RAW files yet, use the included download script:
 | Stage | Focus | Language | Status |
 |---|---|---|---|
 | 1 | Traditional ISP pipeline fundamentals | Python | Complete |
-| 2 | AI-driven image restoration & denoising | Python + PyTorch | In progress |
+| 2 | AI-driven image restoration & denoising | Python + PyTorch | Complete |
 | 3 | C++ high-performance ISP library | C++ | Planned |
 | 4 | CUDA acceleration + TensorRT/NCNN deployment | C++ / CUDA | Planned |
 

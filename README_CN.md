@@ -10,6 +10,7 @@
 route/
 ├── soft_isp_stage1/       # 阶段一：传统 ISP Pipeline（Python）
 ├── ai_isp_stage2/         # 阶段二：AI-ISP 图像恢复（PyTorch）
+├── isp_tutorial_study/    # ISP 教程学习区（35 章，从算法到 RTL 实现）
 ├── study-roadmap/         # 10 个月 AI-ISP 社招学习路线
 ├── README.md
 └── README_CN.md
@@ -27,9 +28,17 @@ route/
 
 第二阶段从手工算法转向可学习图像恢复。当前阶段先用合成 RGB 去噪任务跑通深度学习训练闭环，验证工程链路后再推进到真实传感器数据（SIDD、SID）。
 
-**状态：** 进行中。TinyCNN / DnCNN / UNet 三种模型的 toy RGB denoise baseline 已跑通，训练循环、配置系统和 PSNR/SSIM 评估链路均已就绪。
+**状态：** 已完成（Week 0–9）。从 toy RGB 去噪 → 真实 SIDD paired RGB → 模型对比（DnCNN / UNet / NAFNet-lite）→ pseudo RAW / ISP bridge → 低光增强 → failure case 分析，全链路已跑通并沉淀文档。训练循环、配置系统、PSNR/SSIM 评估链路、三联图、error map 以及阶段二项目总结（含简历和面试表达）均已就绪。
 
 详见 [ai_isp_stage2/README.md](ai_isp_stage2/README.md)。
+
+### [isp_tutorial_study/](isp_tutorial_study/) — ISP 教程学习区
+
+基于 [ISP IP设计教程：从算法到RTL实现](https://zsc.github.io/isp_tutorial/) 的 35 章独立结构化学习区。每章在保留原网页正文的基础上，补充了面向初学者的详细解释、原理拆解、工程问题、实验建议、自测题和参考资料，远超出原网页内容。
+
+**覆盖范围：** 传统 ISP 基础（第 1–16 章）、产业架构与应用场景（第 17–27 章，涵盖手机、车载、专业相机、消费电子、安防和视频 ISP）、AI-ISP 融合（第 28–31 章）、验证与部署（第 32–35 章）。
+
+详见 [isp_tutorial_study/README.md](isp_tutorial_study/README.md)。
 
 ### [study-roadmap/](study-roadmap/) — 职业学习路线
 
@@ -90,7 +99,7 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 | 阶段 | 重点 | 语言 | 状态 |
 |---|---|---|---|
 | 1 | 传统 ISP Pipeline 基础 | Python | 已完成 |
-| 2 | AI 驱动的图像恢复与降噪 | Python + PyTorch | 进行中 |
+| 2 | AI 驱动的图像恢复与降噪 | Python + PyTorch | 已完成 |
 | 3 | C++ 高性能 ISP 库 | C++ | 计划中 |
 | 4 | CUDA 加速 + TensorRT/NCNN 部署 | C++ / CUDA | 计划中 |
 

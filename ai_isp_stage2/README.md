@@ -1,6 +1,8 @@
 # AI-ISP Stage 2
 
-阶段二聚焦 AI-ISP 和图像恢复。当前不急着上真实手机 RAW 数据或大模型，而是先用一个小型 RGB 去噪任务，把深度学习训练闭环跑稳，再逐步走向真实成对 RGB 数据。
+阶段二聚焦 AI-ISP 和图像恢复。从 toy RGB 去噪起步，逐步走向真实成对 RGB 数据（SIDD），最终形成从训练到评估到总结的完整闭环。
+
+**状态：** ✅ 已完成（Week 0–9）。全链路已跑通并沉淀文档，含项目总结、简历和面试表达。
 
 ## 学习报告
 
@@ -38,28 +40,22 @@ stage2_learning_flow.md
 
 ## 当前进度
 
-已经完成：
+阶段二全部完成，按周整理如下：
 
-- Week 0：训练闭环基础梳理；
-- Week 1：toy RGB 去噪闭环；
-- TinyCNN probe；
-- DnCNN residual 去噪；
-- direct clean 和 residual 对比；
-- L1 和 L2/MSE loss 对比；
-- patch size 64 和 128 对比；
-- Gaussian noise 到 shot/read noise；
-- noisy 输入 baseline 测量；
-- 成对 RGB 图片文件夹数据适配；
-- SIDD-style 小型子集准备脚本。
-- Week 3 真实 RGB 实验配置。
-- Week 4 Loss / Metric / 可视化评估学习指导。
-- Week 5 NAFNet-lite 复现学习指导。
-- Week 6 Pseudo RAW / ISP bridge。
-- Week 7 synthetic low-light enhancement。
-- Week 8 failure case crop 分析。
-- Week 9 阶段二项目总结、简历和面试题库。
+| Week | 主题 | 状态 |
+|---|---|---|
+| 0 | 训练闭环基础梳理 | ✅ 完成 |
+| 1 | Toy RGB 去噪闭环（TinyCNN / DnCNN / L1 vs L2 / patch size / noise type） | ✅ 完成 |
+| 2 | 真实成对 RGB 数据入口（SIDD tiny 子集准备、数据检查、baseline 测量） | ✅ 完成 |
+| 3 | 真实 RGB 去噪实验（DnCNN L1/L2、patch 64/128、UNet baseline、NAFNet-lite） | ✅ 完成 |
+| 4 | Loss / Metric / 可视化评估体系（三联图、error map、多模型对比） | ✅ 完成 |
+| 5 | NAFNet-lite 复现学习指导 | ✅ 完成 |
+| 6 | Pseudo RAW / ISP bridge | ✅ 完成 |
+| 7 | 低光 RGB 增强实验 | ✅ 完成 |
+| 8 | Failure case 和局部 crop 分析 | ✅ 完成 |
+| 9 | 阶段二项目总结、简历和面试题库 | ✅ 完成 |
 
-当前阶段二已经形成完整闭环：
+完整闭环：
 
 ```text
 toy RGB denoise
