@@ -1,0 +1,5 @@
+task,run,model,channels,params,checkpoint_mb,best_psnr,best_ssim,best_psnr_step,best_ssim_step
+week4_sidd_tiny_standard_eval,paired_rgb_sidd_tiny_dncnn_l2_2000,dncnn,3,29507,0.351,35.5356,0.88367,1800,1800
+week4_sidd_tiny_standard_eval,paired_rgb_sidd_tiny_unet_l1_1000,unet,3,118307,1.380,30.4453,0.88003,1000,1000
+week4_sidd_tiny_standard_eval,paired_rgb_sidd_tiny_nafnet_lite_l1_1000,nafnet_lite,3,104307,1.329,33.3269,0.86223,1000,1000
+week7_low_light_eval,low_light_sidd_tiny_unet_l1_300,unet,3,118307,1.380,24.7821,0.81468,300,300

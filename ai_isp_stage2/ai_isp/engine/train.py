@@ -51,6 +51,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from ai_isp.data.paired_image_dataset import PairedImageDenoiseDataset
+from ai_isp.data.paired_pseudo_raw_dataset import PairedPseudoRawDataset
 from ai_isp.data.toy_rgb_dataset import ToyRGBDenoiseDataset
 from ai_isp.engine.checkpoint import save_checkpoint
 from ai_isp.engine.logger import CSVLogger, SummaryWriterOrNoop
@@ -88,9 +89,15 @@ def build_dataset(config: dict, project_root: Path, split: str):
     if split == "val":
         seed += 10000
 
-    if data_cfg.get("dataset", "toy_rgb") == "paired_image":
+    dataset_name = data_cfg.get("dataset", "toy_rgb")
+    if dataset_name in {"paired_image", "paired_pseudo_raw"}:
         split_cfg = data_cfg[split]
-        return PairedImageDenoiseDataset(
+        dataset_cls = (
+            PairedPseudoRawDataset
+            if dataset_name == "paired_pseudo_raw"
+            else PairedImageDenoiseDataset
+        )
+        return dataset_cls(
             noisy_dir=resolve_project_path(project_root, split_cfg["noisy_dir"]),
             clean_dir=resolve_project_path(project_root, split_cfg["clean_dir"]),
             patch_size=data_cfg["patch_size"],
