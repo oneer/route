@@ -94,6 +94,29 @@ optimizer.step()
 
 这四步就是训练闭环。
 
+### 5.1 五个训练关键词速查
+
+`forward` 是模型做一次“答题”。输入 `noisy` 之后，模型用当前参数算出 `output`。这一步只负责生成结果，还没有修改模型。
+
+`loss` 是对答案。把 `output` 和 `clean` 比较，得到一个错误分数。分数越小，说明模型输出在这个 loss 定义下越接近干净图。
+
+`backward` 是分析错因。它根据 loss 反向计算每个参数对错误的影响，也就是梯度。梯度告诉模型：哪些参数往哪个方向改，loss 可能会下降。
+
+`validation` 是小测验。它用不参与训练的数据检查模型效果，只评估 PSNR、SSIM、loss 或三联图，不做 `backward`，也不更新参数。
+
+`checkpoint` 是存档。它把当前模型参数、训练 step、最好指标等保存下来，方便后面继续训练、复现实验，或者拿最好的一版模型做推理和对比。
+
+一轮最小训练可以理解成：
+
+```text
+forward 生成答案
+loss 对答案打分
+backward 分析怎么改
+optimizer.step 真正修改参数
+validation 用没见过的数据考试
+checkpoint 保存当前或最好模型
+```
+
 ## 6. 为什么要分 train 和 validation
 
 训练集用来更新参数。
