@@ -176,3 +176,170 @@ RAW 是传感器原始采样，通常是 Bayer mosaic，每个像素只有一个
 3. demosaic 在补什么；
 4. RGB 去噪和 RAW 恢复的输入输出差异；
 5. 为什么 Week6 是从 SIDD sRGB 走向 SID / RAW low-light 的准备。
+
+## 7. Week 6 升级：pseudo RGGB 可训练 baseline
+
+新版阶段二路线要求 Week 6 不只停留在 `RGB -> Bayer -> pack -> preview` 的可视化，还要证明 RAW-like 4 通道路径真的能进入训练闭环。
+
+因此本周补充了三件事：
+
+```text
+1. pseudo RGGB dataset preview
+2. 4-channel DnCNN training run
+3. RGB vs pseudo RGGB 对比表
+```
+
+### 7.1 pseudo RGGB dataset preview
+
+运行命令：
+
+```bash
+python ai_isp_stage2/scripts/12_preview_pseudo_raw_dataset.py
+```
+
+输出文件：
+
+```text
+ai_isp_stage2/reports/figures/week10_pseudo_raw_dataset/pseudo_raw_preview.png
+```
+
+这张图用于确认：
+
+- 原始 RGB 图可以转换成 RGGB pack；
+- pack 后的 preview 仍然保留大致颜色和结构；
+- 每个样本的 pack shape 是 `[4, H/2, W/2]`；
+- 这条路径适合接入 4-channel 模型。
+
+### 7.2 4-channel DnCNN 训练
+
+训练配置：
+
+```text
+ai_isp_stage2/configs/pseudo_raw_sidd_tiny_dncnn_l2_300.yaml
+```
+
+关键设置：
+
+| 项目 | 设置 |
+|---|---|
+| dataset | `paired_pseudo_raw` |
+| input channels | 4 |
+| output channels | 4 |
+| source data | SIDD tiny paired RGB |
+| patch size | 128 RGB crop -> 64x64 RGGB pack |
+| model | DnCNN residual |
+| loss | MSE / L2 |
+| steps | 300 |
+
+训练命令：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/pseudo_raw_sidd_tiny_dncnn_l2_300.yaml
+```
+
+训练日志摘要：
+
+```text
+step=0100 val psnr=27.7834 ssim=0.54807
+step=0200 val psnr=30.8699 ssim=0.66208
+step=0300 val psnr=31.7157 ssim=0.77400
+```
+
+训练产物：
+
+```text
+ai_isp_stage2/runs/pseudo_raw_sidd_tiny_dncnn_l2_300/metrics.csv
+ai_isp_stage2/runs/pseudo_raw_sidd_tiny_dncnn_l2_300/checkpoints/best_psnr.pth
+ai_isp_stage2/runs/pseudo_raw_sidd_tiny_dncnn_l2_300/checkpoints/last.pth
+ai_isp_stage2/runs/pseudo_raw_sidd_tiny_dncnn_l2_300/vis/step_0100.png
+ai_isp_stage2/runs/pseudo_raw_sidd_tiny_dncnn_l2_300/vis/step_0200.png
+ai_isp_stage2/runs/pseudo_raw_sidd_tiny_dncnn_l2_300/vis/step_0300.png
+```
+
+这说明 Week 6 的 RAW-like 路径已经不只是“图像展示”，而是可以生成 metrics、checkpoint 和可视化结果的训练路径。
+
+### 7.3 RGB vs pseudo RGGB 对比
+
+新增汇总脚本：
+
+```text
+ai_isp_stage2/scripts/18_export_week6_pseudo_raw_summary.py
+```
+
+运行命令：
+
+```bash
+python ai_isp_stage2/scripts/18_export_week6_pseudo_raw_summary.py
+```
+
+输出文件：
+
+```text
+ai_isp_stage2/reports/figures/week6_pseudo_raw_training/week6_pseudo_raw_summary.csv
+ai_isp_stage2/reports/figures/week6_pseudo_raw_training/week6_pseudo_raw_summary.md
+```
+
+对比结果：
+
+| Label | Run | Dataset | Channels | Effective spatial | Params | Input PSNR / SSIM | Best PSNR | Best SSIM | Gain PSNR / SSIM |
+|---|---|---|---:|---|---:|---:|---:|---:|---:|
+| RGB 300 | `paired_rgb_sidd_tiny_dncnn_l2_300` | `paired_image` | 3 | 128x128 | 29507 | 26.7302 / 0.52412 | 32.7717@250 | 0.77100@300 | 6.0415 / 0.24688 |
+| pseudo RGGB 300 | `pseudo_raw_sidd_tiny_dncnn_l2_300` | `paired_pseudo_raw` | 4 | 64x64 pack from 128x128 RGB crop | 30084 | 26.6785 / 0.50447 | 31.7157@300 | 0.77400@300 | 5.0372 / 0.26953 |
+
+### 7.4 怎么解释这个结果
+
+第一，pseudo RGGB 已经超过自己的 input baseline：
+
+```text
+input: 26.6785 PSNR / 0.50447 SSIM
+best:  31.7157 PSNR / 0.77400 SSIM
+gain:  +5.0372 PSNR / +0.26953 SSIM
+```
+
+这说明 RAW-like 4-channel path 是可训练的。
+
+第二，RGB 和 pseudo RGGB 的 PSNR 不要做绝对公平比较。
+
+原因是：
+
+```text
+RGB path:        [3, 128, 128]
+pseudo RGGB path:[4, 64, 64] pack from 128x128 RGB crop
+```
+
+它们的数据形态、通道数和空间分辨率不同。这里的对比重点不是证明 RGGB 比 RGB 强，而是证明：
+
+```text
+同一套训练框架可以从 RGB 3-channel 扩展到 RAW-like 4-channel。
+```
+
+第三，pseudo RGGB 的参数量略高：
+
+```text
+RGB DnCNN:        29507 params
+pseudo RGGB DnCNN:30084 params
+```
+
+这是因为输入/输出通道从 3 变成 4，首尾卷积参数随之增加。
+
+### 7.5 当前 Week 6 是否达标
+
+按新版学习路线，Week 6 现在已经满足主要要求：
+
+| 要求 | 当前状态 |
+|---|---|
+| RGGB pack / preview | 已完成 |
+| paired pseudo RAW dataset | 已实现 |
+| 4-channel DnCNN training | 已完成 |
+| metrics.csv | 已生成 |
+| best_psnr.pth / last.pth | 已生成 |
+| RGB vs RGGB 对比表 | 已生成 |
+| 明确 RAW-like 边界 | 已说明，不冒充真实 sensor RAW |
+
+下一步进入 Week 7 时，可以继续保留这个边界：
+
+```text
+Week 6 是 RAW-like 输入形态训练；
+不是完整真实 RAW sensor pipeline；
+后续如果要更接近真实 RAW，需要引入 black level、white balance、CCM、noise model 和真实 RAW 数据。
+```

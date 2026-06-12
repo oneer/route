@@ -1,12 +1,12 @@
 # 阶段 2：AI-ISP 图像恢复学习路线
 
-> **适用对象**：已经完成阶段 1，能理解 RAW → RGB 的传统 ISP 主链路，具备 Python / C++ / CUDA / Pipeline 对齐经验，但还缺少系统的 PyTorch 图像恢复训练、RAW 数据建模、真实噪声理解、论文复现和消融分析能力。
+> **适用对象**：已经完成阶段 1，能理解 RAW → RGB 的传统 ISP 主链路，具备 Python 工程和基础 C++ 经验，已经能读懂传统 ISP 模块和基础训练脚本，但还缺少系统的 PyTorch 图像恢复训练、真实 paired 数据构建、RAW-like 输入建模、工程部署验证和社招项目表达能力。
 >
-> **阶段周期**：8 周。
+> **阶段周期**：Week 0-12，共 13 个学习/交付单元。
 >
-> **阶段目标**：从“会调用深度学习模型”升级到“能独立定义 AI-ISP / 图像恢复问题，构建数据集，训练 baseline，评估画质，做消融实验，解释失败案例，并能复现或改造一个主流图像恢复模型”。
+> **阶段目标**：从“能跑通 PyTorch 图像恢复训练”升级到“能围绕 AI-ISP 图像恢复问题，完成数据构建、baseline 训练、客观评估、可视化诊断、failure case 分析、RAW-like 扩展和 ONNX/C++ 部署验证”。
 >
-> **阶段产出**：一个 `ai_isp_stage2/` 项目，一套可复现训练脚本，一份数据集分析报告，一个 RGB denoise baseline，一个 RAW low-light / RAW denoise baseline，一次 NAFNet 或轻量 UNet 复现实验，一份消融报告和一份面试复述笔记。
+> **阶段产出**：一个 `ai_isp_stage2/` 项目，一套配置驱动的训练与评估脚本，一份 SIDD paired RGB 数据构建报告，一个 DnCNN / UNet / NAFNet-lite 对比 baseline，一个 pseudo RAW/RGGB 可训练 baseline，一份 failure case 分析，一份工程 summary 表，一个 ONNX 导出产物，一个 C++ OpenCV DNN 推理 smoke test，以及一份适合社招 3 年口径的项目报告和面试复述笔记。
 
 ---
 
@@ -21,7 +21,12 @@
 - 指标是否可靠：PSNR / SSIM 高是否等于主观画质好？
 - 模型是否能部署：参数量、FLOPs、显存、patch 推理、量化后的画质损失。
 
-你已有工程优势，阶段二要把它用起来：训练结果不只是“模型好了”，而是要像工程评审一样回答“为什么这个模型、这份数据、这个 loss、这个指标、这个部署取舍是合理的”。
+你当前的优势是已经有阶段一的传统 ISP 链路理解，并且阶段二已经跑通过 toy RGB、SIDD tiny、DnCNN / UNet / NAFNet-lite、PSNR / SSIM、error map 和 failure crop。接下来不要盲目堆更复杂模型，而是把已有内容升级成一个社招项目：每一周都要留下可验证证据，最后能回答“为什么这个数据、模型、loss、指标和部署取舍是合理的”。
+
+阶段二的边界也要说清楚：
+
+- 可以说：AI-ISP 图像恢复 baseline、paired RGB denoise、RAW-like RGGB 实验、ONNX/C++ 部署验证。
+- 不要说：车载摄像头量产 tuning、高通 / MTK / 海思平台 ISP 调试、真实 sensor RAW 量产标定、AE/AWB/AF 联调经验。
 
 ---
 
@@ -32,70 +37,66 @@ ai_isp_stage2/
 ├── README.md
 ├── requirements.txt
 ├── configs/
-│   ├── rgb_denoise_unet.yaml
-│   ├── sidd_denoise_nafnet.yaml
-│   └── sid_raw_lowlight_unet.yaml
+│   ├── toy_rgb_denoise_dncnn.yaml
+│   ├── paired_rgb_sidd_tiny_dncnn_l2_2000.yaml
+│   ├── paired_rgb_sidd_tiny_unet_l1_1000.yaml
+│   ├── paired_rgb_sidd_tiny_nafnet_lite_l1_1000.yaml
+│   ├── pseudo_raw_sidd_tiny_dncnn_l2_300.yaml
+│   └── low_light_sidd_tiny_unet_l1_300.yaml
 ├── datasets/
 │   ├── README.md                 # 数据下载、目录结构、license 说明
-│   ├── sidd/
-│   ├── sid/
-│   └── toy_rgb_denoise/
+│   ├── sidd_tiny/
+│   ├── sidd_low_light_tiny/
+│   └── downloads/
 ├── ai_isp/
 │   ├── data/
-│   │   ├── rgb_pair_dataset.py
-│   │   ├── sidd_dataset.py
-│   │   ├── sid_dataset.py
-│   │   ├── raw_pack.py
-│   │   └── degradations.py
+│   │   ├── paired_rgb_dataset.py
+│   │   ├── paired_pseudo_raw_dataset.py
+│   │   └── pseudo_raw.py
 │   ├── models/
 │   │   ├── dncnn.py
 │   │   ├── unet.py
-│   │   ├── nafnet_lite.py
-│   │   └── blocks.py
-│   ├── losses/
-│   │   ├── charbonnier.py
-│   │   ├── ssim_loss.py
-│   │   └── perceptual.py
+│   │   └── nafnet_lite.py
 │   ├── metrics/
-│   │   ├── psnr_ssim.py
-│   │   ├── lpips_metric.py
-│   │   └── raw_metrics.py
 │   ├── engine/
-│   │   ├── train.py
-│   │   ├── validate.py
-│   │   ├── checkpoint.py
-│   │   └── logger.py
 │   └── utils/
-│       ├── seed.py
-│       ├── image_io.py
-│       ├── visualization.py
-│       └── profile.py
+├── deployment/
+│   ├── export_onnx.py
+│   ├── requirements.txt
+│   ├── onnx/
+│   └── cpp_onnx_infer/
 ├── scripts/
-│   ├── 01_prepare_toy_rgb.py
-│   ├── 02_train_rgb_denoise.py
-│   ├── 03_train_sidd.py
-│   ├── 04_train_sid_raw.py
-│   ├── 05_eval_checkpoint.py
-│   ├── 06_visualize_failures.py
-│   └── 07_ablation_summary.py
-├── notebooks/
-│   ├── 01_dataset_analysis.ipynb
-│   ├── 02_loss_metric_behavior.ipynb
-│   └── 03_failure_cases.ipynb
+│   ├── 01_train_toy_rgb.py
+│   ├── 05_evaluate_runs.py
+│   ├── 06_inspect_paired_dataset.py
+│   ├── 07_prepare_sidd_small_subset.py
+│   ├── 10_make_failure_case_crops.py
+│   ├── 11_export_stage2_summary.py
+│   ├── 12_preview_pseudo_raw_dataset.py
+│   ├── 13_export_engineering_summary.py
+│   ├── 14_export_week2_dataset_card.py
+│   ├── 15_export_week3_model_comparison.py
+│   ├── 16_export_week4_evaluation_protocol.py
+│   ├── 17_export_week5_nafnet_analysis.py
+│   ├── 18_export_week6_pseudo_raw_summary.py
+│   ├── 19_export_week8_failure_taxonomy.py
+│   ├── 20_export_week9_project_pack.py
+│   └── 21_export_week7_low_light_diagnostics.py
 └── reports/
-    ├── stage2_report.md
-    ├── paper_notes/
-    ├── ablations/
+    ├── stage2_final_project_report.md
+    ├── stage2_engineering_summary.md
+    ├── stage2_3year_portfolio_upgrade.md
     └── figures/
 ```
 
 **项目验收标准**：
 
-- 至少完成一个 RGB 降噪 baseline 和一个 RAW / low-light 方向 baseline。
+- 至少完成一个 SIDD paired RGB 降噪 baseline 和一个 pseudo RAW/RGGB RAW-like baseline。
 - 所有训练都能从配置文件复现。
-- 每个实验都记录：数据集、输入域、输出域、模型、loss、指标、patch size、batch size、学习率、训练时长、显存占用。
-- 至少做 3 组消融：loss、模型结构、数据退化/输入域。
-- 至少整理 20 张失败案例，按“噪声残留、过平滑、偏色、伪纹理、暗部脏、高光异常、边缘伪影”分类。
+- 每个实验都记录：数据集、输入域、输出域、模型、loss、指标、patch size、batch size、学习率和训练步数。
+- 至少做 3 组对比：DnCNN / UNet / NAFNet-lite、L1 / L2、RGB / pseudo RGGB。
+- 至少整理一组 failure crop，按“噪声残留、过平滑、偏色、暗部脏、边缘伪影”分类。
+- 至少完成一次 ONNX 导出和 C++ OpenCV DNN 推理 smoke test，并记录 latency。
 
 ---
 
@@ -130,7 +131,8 @@ ai_isp_stage2/
 
 - 第一个 baseline 用小规模 RGB 合成噪声数据，目的是跑通训练工程。
 - 第二个 baseline 用 SIDD，目的是接触真实噪声。
-- 第三个 baseline 用 SID，目的是进入 AI-ISP 的 RAW 域。
+- 第三个 baseline 先用 pseudo RAW/RGGB，目的是在不直接跨到真实 sensor RAW 的情况下建立 RAW-like 输入直觉。
+- SID 放到后续扩展或阶段三/阶段四前的补强项，等 SIDD、pseudo RGGB、ONNX/C++ 跑稳后再做。
 - 不要一开始同时下载所有大数据集；先小样本跑通，再扩大规模。
 
 ### 2.3 必读论文
@@ -190,7 +192,226 @@ Loss 和指标：
 
 ---
 
-## 3. 八周详细路线
+## 3. Week 0-12 详细提升路线
+
+下面这版是阶段二的主执行路线。它基于你已经完成的阶段二内容继续升级：不重新推翻 Week 0-9，而是把每周从“学习记录”升级成“项目证据”，再新增 Week 10-12 补齐工程化和社招 3 年口径。
+
+### Week 0：训练闭环基础整理
+
+**目标**：把 toy 训练从“会跑”整理成可解释的图像恢复训练闭环。
+
+**重点任务**：
+
+- 梳理 noisy、clean、output、residual、loss、metric、checkpoint 的关系。
+- 画清楚 `data -> model -> loss -> metric -> checkpoint -> visualization`。
+- 确认训练脚本能通过 config 复现，而不是手改代码。
+- 说明为什么图像恢复不能只看 loss，还要看 PSNR / SSIM / 局部可视化。
+
+**交付物**：`reports/week0_foundation.md`、训练闭环图、最小训练命令和结果截图。
+
+**掌握标准**：能完整解释 forward、loss、backward、optimizer、validation 的顺序；能说明 `metrics.csv`、checkpoint、可视化图各自服务于什么判断。
+
+### Week 1：Toy RGB Denoise 校准
+
+**目标**：用 toy RGB denoise 校准训练系统和 denoise 直觉，不把它包装成最终项目成果。
+
+**重点任务**：
+
+- 对比 TinyCNN、DnCNN、direct prediction、residual prediction。
+- 对比 L1 / L2、patch size、noise type。
+- 解释 DnCNN residual 为什么适合 denoise。
+
+**交付物**：toy denoise ablation 表、noisy / output / clean 三联图、`reports/week1_toy_rgb_denoise.md`。
+
+**掌握标准**：能说明 toy 实验是 sanity check；能解释 residual denoise、L1/L2、patch size 对结果的影响。
+
+### Week 2：真实 Paired RGB 数据构建
+
+**目标**：从合成 toy 数据进入真实 SIDD paired RGB 数据，证明你能构建可信训练任务。
+
+**重点任务**：
+
+- 准备 SIDD tiny 80/20 noisy-clean paired subset。
+- 检查 noisy / clean 是否像素对齐。
+- 测 noisy input baseline。
+- 记录 train / val 数量、crop size、数据来源和限制。
+
+**交付物**：Dataset card、数据检查图、`reports/week2_real_paired_rgb.md`。
+
+**掌握标准**：能解释 paired 数据为什么必须像素对齐；能解释 noisy baseline 为什么是模型对比前的必要参照。
+
+### Week 3：真实 RGB 模型 Baseline
+
+**目标**：从“跑模型”升级成“建立 baseline 并解释差异”。
+
+**重点任务**：
+
+- 在 SIDD tiny 上训练 DnCNN residual、UNet、NAFNet-lite。
+- 对比 300-step 和标准训练结果。
+- 统计参数量、checkpoint 大小、PSNR / SSIM。
+- 解释为什么当前小数据设置下 DnCNN residual 更稳。
+
+**交付物**：model comparison table、`reports/week3_real_rgb_experiments.md`。
+
+**掌握标准**：能说明 DnCNN、UNet、NAFNet-lite 的任务假设和取舍；对 NAFNet-lite 的表达是“现代 restoration block 跑通，但需要扩数据和长训”，不要简单说失败。
+
+### Week 4：Metric 与可视化评估体系
+
+**目标**：建立“客观指标 + 主观诊断”的评价体系。
+
+**重点任务**：
+
+- 统一 PSNR / SSIM 评估脚本。
+- 输出 triplet、error map、局部 crop。
+- 分析 PSNR、SSIM 和视觉观感不一致的情况。
+
+**交付物**：evaluation protocol、多模型评估报告、`reports/week4_loss_metric_visualization.md`。
+
+**掌握标准**：能解释 PSNR 高不一定视觉最好；能用 error map 和 crop 定位模型主要错误区域。
+
+### Week 5：NAFNet-lite 复现与分析
+
+**目标**：理解现代 image restoration block，而不是只停留在传统 CNN baseline。
+
+**重点任务**：
+
+- 实现或整理 NAFNet-lite。
+- 解释 SimpleGate、残差连接、轻量 encoder-decoder 的意义。
+- 对比 NAFNet-lite 与 DnCNN / UNet 的参数量、指标和训练条件。
+
+**交付物**：NAFNet-lite analysis、`reports/week5_nafnet_reproduction.md`。
+
+**掌握标准**：能解释复杂模型为什么在小数据短训下不一定赢；能提出后续提升方向：扩数据、长训、学习率、loss、patch size。
+
+### Week 6：Pseudo RAW / RGGB 可训练 Baseline
+
+**目标**：把阶段二从纯 RGB denoise 升级到 RAW-like AI-ISP 场景。
+
+**重点任务**：
+
+- 使用 pseudo RAW / RGGB pack 数据入口。
+- 跑通 4-channel DnCNN baseline。
+- 生成 `metrics.csv` 和 checkpoint。
+- 对比 RGB 3-channel baseline 与 pseudo RGGB 4-channel baseline。
+
+**交付物**：RGB vs pseudo RGGB table、RGGB preview 图、pseudo RAW baseline run、`reports/week6_pseudo_raw_isp_bridge.md`。
+
+**掌握标准**：能说明这是 RAW-like bridge，不是真实 sensor RAW；能解释 RGGB pack 的输入形态为什么更接近 AI-ISP 讨论。
+
+### Week 7：Low-light Enhancement 任务升级
+
+**目标**：从普通 denoise 扩展到低光增强，贴近夜景和暗光画质问题。
+
+**重点任务**：
+
+- 构建 synthetic low-light SIDD tiny。
+- 记录 exposure、shot noise、read noise 设置。
+- 训练 low-light UNet baseline。
+- 分析亮度恢复、噪声抑制、颜色保持之间的取舍。
+
+**交付物**：low-light task card、low-light triplet 和 failure crop、`reports/week7_low_light_rgb_enhancement.md`。
+
+**掌握标准**：能说明 low-light enhancement 不只是 denoise；能分析暗部噪声、色偏、细节糊和过增强。
+
+### Week 8：Failure Case 与问题诊断
+
+**目标**：从平均指标推进到模型问题诊断。
+
+**重点任务**：
+
+- 整理 failure crop。
+- 建立 failure taxonomy：texture、edge、dark region、color cast、over-smoothing。
+- 每类 failure 给出原因假设和下一步改进方向。
+
+**交付物**：failure taxonomy table、failure crop sheet、`reports/week8_failure_case_analysis.md`。
+
+**掌握标准**：能根据失败图判断是数据、模型、loss、metric 还是任务定义的问题；能提出可执行改法，而不是只说“效果不好”。
+
+### Week 9：阶段二项目报告 v1
+
+**目标**：把 Week 0-8 收束成项目报告，而不是流水账周报。
+
+**重点任务**：
+
+- 按“背景 -> 数据 -> 模型 -> 实验 -> 评估 -> 失败案例 -> 项目边界”组织。
+- 整理简历表达和一分钟面试讲法。
+- 明确能证明什么、不能证明什么。
+
+**交付物**：`reports/week9_stage2_project_summary.md`、`reports/stage2_final_project_report.md`、简历版项目描述。
+
+**掌握标准**：能把阶段二讲成 AI-ISP restoration baseline 项目；能克制表达，不冒充量产 tuning 或平台 ISP 调试经验。
+
+### Week 10：Engineering Summary
+
+**目标**：补齐工程判断，让项目从“训练结果”变成“可评审结果”。
+
+**重点任务**：
+
+- 统计模型参数量、checkpoint 大小、输入通道数。
+- 汇总 PSNR / SSIM。
+- 为后续 ONNX / C++ latency 预留字段。
+- 把 RGB 和 pseudo RGGB 结果放入同一张 summary 表。
+
+**交付物**：`reports/stage2_engineering_summary.md`、`reports/figures/week10_engineering_summary/stage2_engineering_summary.csv`。
+
+**掌握标准**：能从质量、模型大小、输入形态、部署潜力几个角度比较模型。
+
+### Week 11：ONNX Export
+
+**目标**：证明模型能离开 PyTorch，进入部署验证链路。
+
+**重点任务**：
+
+- 安装并记录 `onnx` / `onnxscript` 等依赖。
+- 导出 DnCNN ONNX。
+- 记录输入 shape、模型大小和导出命令。
+- 验证 `.onnx` 文件真实存在且能被加载。
+
+**交付物**：`deployment/onnx/dncnn_sidd_tiny.onnx`、ONNX export report、更新后的 `deployment/README.md`。
+
+**掌握标准**：能解释 PyTorch checkpoint 和 ONNX 文件的区别；能说明动态 shape / 固定 shape 对部署验证的影响。
+
+### Week 12：C++ OpenCV DNN Inference
+
+**目标**：补齐 C++ 和部署 smoke test 证据，让阶段二达到更接近社招 3 年的项目口径。
+
+**重点任务**：
+
+- 用 C++ OpenCV DNN 加载 ONNX。
+- 输入一张 SIDD noisy 图。
+- 输出 restored 图。
+- 打印 CPU latency。
+- 对比 PyTorch 与 C++ 输出差异，至少记录一次 sanity check。
+
+**交付物**：`deployment/cpp_onnx_infer/`、C++ inference output image、latency log、更新后的 deployment README。
+
+**掌握标准**：能说明这个 C++ 推理是 smoke test，不等于端侧量产部署；能把模型质量、模型大小、latency 放在同一张表里讨论取舍。
+
+### 阶段二最终验收
+
+完成 Week 0-12 后，阶段二应能被表述为：
+
+```text
+AI-ISP 图像恢复与部署验证 baseline 项目：
+基于 SIDD paired RGB 构建训练与评估闭环，对比 DnCNN / UNet / NAFNet-lite，
+使用 PSNR / SSIM / error map / failure crop 分析画质问题，扩展 pseudo RAW/RGGB
+RAW-like 输入，并完成 ONNX 导出与 C++ OpenCV DNN 推理 smoke test。
+```
+
+最低验收标准：
+
+- SIDD paired RGB leaderboard 已完成。
+- pseudo RAW/RGGB baseline 有训练 metrics 和 checkpoint。
+- engineering summary 有参数量、checkpoint 大小、PSNR / SSIM。
+- ONNX 文件已导出。
+- C++ 推理能输出图片并记录 latency。
+- 最终报告明确项目边界，不夸大量产 ISP 经验。
+
+---
+
+## 3.1 旧版 8 周路线参考
+
+以下内容是阶段二早期路线的展开资料，适合作为补充阅读或后续扩展。当前主执行路线以上面的 Week 0-12 为准。
 
 ### Week 0.5：环境、项目骨架和最小训练闭环
 
@@ -679,43 +900,55 @@ Loss 和指标：
 ## 8. 推荐执行顺序摘要
 
 ```text
-Week 0.5  最小训练闭环
-  -> 能训练一个 tiny CNN，并保存 checkpoint / TensorBoard
+Week 0    训练闭环基础整理
+  -> 能解释 data / model / loss / metric / checkpoint / visualization
 
-Week 1    RGB 合成噪声 baseline
-  -> 能训练 DnCNN / UNet，理解 residual denoise
+Week 1    Toy RGB denoise 校准
+  -> 能用 toy 任务验证训练系统，理解 DnCNN residual / L1 / L2 / patch
 
-Week 2    SIDD 真实噪声
-  -> 能训练真实图像降噪模型，理解真实噪声和合成噪声差异
+Week 2    SIDD paired RGB 数据构建
+  -> 能准备 noisy-clean paired subset，检查像素对齐，测 noisy baseline
 
-Week 3    SID RAW low-light
-  -> 能读取 RAW、pack 4ch、乘 exposure ratio，并 overfit 小样本
+Week 3    真实 RGB 模型 baseline
+  -> 能对比 DnCNN / UNet / NAFNet-lite，并解释结果差异
 
-Week 4    Loss / Metric / 可视化
-  -> 能用 PSNR / SSIM / LPIPS / error map / ROI 分析模型
+Week 4    Metric 与可视化评估
+  -> 能用 PSNR / SSIM / triplet / error map / crop 分析模型
 
-Week 5    NAFNet-lite 复现
-  -> 能解释 SimpleGate / SCA / LayerNorm，并和 UNet 对比
+Week 5    NAFNet-lite 复现与分析
+  -> 能解释现代 restoration block 在小数据短训下的表现
 
-Week 6    RAW 噪声建模
-  -> 能实现简化 unprocess / Poisson-Gaussian 数据合成
+Week 6    Pseudo RAW / RGGB baseline
+  -> 能跑通 RAW-like 4-channel 输入训练，并和 RGB baseline 对比
 
-Week 7    消融与失败案例
-  -> 能从实验和失败图反推算法问题
+Week 7    Low-light enhancement
+  -> 能构建低光增强任务，分析亮度恢复、噪声和颜色保持
 
-Week 8    阶段报告与面试表达
-  -> 能把 AI-ISP 项目讲成数据、算法、指标、工程闭环
+Week 8    Failure case 与问题诊断
+  -> 能把失败图分类，并提出数据、loss、模型层面的改法
+
+Week 9    项目报告 v1
+  -> 能把阶段二讲成 AI-ISP restoration baseline，而不是周报流水账
+
+Week 10   Engineering summary
+  -> 能汇总参数量、checkpoint 大小、PSNR / SSIM，并预留 latency
+
+Week 11   ONNX export
+  -> 能导出 DnCNN ONNX，并记录输入 shape、模型大小和导出命令
+
+Week 12   C++ OpenCV DNN inference
+  -> 能跑通 C++ 推理 smoke test，输出图片并记录 CPU latency
 ```
 
 ---
 
 ## 9. 阶段二与阶段三的衔接
 
-阶段二结束时不要急着继续换模型。进入阶段三前，先从阶段二项目里选一个最小可部署模型：
+阶段二结束时不要急着继续换模型。进入阶段三前，先从阶段二项目里选一个最小可部署模型，并确保 Week 11-12 已经完成 ONNX / C++ smoke test：
 
-- 优先选择 NAFNet-lite / UNet-lite，而不是 Restormer。
+- 优先选择 DnCNN / NAFNet-lite / UNet-lite，而不是 Restormer。
 - 输入分辨率、通道数和 patch 推理方式要固定。
-- 保存一组固定测试图，用于后续 ONNX / TensorRT / NCNN 输出对齐。
-- 记录 PyTorch FP32 baseline 的 PSNR / SSIM / LPIPS / latency，作为部署阶段的基准。
+- 保存一组固定测试图，用于后续 ONNX / TensorRT / NCNN / OpenCV DNN 输出对齐。
+- 记录 PyTorch FP32 baseline、ONNX 输出和 C++ OpenCV DNN 输出的 PSNR / SSIM / latency，作为部署阶段的基准。
 
-阶段三的目标不是重新训练更强模型，而是把这个模型导出、对齐、加速、量化，并解释画质损失。
+阶段三的目标不是重新训练更强模型，而是在阶段二 smoke test 的基础上继续做导出对齐、加速、量化、端侧推理和画质损失解释。

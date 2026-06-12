@@ -1,0 +1,3 @@
+split,noisy_count,clean_count,matched_count,unmatched_noisy,unmatched_clean,unique_sizes,mean_pair_psnr,mean_abs_diff
+train,80,80,80,0,0,512x512,28.2521,0.034589
+val,20,20,20,0,0,512x512,26.5687,0.041222

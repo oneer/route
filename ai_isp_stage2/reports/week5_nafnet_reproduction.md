@@ -660,3 +660,127 @@ feature_out = feature_in + delta_feature
 再用统一 split 比较不同模型；
 最后用指标曲线、三联图和 error map 分析为什么模型表现不同。
 ```
+
+## 18. Week 5 升级：NAFNet-lite 结构检查与专项分析卡
+
+新版阶段二路线要求 Week 5 不只是“实现了 NAFNet-lite”，还要能证明：
+
+```text
+模型 shape 正确；
+NAFBlock / SimpleGate 数量可解释；
+参数量和训练设置可复查；
+NAFNet-lite 的短训和标准训差异能被量化；
+和 DnCNN / UNet 的差距能被准确描述。
+```
+
+为此新增脚本：
+
+```text
+ai_isp_stage2/scripts/17_export_week5_nafnet_analysis.py
+```
+
+运行命令：
+
+```bash
+python ai_isp_stage2/scripts/17_export_week5_nafnet_analysis.py
+```
+
+输出文件：
+
+```text
+ai_isp_stage2/reports/figures/week5_nafnet_analysis/week5_nafnet_analysis.csv
+ai_isp_stage2/reports/figures/week5_nafnet_analysis/week5_nafnet_analysis.md
+```
+
+### 18.1 本次运行结果
+
+脚本会对每个模型做一次 shape check：
+
+```text
+input:  (2, 3, 128, 128)
+output: (2, 3, 128, 128)
+```
+
+这说明 NAFNet-lite、DnCNN、UNet 都能直接用于像素级 restoration loss。
+
+自动导出的结果：
+
+| Run | Model | Width | Loss | Steps | Params | Best PSNR | Best SSIM | Gap vs DnCNN L1 |
+|---|---|---|---|---:|---:|---:|---:|---:|
+| `paired_rgb_sidd_tiny_nafnet_lite_l1_300` | nafnet_lite | 8 | L1 | 300 | 19995 | 26.8194@250 | 0.73509@300 | -8.8140 |
+| `paired_rgb_sidd_tiny_nafnet_lite_l1_1000` | nafnet_lite | 16 | L1 | 1000 | 104307 | 33.3269@1000 | 0.86223@1000 | -2.3065 |
+| `paired_rgb_sidd_tiny_dncnn_l2_2000` | dncnn | features=32 | MSE | 2000 | 29507 | 35.5356@1800 | 0.88367@1800 | -0.0978 |
+| `paired_rgb_sidd_tiny_dncnn_l1_2000` | dncnn | features=32 | L1 | 2000 | 29507 | 35.6334@2000 | 0.88839@1800 | 0.0000 |
+| `paired_rgb_sidd_tiny_unet_l1_1000` | unet | base=16 | L1 | 1000 | 118307 | 30.4453@1000 | 0.88003@1000 | -5.1881 |
+
+NAFNet-lite 结构检查：
+
+| Run | Structure |
+|---|---|
+| width=8, 300 steps | `enc=[1, 1], dec=[1, 1], middle=1, naf_blocks=5, gates=10` |
+| width=16, 1000 steps | `enc=[1, 1], dec=[1, 1], middle=2, naf_blocks=6, gates=12` |
+
+### 18.2 这组结果怎么解释
+
+第一，NAFNet-lite 的实现是 shape-compatible 的。
+
+```text
+输入和输出都是 [B, 3, H, W]
+```
+
+这意味着它不是“代码能 import”，而是真的能接入当前 paired RGB 训练闭环。
+
+第二，width=16 标准版比 width=8 短训版强很多：
+
+```text
+width=8, 300 steps:   26.8194 PSNR
+width=16, 1000 steps: 33.3269 PSNR
+```
+
+提升超过 6 dB，说明早期 NAFNet-lite 结果差，主要不能归因于结构无效，而是配置太小、训练太短。
+
+第三，当前 NAFNet-lite 仍未超过 DnCNN：
+
+```text
+NAFNet-lite width=16: 33.3269 PSNR
+DnCNN L1:             35.6334 PSNR
+gap:                 -2.3065 dB
+```
+
+这个结论要克制表达：
+
+```text
+在当前 SIDD tiny split、L1 loss、1000 steps、width=16 设置下，NAFNet-lite 尚未超过 DnCNN residual。
+```
+
+不要说：
+
+```text
+NAFNet 不如 DnCNN。
+```
+
+因为完整 NAFNet 的训练策略、数据规模、scheduler、EMA、训练步数和模型宽度都没有完全复现。
+
+### 18.3 当前 Week 5 是否达标
+
+按新版学习路线，Week 5 现在已经满足主要要求：
+
+| 要求 | 当前状态 |
+|---|---|
+| SimpleGate / NAFBlock 概念说明 | 已完成 |
+| NAFNet-lite 最小实现 | 已完成 |
+| shape check | 已由脚本自动验证 |
+| 参数量统计 | 已导出 |
+| width=8 vs width=16 对比 | 已导出 |
+| 与 DnCNN / UNet 对比 | 已导出 |
+| 未超过 DnCNN 的原因分析 | 已补充 |
+| 下一步实验方向 | 明确为 2000 steps 或 Charbonnier loss |
+
+后续如果继续增强 Week 5，最值得补的是：
+
+```text
+paired_rgb_sidd_tiny_nafnet_lite_l1_2000.yaml
+paired_rgb_sidd_tiny_nafnet_lite_charbonnier_1000.yaml
+```
+
+但这不是进入 Week 6 的阻塞项。当前 Week 5 已经足够支撑“现代轻量 restoration block 复现与分析”的学习目标。

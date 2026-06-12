@@ -865,3 +865,119 @@ UNet 在结构指标上接近 DnCNN，但像素误差明显更高。
 **Q4：如果只能选一个 baseline 写进简历，选哪个？**
 
 选 DnCNN residual。它结构清楚、结果稳定、PSNR/SSIM 都强，而且能讲清 residual denoise 的动机。UNet 和 NAFNet-lite 可以作为后续模型对比。
+
+## 16. Week 3 升级：自动模型对比卡与补充实验
+
+新版阶段二路线要求 Week 3 不只列出几个训练结果，而是形成一张可复查的 model comparison table。它需要同时回答：
+
+```text
+哪个模型超过 noisy baseline？
+哪个 loss 更适合当前 SIDD tiny？
+patch 64 和 patch 128 有什么取舍？
+短训结果和标准训练结果是否一致？
+参数量和 checkpoint 大小是否合理？
+```
+
+为此新增脚本：
+
+```text
+ai_isp_stage2/scripts/15_export_week3_model_comparison.py
+```
+
+运行命令：
+
+```bash
+python ai_isp_stage2/scripts/15_export_week3_model_comparison.py
+```
+
+输出文件：
+
+```text
+ai_isp_stage2/reports/figures/week3_model_comparison/week3_model_comparison.csv
+ai_isp_stage2/reports/figures/week3_model_comparison/week3_model_comparison.md
+```
+
+同时补跑了原 Week 3 设计里缺失的两组实验：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l1_2000.yaml
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2_patch64_2000.yaml
+```
+
+### 16.1 完整 Week 3 对比表
+
+input noisy baseline：
+
+```text
+PSNR = 26.7302
+SSIM = 0.52412
+```
+
+自动导出的模型对比结果：
+
+| Group | Run | Model | Loss | Residual | Patch | Steps | Params | Checkpoint MB | Best PSNR | Best SSIM | PSNR gain | SSIM gain |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| short_300 | `paired_rgb_sidd_tiny_dncnn_l2_300` | dncnn | mse | true | 128 | 300 | 29507 | 0.351 | 32.7717@250 | 0.77100@300 | 6.0415 | 0.24688 |
+| short_300 | `paired_rgb_sidd_tiny_unet_l1_300` | unet | l1 | false | 128 | 300 | 118307 | 1.380 | 28.2856@300 | 0.85951@300 | 1.5554 | 0.33539 |
+| short_300 | `paired_rgb_sidd_tiny_nafnet_lite_l1_300` | nafnet_lite | l1 | false | 128 | 300 | 19995 | 0.343 | 26.8194@250 | 0.73509@300 | 0.0892 | 0.21097 |
+| standard | `paired_rgb_sidd_tiny_dncnn_l2_2000` | dncnn | mse | true | 128 | 2000 | 29507 | 0.351 | 35.5356@1800 | 0.88367@1800 | 8.8054 | 0.35955 |
+| loss_ablation | `paired_rgb_sidd_tiny_dncnn_l1_2000` | dncnn | l1 | true | 128 | 2000 | 29507 | 0.351 | 35.6334@2000 | 0.88839@1800 | 8.9032 | 0.36427 |
+| patch_ablation | `paired_rgb_sidd_tiny_dncnn_l2_patch64_2000` | dncnn | mse | true | 64 | 2000 | 29507 | 0.351 | 35.2304@1600 | 0.88455@1800 | 8.5002 | 0.36043 |
+| standard | `paired_rgb_sidd_tiny_unet_l1_1000` | unet | l1 | false | 128 | 1000 | 118307 | 1.380 | 30.4453@1000 | 0.88003@1000 | 3.7151 | 0.35591 |
+| standard | `paired_rgb_sidd_tiny_nafnet_lite_l1_1000` | nafnet_lite | l1 | false | 128 | 1000 | 104307 | 1.329 | 33.3269@1000 | 0.86223@1000 | 6.5967 | 0.33811 |
+
+### 16.2 新增实验结论
+
+**DnCNN L1 vs L2：**
+
+在同样 2000 step、patch 128、DnCNN residual 设置下，L1 略高于 L2：
+
+```text
+DnCNN L2: 35.5356 PSNR / 0.88367 SSIM
+DnCNN L1: 35.6334 PSNR / 0.88839 SSIM
+```
+
+这说明在当前 SIDD tiny split 上，L1 不只是视觉对照，也能取得略好的 PSNR/SSIM。后续正式 baseline 可以优先保留 DnCNN L1 和 DnCNN L2 两条线，而不是只凭习惯选择 MSE。
+
+**patch 64 vs patch 128：**
+
+DnCNN L2 patch64 的结果：
+
+```text
+patch64: 35.2304 PSNR / 0.88455 SSIM
+patch128: 35.5356 PSNR / 0.88367 SSIM
+```
+
+patch64 的 PSNR 略低，但 SSIM 基本持平。这说明小 patch 可以作为快速实验配置；如果追求最高 PSNR，当前仍优先用 patch128。
+
+**短训 vs 标准训练：**
+
+300-step 只能判断模型能不能学，不能直接代表模型能力。最明显的是 NAFNet-lite：
+
+```text
+300-step: 26.8194 PSNR
+1000-step: 33.3269 PSNR
+```
+
+所以面试时不能说“NAFNet-lite 不行”，只能说：
+
+```text
+在 300-step smoke test 下 NAFNet-lite 尚未充分收敛；
+标准训练后明显提升，但在当前 tiny split 上仍低于 DnCNN residual。
+```
+
+### 16.3 当前 Week 3 是否达标
+
+按新版学习路线，Week 3 现在已经满足主要要求：
+
+| 要求 | 当前状态 |
+|---|---|
+| 至少一个模型超过 input baseline | 已满足，所有正式 run 都超过 |
+| DnCNN / UNet / NAFNet-lite 对比 | 已完成 |
+| L1 / L2 对比 | 已补跑 DnCNN L1 2000 |
+| patch 64 / 128 对比 | 已补跑 DnCNN L2 patch64 2000 |
+| 参数量和 checkpoint 大小 | 已由对比脚本导出 |
+| best step 和 last step 区分 | 已由 `metrics.csv` 和对比表体现 |
+| 下一步判断 | DnCNN residual 是当前最稳 baseline，NAFNet-lite 保留为现代结构对照 |
+
+下一步不建议继续盲目堆新模型。更合理的路线是进入 Week 4，把这些结果转成统一评估、error map、triplet 和 failure case 分析。

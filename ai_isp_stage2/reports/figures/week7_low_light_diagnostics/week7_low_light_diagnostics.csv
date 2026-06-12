@@ -1,0 +1,4 @@
+name,luma_mean,luma_mae,dark_luma_mae,rgb_mae,under_enhanced_pct,over_enhanced_pct,black_clip_pct,white_clip_pct
+low_light_input,0.184269,0.150155,0.071530,0.162942,67.0190,0.1811,21.4171,0.0000
+model_output,0.340871,0.024881,0.038840,0.043915,0.4221,1.1437,0.0000,0.9120
+clean_target,0.330314,0.000000,0.000000,0.000000,0.0000,0.0000,3.4655,0.7287

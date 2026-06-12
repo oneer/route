@@ -1,0 +1,6 @@
+run,model,width,blocks,loss,patch_size,steps,batch_size,params,input_shape,output_shape,best_psnr,best_psnr_step,best_ssim,best_ssim_step,psnr_gap_to_dncnn_l1,psnr_gap_to_dncnn_l2
+paired_rgb_sidd_tiny_nafnet_lite_l1_300,nafnet_lite,8,"enc=[1, 1], dec=[1, 1], middle=1, naf_blocks=5, gates=10",l1,128,300,2,19995,"(2, 3, 128, 128)","(2, 3, 128, 128)",26.8194,250,0.73509,300,-8.8140,-8.7162
+paired_rgb_sidd_tiny_nafnet_lite_l1_1000,nafnet_lite,16,"enc=[1, 1], dec=[1, 1], middle=2, naf_blocks=6, gates=12",l1,128,1000,2,104307,"(2, 3, 128, 128)","(2, 3, 128, 128)",33.3269,1000,0.86223,1000,-2.3065,-2.2087
+paired_rgb_sidd_tiny_dncnn_l2_2000,dncnn,features=32,-,mse,128,2000,4,29507,"(2, 3, 128, 128)","(2, 3, 128, 128)",35.5356,1800,0.88367,1800,-0.0978,0.0000
+paired_rgb_sidd_tiny_dncnn_l1_2000,dncnn,features=32,-,l1,128,2000,4,29507,"(2, 3, 128, 128)","(2, 3, 128, 128)",35.6334,2000,0.88839,1800,0.0000,0.0978
+paired_rgb_sidd_tiny_unet_l1_1000,unet,base=16,-,l1,128,1000,4,118307,"(2, 3, 128, 128)","(2, 3, 128, 128)",30.4453,1000,0.88003,1000,-5.1881,-5.0903

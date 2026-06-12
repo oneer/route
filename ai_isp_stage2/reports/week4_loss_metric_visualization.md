@@ -528,3 +528,117 @@ reports/week4_loss_metric_visualization.md
 ```text
 Week4 的目标是从“会跑模型”升级到“会评价模型”。
 ```
+
+## 11. Week 4 升级：评估协议摘要和消融可视化
+
+新版阶段二路线要求 Week 4 不只会解释 PSNR / SSIM / 三联图，还要把 Week 3 的模型对比结果纳入统一评估协议。也就是说，评估报告要能同时回答：
+
+```text
+模型是否超过 noisy input baseline？
+PSNR 和 SSIM 的排名是否一致？
+best PSNR 和 best SSIM 是否出现在同一步？
+如果指标出现分歧，应该去看哪张三联图和 error map？
+```
+
+### 11.1 新增 ablation 评估
+
+Week 3 已经补齐 DnCNN L1 和 patch64 两组实验，所以 Week 4 新增一组 ablation 评估，把它们和标准模型一起比较。
+
+运行命令：
+
+```bash
+python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l1_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_patch64_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_1000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 --output-dir ai_isp_stage2/reports/figures/week4_sidd_tiny_ablation_eval --report-md ai_isp_stage2/reports/week4_sidd_tiny_ablation_eval_results.md --title "Week 4 SIDD Tiny Ablation Evaluation Results"
+```
+
+输出文件：
+
+```text
+ai_isp_stage2/reports/week4_sidd_tiny_ablation_eval_results.md
+ai_isp_stage2/reports/figures/week4_sidd_tiny_ablation_eval/metrics_summary.csv
+ai_isp_stage2/reports/figures/week4_sidd_tiny_ablation_eval/metrics_plot.png
+ai_isp_stage2/reports/figures/week4_sidd_tiny_ablation_eval/triplet_contact_sheet.png
+ai_isp_stage2/reports/figures/week4_sidd_tiny_ablation_eval/error_maps/
+```
+
+ablation 评估结果：
+
+| Run | Best PSNR | Best PSNR Step | Best SSIM | Best SSIM Step | Last PSNR | Last SSIM |
+|---|---:|---:|---:|---:|---:|---:|
+| DnCNN L2 patch128 | 35.5356 | 1800 | 0.88367 | 1800 | 34.7538 | 0.87418 |
+| DnCNN L1 patch128 | 35.6334 | 2000 | 0.88839 | 1800 | 35.6334 | 0.88669 |
+| DnCNN L2 patch64 | 35.2304 | 1600 | 0.88455 | 1800 | 35.0176 | 0.88168 |
+| UNet L1 | 30.4453 | 1000 | 0.88003 | 1000 | 30.4453 | 0.88003 |
+| NAFNet-lite L1 | 33.3269 | 1000 | 0.86223 | 1000 | 33.3269 | 0.86223 |
+
+![SIDD tiny ablation metrics](figures/week4_sidd_tiny_ablation_eval/metrics_plot.png)
+
+> 图说明：这张图把 DnCNN L1/L2、patch64/128、UNet 和 NAFNet-lite 放在同一评估视角下。DnCNN L1 在当前 split 上取得最高 PSNR 和 SSIM；patch64 的 PSNR 略低但 SSIM 接近，适合作为快速实验配置。
+
+![SIDD tiny ablation triplets](figures/week4_sidd_tiny_ablation_eval/triplet_contact_sheet.png)
+
+> 图说明：这张三联图用于检查指标结论是否和视觉一致。特别是当 PSNR / SSIM 排名不同，或者 best PSNR / best SSIM 出现在不同 step 时，不能只看表格下结论。
+
+### 11.2 新增评估协议摘要脚本
+
+新增脚本：
+
+```text
+ai_isp_stage2/scripts/16_export_week4_evaluation_protocol.py
+```
+
+运行命令：
+
+```bash
+python ai_isp_stage2/scripts/16_export_week4_evaluation_protocol.py
+```
+
+输出文件：
+
+```text
+ai_isp_stage2/reports/figures/week4_evaluation_protocol/week4_evaluation_protocol.csv
+ai_isp_stage2/reports/figures/week4_evaluation_protocol/week4_evaluation_protocol.md
+```
+
+它会读取已有的 `metrics_summary.csv`，自动补充：
+
+| 字段 | 含义 |
+|---|---|
+| PSNR gain | 相比 noisy input baseline 的 PSNR 提升 |
+| SSIM gain | 相比 noisy input baseline 的 SSIM 提升 |
+| PSNR rank | 当前评估组内 PSNR 排名 |
+| SSIM rank | 当前评估组内 SSIM 排名 |
+| metric note | 是否存在 PSNR/SSIM 分歧，或 best step 不一致 |
+
+本次自动摘要中的关键结论：
+
+| Eval | Run | Best PSNR | Best SSIM | PSNR Rank | SSIM Rank | Note |
+|---|---|---:|---:|---:|---:|---|
+| standard | DnCNN L2 | 35.5356@1800 | 0.88367@1800 | 1 | 1 | PSNR/SSIM aligned |
+| standard | UNet L1 | 30.4453@1000 | 0.88003@1000 | 3 | 2 | SSIM 接近，但 PSNR 明显低 |
+| standard | NAFNet-lite L1 | 33.3269@1000 | 0.86223@1000 | 2 | 3 | 指标稳定，仍低于 DnCNN |
+| ablation | DnCNN L1 | 35.6334@2000 | 0.88839@1800 | 1 | 1 | best PSNR 和 best SSIM 不同步 |
+| ablation | DnCNN L2 patch64 | 35.2304@1600 | 0.88455@1800 | 3 | 2 | patch64 SSIM 接近，PSNR 略低 |
+
+### 11.3 当前 Week 4 是否达标
+
+按新版学习路线，Week 4 现在已经满足主要要求：
+
+| 要求 | 当前状态 |
+|---|---|
+| 统一 PSNR / SSIM 评估 | 已有 `05_evaluate_runs.py` |
+| triplet contact sheet | 已生成 smoke、short、standard、ablation 多组 |
+| error map | 已自动生成 `error_maps/` |
+| L1 / L2 可视化评估 | 已补入 DnCNN L1/L2 ablation |
+| patch64 / patch128 可视化评估 | 已补入 patch ablation |
+| PSNR / SSIM 分歧识别 | 已新增 `16_export_week4_evaluation_protocol.py` |
+| gain vs input baseline | 已自动写入 evaluation protocol |
+
+下一步进入 Week 5 时，不要只问“NAFNet-lite 分数为什么没最高”。更好的问题是：
+
+```text
+NAFNet-lite 的结构假设是什么？
+当前数据量、训练步数、width 和 loss 是否足够支撑它？
+它在 triplet 和 error map 中的失败区域，和 DnCNN 有什么不同？
+```
+
+这才是 Week 4 到 Week 5 的正确衔接。

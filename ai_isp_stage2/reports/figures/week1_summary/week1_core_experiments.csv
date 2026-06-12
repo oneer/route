@@ -1,0 +1,14 @@
+group,run,label,lesson,final_step,final_loss,final_psnr,final_ssim,best_psnr,best_psnr_step,best_ssim,best_ssim_step
+TinyCNN probe,toy_rgb_denoise_tiny_10,TinyCNN 10 steps,training just starts,10,0.170468,13.4923,0.66006,13.4923,10,0.66006,10
+TinyCNN probe,toy_rgb_denoise_tiny_50,TinyCNN 50 steps,loss/metrics begin to improve,50,0.083647,18.1936,0.73767,18.1936,50,0.73767,50
+TinyCNN probe,toy_rgb_denoise_tiny_100_probe,TinyCNN 100 steps,closed loop is working,100,0.034625,26.7288,0.85265,26.7288,100,0.85265,100
+Model baseline,toy_rgb_denoise_dncnn,DnCNN residual 300,stronger denoise prior,300,0.020152,31.1470,0.89850,31.1470,300,0.89850,300
+Model baseline,toy_rgb_denoise_dncnn_direct,DnCNN direct 300,direct clean is harder,300,0.037522,28.2323,0.88763,28.2323,300,0.88763,300
+Model baseline,toy_rgb_denoise_unet,UNet 300,model name is not enough,300,0.058510,21.3899,0.80128,21.4783,200,0.80128,300
+Residual vs direct,toy_rgb_denoise_dncnn_long,DnCNN residual 1000,residual keeps improving,1000,0.017346,33.1290,0.93547,33.1290,1000,0.93547,1000
+Residual vs direct,toy_rgb_denoise_dncnn_direct_long,DnCNN direct 1000,direct improves but lags,1000,0.026696,31.2291,0.91442,31.2291,1000,0.91442,1000
+Loss,toy_rgb_denoise_dncnn_l1_loss,DnCNN L1,SSIM-oriented comparison,300,0.020152,31.1470,0.89850,31.1470,300,0.89850,300
+Loss,toy_rgb_denoise_dncnn_l2_loss,DnCNN L2/MSE,PSNR-oriented comparison,300,0.000739,31.5874,0.89452,31.5874,300,0.89452,300
+Patch,toy_rgb_denoise_dncnn_l2_patch128,DnCNN patch 128,"more context, more cost",300,0.000499,33.4745,0.93176,33.4745,300,0.93176,300
+Noise,toy_rgb_denoise_dncnn_l2_shot_read_calibrated,DnCNN shot/read,sensor-noise intuition,300,0.000613,32.1824,0.91118,32.1824,300,0.91118,300
+Paired smoke,paired_rgb_smoke_dncnn_l2,Paired RGB smoke,folder pair pipeline,120,0.000557,32.9687,0.89384,32.9687,120,0.89384,120

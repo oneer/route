@@ -838,3 +838,108 @@ sRGB 图已经经过 ISP，训练器可以直接按 RGB 读取。RAW 会引入 B
 **Q5：如果训练后指标很差，Week2 应该先查什么？**
 
 先查数据，不要先换模型。检查顺序是：路径是否正确、noisy/clean 文件名是否匹配、尺寸是否一致、图像是否同一场景、baseline 是否正常、三联图是否对齐。
+
+## 17. Week 2 升级：Dataset Card 和可复查摘要
+
+新版阶段二路线要求 Week 2 不只说明“数据已经准备好”，还要留下一个更像项目交付物的 Dataset Card。它的作用是把真实 paired RGB 子集的来源、划分、尺寸、配对完整性和 baseline 摘要统一记录下来。
+
+新增脚本：
+
+```text
+ai_isp_stage2/scripts/14_export_week2_dataset_card.py
+```
+
+运行命令：
+
+```bash
+python ai_isp_stage2/scripts/14_export_week2_dataset_card.py
+```
+
+输出文件：
+
+```text
+ai_isp_stage2/reports/figures/week2_dataset_card/week2_dataset_card.csv
+ai_isp_stage2/reports/figures/week2_dataset_card/week2_dataset_card.md
+```
+
+本次运行结果：
+
+```text
+train: matched=80 sizes=[(512, 512)] mean_pair_psnr=28.2521 mean_abs_diff=0.034589
+val: matched=20 sizes=[(512, 512)] mean_pair_psnr=26.5687 mean_abs_diff=0.041222
+```
+
+Dataset Card 摘要：
+
+| Split | Noisy | Clean | Matched | Unmatched noisy | Unmatched clean | Size | Mean pair PSNR | Mean abs diff |
+|---|---:|---:|---:|---:|---:|---|---:|---:|
+| train | 80 | 80 | 80 | 0 | 0 | 512x512 | 28.2521 | 0.034589 |
+| val | 20 | 20 | 20 | 0 | 0 | 512x512 | 26.5687 | 0.041222 |
+
+这里的 `mean_pair_psnr` 是对完整 512x512 crop 计算的 noisy-clean 差异摘要，用来检查数据本身的噪声水平。它不是训练模型结果，也不替代后面的 patch validation baseline。
+
+重新确认 patch validation noisy baseline：
+
+```bash
+python ai_isp_stage2/scripts/02_measure_noise_baseline.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_dncnn_l2.yaml
+```
+
+输出：
+
+```text
+config,noise,patch_size,val_size,input_psnr,input_ssim
+ai_isp_stage2\configs\paired_rgb_sidd_tiny_dncnn_l2.yaml,real_paired_rgb,128,200,26.7302,0.52412
+```
+
+这两个数值的用途不同：
+
+| 指标 | 计算对象 | 用途 |
+|---|---|---|
+| Dataset Card mean pair PSNR | 完整 512x512 paired crop | 检查数据集整体噪声水平 |
+| input PSNR / SSIM baseline | validation 随机 patch | 作为训练模型必须超过的最低参照 |
+
+### 17.1 为什么要补 Dataset Card
+
+真实 paired RGB 数据最容易出问题的地方不是模型，而是数据本身。Dataset Card 能快速回答这些问题：
+
+- noisy 和 clean 数量是否一致；
+- 同名文件是否都能匹配；
+- train / val 尺寸是否统一；
+- 是否存在 unmatched noisy 或 unmatched clean；
+- 当前子集 noisy-clean 的平均差异大概是多少；
+- 后续训练结果应该和哪个 input baseline 对比。
+
+如果后续模型训练异常，先回到 Dataset Card 做第一轮判断：
+
+```text
+matched 是否等于 noisy/clean 数量？
+unmatched 是否为 0？
+尺寸是否一致？
+input baseline 是否合理？
+```
+
+这些都正常后，再继续排查 loss、模型结构和训练配置。
+
+### 17.2 Week 2 当前是否达标
+
+按新版 Week 2 路线，目前这一周已经满足主要要求：
+
+| 要求 | 当前状态 |
+|---|---|
+| SIDD paired RGB 子集 | 已完成，80 train / 20 val |
+| noisy-clean 文件配对 | 已检查，matched 数量完整 |
+| 图片尺寸统一 | 已统一为 512x512 |
+| 数据检查图 | 已生成 train / val paired samples grid |
+| noisy input baseline | 已确认，26.7302 PSNR / 0.52412 SSIM |
+| Dataset Card | 已新增脚本和导出结果 |
+
+后续如果要继续增强 Week 2，优先级不是换模型，而是补更丰富的数据诊断，例如：
+
+```text
+按 scene / ISO / brightness 分组统计 noisy-clean 差异；
+增加 RGB channel mean/std；
+抽取暗部 ROI 单独计算 noise level；
+把异常 pair 自动标记出来。
+```
+
+但这些可以放到后续画质分析周，不必阻塞 Week 2 进入 Week 3。

@@ -1,0 +1,5 @@
+module,artifact,result,interview_value,next_action
+真实 paired RGB 去噪,week4_sidd_tiny_standard_eval + Week 9 leaderboard,paired_rgb_sidd_tiny_dncnn_l2_2000 reaches 35.5356 dB PSNR / 0.88367 SSIM,能解释为什么 residual DnCNN 是小数据 paired denoise 的强基线。,继续用它作为后续 loss、数据和部署实验的 reference baseline。
+工程可部署性,stage2_engineering_summary.csv,"DnCNN params=29507, checkpoint=0.351 MB",能把质量指标和参数量、checkpoint 大小一起讨论，而不是只报 PSNR。,Week 10-12 补 ONNX/C++ latency 和输出一致性。
+低光增强扩展,week7_low_light_eval,low_light_sidd_tiny_unet_l1_300 reaches 24.7821 dB PSNR / 0.81468 SSIM,能说明 low-light enhancement 同时涉及亮度、颜色和噪声恢复。,补暗区 ROI、亮度统计和色偏分析。
+失败案例诊断,week8_failure_taxonomy.csv,6 failure types summarized,能把 crop/error map 转成 failure taxonomy 和下一步实验。,后续可做 error-map 自动挖掘高误差 ROI。

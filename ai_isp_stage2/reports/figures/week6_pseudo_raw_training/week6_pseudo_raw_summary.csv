@@ -1,0 +1,3 @@
+label,run,dataset,channels,patch_size,effective_spatial,params,input_psnr,input_ssim,best_psnr,best_psnr_step,best_ssim,best_ssim_step,psnr_gain,ssim_gain
+rgb_300,paired_rgb_sidd_tiny_dncnn_l2_300,paired_image,3,128,128x128,29507,26.7302,0.52412,32.7717,250,0.77100,300,6.0415,0.24688
+pseudo_rggb_300,pseudo_raw_sidd_tiny_dncnn_l2_300,paired_pseudo_raw,4,128,64x64 pack from 128x128 RGB crop,30084,26.6785,0.50447,31.7157,300,0.77400,300,5.0372,0.26953

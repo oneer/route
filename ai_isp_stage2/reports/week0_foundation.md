@@ -522,3 +522,103 @@ ToyRGBDenoiseDataset
 ```
 
 也就是说，Week 1 不是新开一条线，而是 Week 0 的具体落地。
+
+## 16. Week 0 在阶段二项目中的位置
+
+新版阶段二不是只学习神经网络概念，而是要逐步形成一个可复现、可评估、可解释的 AI-ISP 图像恢复项目。
+
+所以 Week 0 的作用不是“学完整深度学习”，而是先建立后面所有实验都要遵守的工程闭环：
+
+```text
+data -> model -> loss -> metric -> checkpoint -> visualization -> analysis
+```
+
+对应到后面的阶段二：
+
+| Week 0 概念 | 后续项目里的作用 |
+|---|---|
+| data | SIDD paired RGB、pseudo RAW/RGGB、low-light 数据入口 |
+| model | TinyCNN、DnCNN、UNet、NAFNet-lite |
+| loss | L1、L2/MSE，以及后续可能扩展的结构类 loss |
+| metric | PSNR、SSIM、参数量、checkpoint 大小、latency |
+| checkpoint | 保存可复现实验结果，用于评估、导出 ONNX 和 C++ 推理 |
+| visualization | triplet、error map、failure crop |
+| analysis | 解释为什么某个模型更好、哪里失败、下一步怎么改 |
+
+这条链路后面会反复出现。Week 1 的 toy denoise、Week 3 的 SIDD 模型对比、Week 6 的 pseudo RGGB baseline、Week 11/12 的 ONNX/C++ 验证，本质上都在回答同一个问题：
+
+```text
+这个实验的数据、模型、指标、产物和结论是否可信？
+```
+
+## 17. 一个合格 run 应该留下什么
+
+阶段二后续每次训练都不要只看终端里最后一行指标。一个合格的实验 run 至少应该留下这些东西：
+
+```text
+run_name/
+├── config.yaml 或对应配置文件
+├── metrics.csv
+├── checkpoints/
+│   ├── last.pth
+│   └── best_psnr.pth
+├── previews 或 figures/
+│   ├── noisy_output_clean.png
+│   ├── error_map.png
+│   └── failure_crop.png
+└── 训练命令和简短结论
+```
+
+每个产物回答的问题不同：
+
+| 产物 | 回答的问题 |
+|---|---|
+| config | 这个实验能不能复现 |
+| metrics.csv | loss、PSNR、SSIM 是否随训练变好 |
+| last.pth | 能不能从最后一步继续训练 |
+| best_psnr.pth | 哪个 checkpoint 最适合评估或导出 |
+| triplet 图 | 输出是否真的比 noisy 更接近 clean |
+| error map | 错误主要集中在哪里 |
+| failure crop | 面试时能不能解释模型失败原因 |
+| 训练命令 | 别人能不能复跑同一个实验 |
+
+如果一个实验只有一张最终输出图，但没有配置、指标和 checkpoint，它就不适合作为阶段二的正式证据。
+
+## 18. 训练异常的第一轮排查表
+
+Week 0 还要建立一个基本调试习惯：看到异常结果时，先定位问题属于数据、模型、loss、指标，还是可视化。
+
+| 现象 | 常见原因 | 优先排查 |
+|---|---|---|
+| loss 不下降 | 学习率不合适、输入输出范围错、clean/noisy 不匹配 | 打印 tensor 范围，检查 batch 图 |
+| train loss 下降但 val 不涨 | 过拟合、train/val 分布不同、验证集太小 | 看 validation triplet 和 metrics 曲线 |
+| PSNR 涨但图像发糊 | L2/MSE 偏向平均结果，纹理被抹掉 | 看 crop、SSIM 和 error map |
+| 图像偏色或发灰 | normalize / denormalize 错误，RGB/BGR 顺序错 | 检查保存图像前的通道和范围 |
+| 输出几乎等于输入 | 模型学成 identity，噪声太弱或 loss 不敏感 | 对比 noisy baseline 和 output 指标 |
+| 输出出现棋盘格/边缘异常 | 上采样、padding、crop 拼接问题 | 看边缘 crop 和模型结构 |
+| val 指标大幅波动 | 验证样本太少，patch 随机性太强 | 固定 val set 和随机种子 |
+| checkpoint 加载失败 | 模型结构或 key 不一致 | 检查 config、model name、state_dict key |
+
+阶段二后面不要只说“模型效果不好”。更好的表达是：
+
+```text
+我先检查了数据范围和 noisy-clean 对齐；
+再看 loss / PSNR / SSIM 曲线；
+然后用 triplet、error map 和 crop 判断失败区域；
+最后再决定是改数据、loss、模型还是训练配置。
+```
+
+## 19. Week 0 升级版通过标准
+
+完成 Week 0 后，不要求你能推导反向传播公式，但要能做到下面这些：
+
+1. 能手写一段最小训练伪代码，并说清每一行负责什么。
+2. 能解释 `noisy`、`clean`、`output`、`loss`、`metric`、`checkpoint` 的关系。
+3. 能说清 train set 和 validation set 为什么不能混用。
+4. 能看懂一个 `metrics.csv`，判断训练是否在变好。
+5. 能解释为什么只看 loss 不够，还要看 PSNR / SSIM / 三联图。
+6. 能说清 `best_psnr.pth` 为什么后面可以用于评估、ONNX 导出和 C++ 推理。
+7. 能根据异常现象做第一轮排查，而不是盲目换模型。
+8. 能解释为什么 Week 1 先做 toy denoise，而不是直接上 NAFNet、Restormer 或真实 RAW。
+
+如果这些都能讲清楚，Week 0 就不只是“神经网络基础”，而是阶段二所有训练实验的共同地基。

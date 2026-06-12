@@ -129,6 +129,12 @@ python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_sta
 python ai_isp_stage2/scripts/06_inspect_paired_dataset.py --noisy-dir ai_isp_stage2/datasets/sidd_tiny/val/noisy --clean-dir ai_isp_stage2/datasets/sidd_tiny/val/clean --output-dir ai_isp_stage2/reports/figures/week2_sidd_tiny_val_inspection --max-samples 8
 ```
 
+导出 Week 2 Dataset Card：
+
+```bash
+python ai_isp_stage2/scripts/14_export_week2_dataset_card.py
+```
+
 测真实子集 noisy 输入 baseline：
 
 ```bash
@@ -170,6 +176,12 @@ UNet baseline：
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_unet_l1_1000.yaml
 ```
 
+导出 Week 3 模型对比表：
+
+```bash
+python ai_isp_stage2/scripts/15_export_week3_model_comparison.py
+```
+
 CPU 友好的 SIDD Tiny 300-step 对比：
 
 ```bash
@@ -204,6 +216,18 @@ python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paire
 python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_1000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 --output-dir ai_isp_stage2/reports/figures/week4_sidd_tiny_standard_eval --report-md ai_isp_stage2/reports/week4_sidd_tiny_standard_eval_results.md --title "Week 4 SIDD Tiny Standard Evaluation Results"
 ```
 
+真实 SIDD Tiny 消融评估：
+
+```bash
+python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l1_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_patch64_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_1000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 --output-dir ai_isp_stage2/reports/figures/week4_sidd_tiny_ablation_eval --report-md ai_isp_stage2/reports/week4_sidd_tiny_ablation_eval_results.md --title "Week 4 SIDD Tiny Ablation Evaluation Results"
+```
+
+导出 Week 4 评估协议摘要：
+
+```bash
+python ai_isp_stage2/scripts/16_export_week4_evaluation_protocol.py
+```
+
 ## Week 5 常用命令
 
 NAFNet-lite smoke 训练：
@@ -218,12 +242,36 @@ NAFNet-lite 真实 paired RGB 小子集训练：
 python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000.yaml
 ```
 
+导出 Week 5 NAFNet-lite 专项分析：
+
+```bash
+python ai_isp_stage2/scripts/17_export_week5_nafnet_analysis.py
+```
+
 ## Week 6 常用命令
 
 生成 pseudo RAW / ISP bridge 图：
 
 ```bash
 python ai_isp_stage2/scripts/08_pseudo_raw_isp_bridge.py --input ai_isp_stage2/datasets/sidd_tiny/val/clean/pair_00001.png --output-dir ai_isp_stage2/reports/figures/week6_pseudo_raw_isp --crop-size 256
+```
+
+预览 pseudo RGGB dataset：
+
+```bash
+python ai_isp_stage2/scripts/12_preview_pseudo_raw_dataset.py
+```
+
+训练 pseudo RGGB baseline：
+
+```bash
+python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/pseudo_raw_sidd_tiny_dncnn_l2_300.yaml
+```
+
+导出 RGB vs pseudo RGGB 对比：
+
+```bash
+python ai_isp_stage2/scripts/18_export_week6_pseudo_raw_summary.py
 ```
 
 ## Week 7 常用命令
@@ -242,6 +290,12 @@ python ai_isp_stage2/scripts/01_train_toy_rgb.py --config ai_isp_stage2/configs/
 python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/low_light_sidd_tiny_unet_l1_300 --output-dir ai_isp_stage2/reports/figures/week7_low_light_eval --report-md ai_isp_stage2/reports/week7_low_light_eval_results.md --title "Week 7 Low-Light RGB Evaluation Results"
 ```
 
+导出低光任务专属诊断指标：
+
+```bash
+python ai_isp_stage2/scripts/21_export_week7_low_light_diagnostics.py
+```
+
 ## Week 8 常用命令
 
 生成局部 crop failure case 图：
@@ -250,12 +304,24 @@ python ai_isp_stage2/scripts/05_evaluate_runs.py --runs ai_isp_stage2/runs/low_l
 python ai_isp_stage2/scripts/10_make_failure_case_crops.py --runs ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_unet_l1_1000 ai_isp_stage2/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 ai_isp_stage2/runs/low_light_sidd_tiny_unet_l1_300 --output-dir ai_isp_stage2/reports/figures/week8_failure_case_crops --crop-size 96 --zoom 3
 ```
 
+导出 failure taxonomy 和下一步实验建议：
+
+```bash
+python ai_isp_stage2/scripts/19_export_week8_failure_taxonomy.py
+```
+
 ## Week 9 常用命令
 
 导出阶段二总榜：
 
 ```bash
 python ai_isp_stage2/scripts/11_export_stage2_summary.py --metric-csvs ai_isp_stage2/reports/figures/week4_sidd_tiny_standard_eval/metrics_summary.csv ai_isp_stage2/reports/figures/week7_low_light_eval/metrics_summary.csv --output-dir ai_isp_stage2/reports/figures/week9_stage2_summary
+```
+
+导出 Week 9 项目交付包、简历表达和最终项目报告：
+
+```bash
+python ai_isp_stage2/scripts/20_export_week9_project_pack.py
 ```
 
 ## 项目结构

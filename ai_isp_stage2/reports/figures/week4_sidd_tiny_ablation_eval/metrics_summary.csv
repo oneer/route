@@ -1,0 +1,6 @@
+run,best_psnr,best_psnr_step,best_ssim,best_ssim_step,last_psnr,last_ssim,last_step
+paired_rgb_sidd_tiny_dncnn_l2_2000,35.5356,1800,0.88367,1800,34.7538,0.87418,2000
+paired_rgb_sidd_tiny_dncnn_l1_2000,35.6334,2000,0.88839,1800,35.6334,0.88669,2000
+paired_rgb_sidd_tiny_dncnn_l2_patch64_2000,35.2304,1600,0.88455,1800,35.0176,0.88168,2000
+paired_rgb_sidd_tiny_unet_l1_1000,30.4453,1000,0.88003,1000,30.4453,0.88003,1000
+paired_rgb_sidd_tiny_nafnet_lite_l1_1000,33.3269,1000,0.86223,1000,33.3269,0.86223,1000

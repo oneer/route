@@ -4,6 +4,39 @@ Week 1 的目标是跑通一个完整但小型的 RGB 去噪任务。
 
 它原来被拆成很多 `week1a/week1b/...` 小报告，现在统一整理成一条学习路线。
 
+## 0. 本次补充：Week1 核心实验总表
+
+对照阶段二学习路线，Week1 原有内容已经覆盖 toy RGB denoise 的主体学习目标：TinyCNN probe、DnCNN residual、direct clean、L1/L2、patch size、shot/read noise 和 paired RGB smoke。
+
+这次补充的重点不是再增加一个模型，而是增加一个可复现的汇总脚本，把已有 `runs/*/metrics.csv` 自动整理成 Week1 核心实验总表：
+
+```bash
+python ai_isp_stage2/scripts/15_export_week1_summary.py --runs-root ai_isp_stage2/runs --output-dir ai_isp_stage2/reports/figures/week1_summary
+```
+
+输出文件：
+
+```text
+reports/figures/week1_summary/week1_core_experiments.csv
+reports/figures/week1_summary/week1_core_experiments.png
+```
+
+![Week1 core experiments](figures/week1_summary/week1_core_experiments.png)
+
+这张表的读法：
+
+- TinyCNN 10/50/100 steps 用来确认训练闭环是否真的在工作；
+- DnCNN residual vs direct clean 用来理解“预测噪声再相减”为什么更适合去噪；
+- L1 vs L2/MSE 用来理解 loss 和 PSNR/SSIM 的偏向；
+- patch 128 和 shot/read noise 用来建立“上下文、代价、噪声建模”的实验意识；
+- paired RGB smoke 用来证明训练入口已经能从 toy 数据过渡到文件夹成对数据。
+
+所以 Week1 的最终学习重点可以压缩成一句话：
+
+```text
+先用最小 toy 任务证明训练闭环可信，再用一组控制实验理解模型、loss、patch 和噪声模型的取舍。
+```
+
 ## 1. 本周目标
 
 最小任务：

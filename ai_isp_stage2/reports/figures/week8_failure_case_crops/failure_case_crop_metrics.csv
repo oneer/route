@@ -1,5 +1,7 @@
 run,vis_image,crop_mae
 paired_rgb_sidd_tiny_dncnn_l2_2000,step_2000.png,0.029846
+paired_rgb_sidd_tiny_dncnn_l1_2000,step_2000.png,0.028497
+paired_rgb_sidd_tiny_dncnn_l2_patch64_2000,step_2000.png,0.014191
 paired_rgb_sidd_tiny_unet_l1_1000,step_1000.png,0.036193
 paired_rgb_sidd_tiny_nafnet_lite_l1_1000,step_1000.png,0.030536
 low_light_sidd_tiny_unet_l1_300,step_0300.png,0.036040
