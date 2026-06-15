@@ -1,0 +1,12 @@
+function(cpp_isp_enable_sanitizers target_name)
+    if(NOT CPP_ISP_ENABLE_ASAN)
+        return()
+    endif()
+
+    if(MSVC)
+        target_compile_options(${target_name} PRIVATE /fsanitize=address)
+    else()
+        target_compile_options(${target_name} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(${target_name} PRIVATE -fsanitize=address)
+    endif()
+endfunction()
