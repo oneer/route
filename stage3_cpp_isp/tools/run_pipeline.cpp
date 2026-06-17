@@ -1,10 +1,6 @@
 #include "cpp_isp/cpf32.hpp"
-#include "cpp_isp/denoise.hpp"
-#include "cpp_isp/hdr_merge.hpp"
 #include "cpp_isp/image.hpp"
-#include "cpp_isp/local_tone_mapping.hpp"
-#include "cpp_isp/tone_lut.hpp"
-#include "cpp_isp/tone_mapping.hpp"
+#include "cpp_isp/pipeline.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -12,19 +8,6 @@
 #include <string>
 
 namespace {
-
-cpp_isp::ToneCurve parse_curve(const std::string& value) {
-    if (value == "reinhard") {
-        return cpp_isp::ToneCurve::Reinhard;
-    }
-    if (value == "filmic") {
-        return cpp_isp::ToneCurve::Filmic;
-    }
-    if (value == "scurve") {
-        return cpp_isp::ToneCurve::SCurve;
-    }
-    throw std::invalid_argument("unknown tone curve: " + value);
-}
 
 cpp_isp::ImageBuffer<float> tensor_to_image(const cpp_isp::TensorF32& tensor) {
     cpp_isp::ImageBuffer<float> image(tensor.width, tensor.height, tensor.channels);
@@ -70,98 +53,18 @@ void print_usage() {
         << "<short_exposure> <long_exposure>\n";
 }
 
-void apply_denoise(const cpp_isp::ImageBuffer<float>& input,
-                   cpp_isp::ImageBuffer<float>& output,
-                   const std::string& mode) {
-    const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
-    if (mode == "none") {
-        output.storage() = input.storage();
-        return;
-    }
-    if (mode == "box") {
-        cpp_isp::box_filter(input_view, output.view(), 1, cpp_isp::BorderPolicy::Reflect);
-        return;
-    }
-    if (mode == "gaussian") {
-        cpp_isp::gaussian_filter(input_view, output.view(), 1, 1.0F, cpp_isp::BorderPolicy::Reflect);
-        return;
-    }
-    throw std::invalid_argument("unknown denoise mode: " + mode);
-}
-
-void apply_tone(const cpp_isp::ImageBuffer<float>& input,
-                cpp_isp::ImageBuffer<float>& output,
-                const std::string& mode,
-                cpp_isp::ToneCurve curve,
-                float exposure) {
-    const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
-    if (mode == "global") {
-        cpp_isp::ToneMappingParams params;
-        params.curve = curve;
-        params.exposure = exposure;
-        params.preserve_luminance = true;
-        cpp_isp::tone_map(input_view, output.view(), params);
-        return;
-    }
-    if (mode == "lut") {
-        cpp_isp::ToneLutParams params;
-        params.curve = curve;
-        params.exposure = exposure;
-        params.preserve_luminance = true;
-        params.input_bits = 12;
-        params.output_bits = 12;
-        params.input_max = 8.0F;
-        cpp_isp::ToneCurveLut lut(params);
-        cpp_isp::tone_map_lut(input_view, output.view(), lut);
-        return;
-    }
-    if (mode == "local") {
-        cpp_isp::LocalToneMappingParams params;
-        params.curve = curve;
-        params.exposure = exposure;
-        params.base_filter = cpp_isp::LocalBaseFilter::Bilateral;
-        params.base_radius = 3;
-        params.base_sigma_spatial = 2.4F;
-        params.base_sigma_range = 0.35F;
-        params.detail_strength = 0.75F;
-        cpp_isp::local_tone_map(input_view, output.view(), params);
-        return;
-    }
-    throw std::invalid_argument("unknown tone mode: " + mode);
-}
-
-void apply_optional_gamma(const cpp_isp::ImageBuffer<float>& input,
-                          cpp_isp::ImageBuffer<float>& output,
-                          float gamma) {
-    if (gamma == 1.0F) {
-        output.storage() = input.storage();
-        return;
-    }
-    const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
-    cpp_isp::apply_gamma(input_view, output.view(), gamma);
-}
-
-cpp_isp::ImageBuffer<float> make_source_single(const std::string& input_path) {
-    return tensor_to_image(cpp_isp::read_cpf32(input_path));
-}
-
-cpp_isp::ImageBuffer<float> make_source_hdr(const std::string& short_path,
-                                            const std::string& long_path,
-                                            float short_exposure,
-                                            float long_exposure) {
-    const auto short_tensor = cpp_isp::read_cpf32(short_path);
-    const auto long_tensor = cpp_isp::read_cpf32(long_path);
-    auto short_image = tensor_to_image(short_tensor);
-    auto long_image = tensor_to_image(long_tensor);
-    cpp_isp::ImageBuffer<float> merged(short_tensor.width, short_tensor.height, short_tensor.channels);
-
-    cpp_isp::HdrMergeParams params;
-    params.short_exposure = short_exposure;
-    params.long_exposure = long_exposure;
-    const auto short_view = static_cast<const cpp_isp::ImageBuffer<float>&>(short_image).view();
-    const auto long_view = static_cast<const cpp_isp::ImageBuffer<float>&>(long_image).view();
-    cpp_isp::hdr_merge_aligned(short_view, long_view, merged.view(), params);
-    return merged;
+cpp_isp::PipelineParams parse_pipeline_params(const char* denoise,
+                                              const char* tone,
+                                              const char* curve,
+                                              const char* exposure,
+                                              const char* gamma) {
+    cpp_isp::PipelineParams params;
+    params.denoise = cpp_isp::parse_pipeline_denoise_mode(denoise);
+    params.tone = cpp_isp::parse_pipeline_tone_mode(tone);
+    params.curve = cpp_isp::parse_pipeline_tone_curve(curve);
+    params.exposure = static_cast<float>(std::atof(exposure));
+    params.gamma = static_cast<float>(std::atof(gamma));
+    return params;
 }
 
 }  // namespace
@@ -174,45 +77,32 @@ int main(int argc, char** argv) {
         }
 
         const std::string pipeline_mode = argv[1];
+        cpp_isp::PipelineIntermediates result;
         std::string output_path;
-        std::string denoise_mode;
-        std::string tone_mode;
-        cpp_isp::ToneCurve curve = cpp_isp::ToneCurve::Reinhard;
-        float exposure = 1.0F;
-        float gamma = 1.0F;
-        cpp_isp::ImageBuffer<float> source;
 
         if (pipeline_mode == "single" && argc == 9) {
-            source = make_source_single(argv[2]);
+            auto input = tensor_to_image(cpp_isp::read_cpf32(argv[2]));
+            const auto params = parse_pipeline_params(argv[4], argv[5], argv[6], argv[7], argv[8]);
+            const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
+            result = cpp_isp::run_pipeline_single(input_view, params);
             output_path = argv[3];
-            denoise_mode = argv[4];
-            tone_mode = argv[5];
-            curve = parse_curve(argv[6]);
-            exposure = static_cast<float>(std::atof(argv[7]));
-            gamma = static_cast<float>(std::atof(argv[8]));
         } else if (pipeline_mode == "hdr" && argc == 12) {
+            auto short_image = tensor_to_image(cpp_isp::read_cpf32(argv[2]));
+            auto long_image = tensor_to_image(cpp_isp::read_cpf32(argv[3]));
+            const auto params = parse_pipeline_params(argv[5], argv[6], argv[7], argv[8], argv[9]);
+            cpp_isp::HdrMergeParams hdr_params;
+            hdr_params.short_exposure = static_cast<float>(std::atof(argv[10]));
+            hdr_params.long_exposure = static_cast<float>(std::atof(argv[11]));
+            const auto short_view = static_cast<const cpp_isp::ImageBuffer<float>&>(short_image).view();
+            const auto long_view = static_cast<const cpp_isp::ImageBuffer<float>&>(long_image).view();
+            result = cpp_isp::run_pipeline_hdr(short_view, long_view, hdr_params, params);
             output_path = argv[4];
-            denoise_mode = argv[5];
-            tone_mode = argv[6];
-            curve = parse_curve(argv[7]);
-            exposure = static_cast<float>(std::atof(argv[8]));
-            gamma = static_cast<float>(std::atof(argv[9]));
-            const float short_exposure = static_cast<float>(std::atof(argv[10]));
-            const float long_exposure = static_cast<float>(std::atof(argv[11]));
-            source = make_source_hdr(argv[2], argv[3], short_exposure, long_exposure);
         } else {
             print_usage();
             return 2;
         }
 
-        cpp_isp::ImageBuffer<float> denoised(source.width(), source.height(), source.channels());
-        cpp_isp::ImageBuffer<float> tone_mapped(source.width(), source.height(), source.channels());
-        cpp_isp::ImageBuffer<float> final_output(source.width(), source.height(), source.channels());
-
-        apply_denoise(source, denoised, denoise_mode);
-        apply_tone(denoised, tone_mapped, tone_mode, curve, exposure);
-        apply_optional_gamma(tone_mapped, final_output, gamma);
-        cpp_isp::write_cpf32(output_path, image_to_tensor(final_output));
+        cpp_isp::write_cpf32(output_path, image_to_tensor(result.output));
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "run_pipeline failed: " << error.what() << '\n';

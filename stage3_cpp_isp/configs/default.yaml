@@ -1,0 +1,40 @@
+# Default reproducible Stage 3 pipeline settings.
+# The C++ command-line tools keep parsing explicit arguments; this file records
+# the reference configuration used by Week 8/Week 9 reports.
+
+input:
+  range: linear_float
+  dtype: float32
+  layout: HWC_CPF32
+
+denoise:
+  mode: gaussian
+  radius: 1
+  sigma: 1.0
+  border: reflect
+
+tone:
+  mode: global
+  curve: reinhard
+  exposure: 0.216
+  preserve_luminance: true
+  gamma: 2.2
+
+lut:
+  input_bits: 12
+  output_bits: 12
+  input_max: 8.0
+  lookup: nearest
+
+local_tone_mapping:
+  base_filter: bilateral
+  base_radius: 3
+  base_sigma_spatial: 2.4
+  base_sigma_range: 0.35
+  detail_strength: 0.75
+
+hdr_merge:
+  short_exposure: 0.18
+  long_exposure: 0.72
+  saturation_threshold: 0.92
+  underexposure_threshold: 0.04
