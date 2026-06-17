@@ -8,7 +8,7 @@
 >
 > **阶段目标**：实现并工程化 RAW 域去噪、全局 / 局部 Tone Mapping 和简化双曝光 HDR merge；建立 Python-C++ 输出对齐、单元测试、边界测试、误差报告、benchmark、tile / halo / 多线程性能分析和社招面试复述材料。
 >
-> **阶段产出**：一个 `cpp_isp_stage3/` 项目，一套 CMake + GoogleTest + Google Benchmark 工程，RAW denoise / Tone Mapping / HDR toy 三类算法模块，一份 alignment report，一份 denoise algorithm report，一份 tone mapping algorithm report，一份 HDR toy report，一份 performance report，一份社招三年口径的 interview notes。
+> **阶段产出**：一个 `stage3_cpp_isp/` 项目，一套 CMake + GoogleTest + Google Benchmark 工程，RAW denoise / Tone Mapping / HDR toy 三类算法模块，一份 alignment report，一份 denoise algorithm report，一份 tone mapping algorithm report，一份 HDR toy report，一份 performance report，一份社招三年口径的 interview notes。
 
 ---
 
@@ -46,7 +46,7 @@
 ## 1. 最终项目结构
 
 ```text
-cpp_isp_stage3/
+stage3_cpp_isp/
 ├── README.md
 ├── CMakeLists.txt
 ├── cmake/
@@ -138,14 +138,14 @@ cpp_isp_stage3/
 
 | 主题 | 资料 | 用法 |
 |---|---|---|
-| Tone Mapping 基础 | `soft_isp_stage1/soft_isp/tone.py` | 作为 Python reference 的起点，迁移到 C++。 |
-| Tone Mapping 报告 | `soft_isp_stage1/reports/week4/tone_mapping_report.md` | 复习 Gamma / TM 区别、曲线和动态范围压缩。 |
+| Tone Mapping 基础 | `stage1_soft_isp/soft_isp/tone.py` | 作为 Python reference 的起点，迁移到 C++。 |
+| Tone Mapping 报告 | `stage1_soft_isp/reports/week4/tone_mapping_report.md` | 复习 Gamma / TM 区别、曲线和动态范围压缩。 |
 | 降噪总览 | `isp_tutorial_study/full_chapters/chapter08-第8章：ISP降噪技术全景.md` | 建立 RAW denoise、亮噪、色噪、时域/空域降噪框架。 |
 | NLM 专题 | `isp_tutorial_study/full_chapters/chapter09-第9章：NLM算法硬件实现专题.md` | 理解非局部去噪和复杂度，不作为阶段三主实现。 |
 | HDR/TM | `isp_tutorial_study/full_chapters/chapter14-第14章：HDR技术与ToneMapping.md` | 理解 HDR merge 与 Tone Mapping 的关系。 |
-| OpenISP BNF/CNF/NLM | `soft_isp_stage1/openisp/bnf.py`、`cnf.py`、`nlm.py` | 参考传统 ISP 去噪模块结构和参数含义。 |
-| HDR+ 论文 | `soft_isp_stage1/materials/papers/Hasinoff_2016_HDRPlus_Burst_Photography.pdf` | 只读 pipeline、burst/HDR/low-light 关系，不复现完整 HDR+。 |
-| 阶段二 denoise | `ai_isp_stage2/reports/week1_toy_rgb_denoise.md`、`week2_real_paired_rgb.md` | 对照传统 denoise 和 AI denoise 的边界。 |
+| OpenISP BNF/CNF/NLM | `stage1_soft_isp/openisp/bnf.py`、`cnf.py`、`nlm.py` | 参考传统 ISP 去噪模块结构和参数含义。 |
+| HDR+ 论文 | `stage1_soft_isp/materials/papers/Hasinoff_2016_HDRPlus_Burst_Photography.pdf` | 只读 pipeline、burst/HDR/low-light 关系，不复现完整 HDR+。 |
+| 阶段二 denoise | `stage2_ai_isp/reports/week1_toy_rgb_denoise.md`、`week2_real_paired_rgb.md` | 对照传统 denoise 和 AI denoise 的边界。 |
 
 ### 2.2 外部公开资料
 
@@ -178,7 +178,7 @@ cpp_isp_stage3/
 
 **具体任务**：
 
-1. 新建 `cpp_isp_stage3/`。
+1. 新建 `stage3_cpp_isp/`。
 2. 配置 CMake：
    - Debug
    - Release
@@ -682,7 +682,7 @@ RAW-like / linear input
 
 **最终交付**：
 
-- `cpp_isp_stage3/`
+- `stage3_cpp_isp/`
 - `reports/stage3_report.md`
 - `reports/alignment_report.md`
 - `reports/denoise_algorithm_report.md`

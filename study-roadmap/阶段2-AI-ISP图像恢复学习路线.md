@@ -6,7 +6,7 @@
 >
 > **阶段目标**：从“能跑通 PyTorch 图像恢复训练”升级到“能围绕 AI-ISP 图像恢复问题，完成数据构建、baseline 训练、客观评估、可视化诊断、failure case 分析、RAW-like 扩展和 ONNX/C++ 部署验证”。
 >
-> **阶段产出**：一个 `ai_isp_stage2/` 项目，一套配置驱动的训练与评估脚本，一份 SIDD paired RGB 数据构建报告，一个 DnCNN / UNet / NAFNet-lite 对比 baseline，一个 pseudo RAW/RGGB 可训练 baseline，一份 failure case 分析，一份工程 summary 表，一个 ONNX 导出产物，一个 C++ OpenCV DNN 推理 smoke test，以及一份适合社招 3 年口径的项目报告和面试复述笔记。
+> **阶段产出**：一个 `stage2_ai_isp/` 项目，一套配置驱动的训练与评估脚本，一份 SIDD paired RGB 数据构建报告，一个 DnCNN / UNet / NAFNet-lite 对比 baseline，一个 pseudo RAW/RGGB 可训练 baseline，一份 failure case 分析，一份工程 summary 表，一个 ONNX 导出产物，一个 C++ OpenCV DNN 推理 smoke test，以及一份适合社招 3 年口径的项目报告和面试复述笔记。
 
 ---
 
@@ -33,7 +33,7 @@
 ## 1. 最终项目结构
 
 ```text
-ai_isp_stage2/
+stage2_ai_isp/
 ├── README.md
 ├── requirements.txt
 ├── configs/
@@ -426,7 +426,7 @@ RAW-like 输入，并完成 ONNX 导出与 C++ OpenCV DNN 推理 smoke test。
 
 **具体步骤**：
 
-1. 创建 `ai_isp_stage2/` 项目结构。
+1. 创建 `stage2_ai_isp/` 项目结构。
 2. 实现最小训练脚本：
    - 随机生成输入图 `noisy = clean + gaussian_noise`
    - 模型用 3 层 CNN
@@ -817,7 +817,7 @@ RAW-like 输入，并完成 ONNX 导出与 C++ OpenCV DNN 推理 smoke test。
 
 **最终交付物**：
 
-- 可复现训练项目：`ai_isp_stage2/`
+- 可复现训练项目：`stage2_ai_isp/`
 - 阶段报告：`reports/stage2_report.md`
 - 消融报告：`reports/ablations/summary.md`
 - 面试笔记：`reports/stage2_interview_notes.md`

@@ -6,7 +6,7 @@
 >
 > **阶段目标**：把阶段 2 训练出的轻量图像恢复模型部署到 C++ 推理链路中，并与阶段 3 的 C++ ISP 前后处理模块串起来；完成 ONNX 导出、ONNX Runtime baseline、TensorRT 或 NCNN/MNN 加速、FP16 / INT8 对比、输入输出对齐、延迟 / 显存 / 画质损失评估和最终系统报告。
 >
-> **阶段产出**：一个 `deploy_isp_stage4/` 项目，一个可导出的 PyTorch 模型，一个 ONNX 模型，一个 C++ 推理程序，一个 TensorRT / NCNN / MNN / ONNX Runtime 中至少一个高性能后端，一份 FP32 / FP16 / INT8 对比报告，一份端到端 AI-ISP 推理系统报告。
+> **阶段产出**：一个 `stage4_deploy_isp/` 项目，一个可导出的 PyTorch 模型，一个 ONNX 模型，一个 C++ 推理程序，一个 TensorRT / NCNN / MNN / ONNX Runtime 中至少一个高性能后端，一份 FP32 / FP16 / INT8 对比报告，一份端到端 AI-ISP 推理系统报告。
 
 ---
 
@@ -27,7 +27,7 @@
 ## 1. 最终项目结构
 
 ```text
-deploy_isp_stage4/
+stage4_deploy_isp/
 ├── README.md
 ├── CMakeLists.txt
 ├── requirements.txt
@@ -627,7 +627,7 @@ deploy_isp_stage4/
 
 **最终交付物**：
 
-- `deploy_isp_stage4/`
+- `stage4_deploy_isp/`
 - `reports/stage4_report.md`
 - `reports/output_alignment_report.md`
 - `reports/latency_report.md`

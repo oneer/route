@@ -8,38 +8,47 @@
 
 ```
 route/
-├── soft_isp_stage1/       # 阶段一：传统 ISP Pipeline（Python）
-├── ai_isp_stage2/         # 阶段二：AI-ISP 图像恢复（PyTorch）
-├── cpp_isp_stage3/        # 阶段三：C++ 高性能 ISP 库
+├── stage1_soft_isp/       # 阶段一：传统 ISP Pipeline（Python）
+├── stage2_ai_isp/         # 阶段二：AI-ISP 图像恢复（PyTorch）
+├── stage3_cpp_isp/        # 阶段三：C++ 高性能 ISP 库
+├── stage4_deploy_isp/     # 阶段四：ONNX Runtime C++ 部署
 ├── isp_tutorial_study/    # ISP 教程学习区（35 章，从算法到 RTL 实现）
 ├── study-roadmap/         # 10 个月 AI-ISP 社招学习路线
 ├── README.md
 └── README_CN.md
 ```
 
-### [soft_isp_stage1/](soft_isp_stage1/) — 阶段一：传统 ISP Pipeline
+### [stage1_soft_isp/](stage1_soft_isp/) — 阶段一：传统 ISP Pipeline
 
 一个动手实践的 Python Soft-ISP Pipeline — 读取真实 DNG 文件，亲手实现每个传统 ISP 模块（BLC、DPC、LSC、去马赛克、AWB、CCM、Gamma、Tone Mapping），与 rawpy 参考输出对比，撰写结构化实验报告。同时包含完整的 [OpenISP](https://github.com/cruxopen/openISP) 参考实现，用于逐模块对照学习。
 
 **状态：** 已完成。所有模块均已实现，IQA 消融实验完成，Week 6 知识盲区闭合。共 16 个脚本，完整的 Pipeline 评估，以及 Week 1–6 的周报。
 
-详见 [soft_isp_stage1/README_CN.md](soft_isp_stage1/README_CN.md)。
+详见 [stage1_soft_isp/README_CN.md](stage1_soft_isp/README_CN.md)。
 
-### [ai_isp_stage2/](ai_isp_stage2/) — 阶段二：AI-ISP 图像恢复
+### [stage2_ai_isp/](stage2_ai_isp/) — 阶段二：AI-ISP 图像恢复
 
 第二阶段从手工算法转向可学习图像恢复。当前阶段先用合成 RGB 去噪任务跑通深度学习训练闭环，验证工程链路后再推进到真实传感器数据（SIDD、SID）。
 
 **状态：** 已完成（Week 0–9）。从 toy RGB 去噪 → 真实 SIDD paired RGB → 模型对比（DnCNN / UNet / NAFNet-lite）→ pseudo RAW / ISP bridge → 低光增强 → failure case 分析，全链路已跑通并沉淀文档。训练循环、配置系统、PSNR/SSIM 评估链路、三联图、error map 以及阶段二项目总结（含简历和面试表达）均已就绪。
 
-详见 [ai_isp_stage2/README.md](ai_isp_stage2/README.md)。
+详见 [stage2_ai_isp/README.md](stage2_ai_isp/README.md)。
 
-### [cpp_isp_stage3/](cpp_isp_stage3/) — 阶段三：C++ 高性能 ISP 库
+### [stage3_cpp_isp/](stage3_cpp_isp/) — 阶段三：C++ 高性能 ISP 库
 
 第三阶段将关键 ISP 算法从 Python 参考实现移植到生产级 C++17，遵循严格闭环：Python 参考 → C++ 实现 → 对齐测试 → 性能基准 → 报告。使用自定义 `CPF32` 二进制张量格式进行跨语言验证。
 
-**状态：** 进行中（Week 0–5 完成）。项目骨架、图像布局、RAW 噪声建模、基础去噪（高斯 / box / bilateral / NLM）、SIDD 真实数据桥接、去噪性能基准测试、全局色调映射（Reinhard / Filmic / ACES / percentile）均已完成，含 Python 参考、对齐测试和周报。
+**状态：** 已完成（Week 0–8）。项目骨架、图像布局、RAW 噪声建模、基础去噪（高斯 / box / bilateral / NLM）、SIDD 真实数据桥接、去噪性能基准测试、全局色调映射（Reinhard / Filmic / ACES / percentile）、Tone LUT 定点量化、局部色调映射 + HDR 合成、全管线集成均已全部完成，含 Python 参考实现、对齐测试、性能基准和周报。
 
-详见 [cpp_isp_stage3/README.md](cpp_isp_stage3/README.md)。
+详见 [stage3_cpp_isp/README.md](stage3_cpp_isp/README.md)。
+
+### [stage4_deploy_isp/](stage4_deploy_isp/) — 阶段四：ONNX Runtime C++ 部署
+
+第四阶段将阶段二的 AI-ISP 恢复模型走通完整的可复现部署链路：PyTorch → ONNX 导出 → ONNX Runtime Python/C++ 推理 → TensorRT 后端实验 → INT8 量化 → 轻量 ISP 预处理/后处理集成。
+
+**状态：** 进行中（Week 0–6）。PyTorch 固定基线、ONNX 导出与对齐、ONNX Runtime C++ 推理器、CUDA 内核基础（normalize / pack_raw）、后端选型 profiling、INT8 QDQ 量化与画质损失分析、端到端管线性能剖析均已完成，含周报与产出物。
+
+详见 [stage4_deploy_isp/README.md](stage4_deploy_isp/README.md)。
 
 ### [isp_tutorial_study/](isp_tutorial_study/) — ISP 教程学习区
 
@@ -69,10 +78,10 @@ route/
 
 ## 快速开始
 
-从 [soft_isp_stage1/](soft_isp_stage1/) 开始 —— Python 学习项目不需要 C++ 工具链，能立刻产生可视化输出。
+从 [stage1_soft_isp/](stage1_soft_isp/) 开始 —— Python 学习项目不需要 C++ 工具链，能立刻产生可视化输出。
 
 ```bash
-cd soft_isp_stage1
+cd stage1_soft_isp
 pip install -r requirements.txt
 python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 ```
@@ -80,7 +89,7 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 如果还没有 RAW 文件，使用项目自带的下载脚本：
 
 ```powershell
-.\soft_isp_stage1\scripts\download_fivek_starter.ps1
+.\stage1_soft_isp\scripts\download_fivek_starter.ps1
 ```
 
 ## 项目理念
@@ -102,7 +111,7 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 | 配置 | YAML |
 | 深度学习 | PyTorch, torchvision |
 | C++ 工作台 | C++17, CMake, Ninja, GoogleTest, Google Benchmark |
-| 未来：CUDA / 部署 | CUDA, TensorRT, NCNN |
+| 部署 / 推理 | ONNX Runtime, CUDA, TensorRT, ONNX, OpenCV (C++) |
 
 ## 阶段规划
 
@@ -110,8 +119,8 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 |---|---|---|---|
 | 1 | 传统 ISP Pipeline 基础 | Python | 已完成 |
 | 2 | AI 驱动的图像恢复与降噪 | Python + PyTorch | 已完成 |
-| 3 | C++ 高性能 ISP 库 | C++ | 进行中（Week 0–5） |
-| 4 | CUDA 加速 + TensorRT/NCNN 部署 | C++ / CUDA | 计划中 |
+| 3 | C++ 高性能 ISP 库 | C++17 | 已完成 |
+| 4 | ONNX Runtime 部署 + CUDA 推理 | C++ / Python / CUDA | 进行中（Week 0–6） |
 
 ## 许可
 

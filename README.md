@@ -8,38 +8,47 @@ A self-directed, project-driven learning repository for mastering the full Image
 
 ```
 route/
-├── soft_isp_stage1/       # Stage 1: Traditional ISP pipeline (Python)
-├── ai_isp_stage2/         # Stage 2: AI-ISP image restoration (PyTorch)
-├── cpp_isp_stage3/        # Stage 3: C++ high-performance ISP library
+├── stage1_soft_isp/       # Stage 1: Traditional ISP pipeline (Python)
+├── stage2_ai_isp/         # Stage 2: AI-ISP image restoration (PyTorch)
+├── stage3_cpp_isp/        # Stage 3: C++ high-performance ISP library
+├── stage4_deploy_isp/     # Stage 4: ONNX Runtime C++ deployment
 ├── isp_tutorial_study/    # ISP tutorial study area (35 chapters, algorithm to RTL)
 ├── study-roadmap/         # 10-month AI-ISP career learning roadmap
 ├── README.md
 └── README_CN.md
 ```
 
-### [soft_isp_stage1/](soft_isp_stage1/) — Stage 1: Traditional ISP Pipeline
+### [stage1_soft_isp/](stage1_soft_isp/) — Stage 1: Traditional ISP Pipeline
 
 A hands-on Python Soft-ISP Pipeline — read real DNG files, implement every traditional ISP module yourself (BLC, DPC, LSC, Demosaic, AWB, CCM, Gamma, Tone Mapping), compare against rawpy references, and write structured reports. Also includes a full [OpenISP](https://github.com/cruxopen/openISP) reference implementation for side-by-side algorithm study.
 
 **Status:** Complete. All modules implemented, IQA ablation done, Week 6 mastery gap closure finished. 16 scripts, full pipeline evaluation, and comprehensive weekly reports (Week 1–6).
 
-See [soft_isp_stage1/README.md](soft_isp_stage1/README.md) for details.
+See [stage1_soft_isp/README.md](stage1_soft_isp/README.md) for details.
 
-### [ai_isp_stage2/](ai_isp_stage2/) — Stage 2: AI-ISP Image Restoration
+### [stage2_ai_isp/](stage2_ai_isp/) — Stage 2: AI-ISP Image Restoration
 
 The second stage shifts from hand-crafted algorithms to learned image restoration. Currently focused on establishing a reliable deep learning training loop with synthetic RGB denoising before moving to real sensor data (SIDD, SID).
 
 **Status:** Complete (Week 0–9). The full pipeline from toy RGB denoise → real SIDD paired RGB → model comparison (DnCNN / UNet / NAFNet-lite) → pseudo RAW / ISP bridge → low-light enhancement → failure case analysis has been executed and documented. Training loop, config system, PSNR/SSIM evaluation pipeline, triplet visualizations, error maps, and a comprehensive stage-2 project summary (including resume and interview talking points) are all in place.
 
-See [ai_isp_stage2/README.md](ai_isp_stage2/README.md) for details.
+See [stage2_ai_isp/README.md](stage2_ai_isp/README.md) for details.
 
-### [cpp_isp_stage3/](cpp_isp_stage3/) — Stage 3: C++ High-Performance ISP Library
+### [stage3_cpp_isp/](stage3_cpp_isp/) — Stage 3: C++ High-Performance ISP Library
 
 The third stage ports key ISP algorithms from Python reference to production-style C++17, with a strict loop: Python reference → C++ implementation → alignment test → benchmark → report. Uses a custom `CPF32` binary tensor format for cross-language verification.
 
-**Status:** In Progress (Week 0–5 done). Project skeleton, image layout, RAW noise modeling, basic denoise (Gaussian / box / bilateral / NLM), SIDD real-data bridge, denoise performance benchmarking, and global tone mapping (Reinhard / Filmic / ACES / percentile) are complete with Python references, alignment tests, and weekly reports.
+**Status:** Complete (Week 0–8). Project skeleton, image layout, RAW noise modeling, basic denoise (Gaussian / box / bilateral / NLM), SIDD real-data bridge, denoise performance benchmarking, global tone mapping (Reinhard / Filmic / ACES / percentile), tone LUT with fixed-point quantization, local tone mapping + HDR merge, and full pipeline integration are complete with Python references, alignment tests, benchmarks, and weekly reports.
 
-See [cpp_isp_stage3/README.md](cpp_isp_stage3/README.md) for details.
+See [stage3_cpp_isp/README.md](stage3_cpp_isp/README.md) for details.
+
+### [stage4_deploy_isp/](stage4_deploy_isp/) — Stage 4: ONNX Runtime C++ Deployment
+
+The fourth stage takes the Stage 2 AI-ISP restoration model through a reproducible deployment chain: PyTorch → ONNX export → ONNX Runtime Python/C++ inference → TensorRT backend experiments → INT8 quantization → lightweight ISP pre/post integration.
+
+**Status:** In Progress (Week 0–6). PyTorch fixed baseline, ONNX export with output alignment, ONNX Runtime C++ runner, CUDA kernel stubs (normalize / pack_raw), backend profiling, INT8 QDQ quantization with quality analysis, and end-to-end pipeline profiling are complete with weekly reports and artifacts.
+
+See [stage4_deploy_isp/README.md](stage4_deploy_isp/README.md) for details.
 
 ### [isp_tutorial_study/](isp_tutorial_study/) — ISP Tutorial Study Area
 
@@ -69,10 +78,10 @@ This project takes the opposite approach: every stage is explicit, inspectable, 
 
 ## Getting Started
 
-Start with [soft_isp_stage1/](soft_isp_stage1/) — the Python learning project. It requires no C++ toolchain and produces visual output immediately.
+Start with [stage1_soft_isp/](stage1_soft_isp/) — the Python learning project. It requires no C++ toolchain and produces visual output immediately.
 
 ```bash
-cd soft_isp_stage1
+cd stage1_soft_isp
 pip install -r requirements.txt
 python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 ```
@@ -80,7 +89,7 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 If you don't have RAW files yet, use the included download script:
 
 ```powershell
-.\soft_isp_stage1\scripts\download_fivek_starter.ps1
+.\stage1_soft_isp\scripts\download_fivek_starter.ps1
 ```
 
 ## Project Philosophy
@@ -102,7 +111,7 @@ If you don't have RAW files yet, use the included download script:
 | Configuration | YAML |
 | Deep learning | PyTorch, torchvision |
 | C++ workbench | C++17, CMake, Ninja, GoogleTest, Google Benchmark |
-| Future: CUDA / deployment | CUDA, TensorRT, NCNN |
+| Deployment / inference | ONNX Runtime, CUDA, TensorRT, ONNX, OpenCV (C++) |
 
 ## Stages
 
@@ -110,8 +119,8 @@ If you don't have RAW files yet, use the included download script:
 |---|---|---|---|
 | 1 | Traditional ISP pipeline fundamentals | Python | Complete |
 | 2 | AI-driven image restoration & denoising | Python + PyTorch | Complete |
-| 3 | C++ high-performance ISP library | C++ | In Progress (Week 0–5) |
-| 4 | CUDA acceleration + TensorRT/NCNN deployment | C++ / CUDA | Planned |
+| 3 | C++ high-performance ISP library | C++17 | Complete |
+| 4 | ONNX Runtime deployment + CUDA inference | C++ / Python / CUDA | In Progress (Week 0–6) |
 
 ## License
 

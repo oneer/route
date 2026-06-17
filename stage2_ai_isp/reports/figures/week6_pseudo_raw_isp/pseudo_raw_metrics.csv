@@ -1,0 +1,2 @@
+input,crop_size,roundtrip_mse,roundtrip_psnr
+stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00001.png,256,0.00029929,35.2391

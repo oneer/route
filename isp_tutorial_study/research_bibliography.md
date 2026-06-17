@@ -33,7 +33,7 @@
 
 - Infinite-ISP：Verilog ISP pipeline，适合学习 RTL 级 BLC、DPC、LSC、demosaic、AWB、color correction 等模块边界。
   <https://github.com/10x-Engineers/Infinite-ISP>
-- openISP / cruxopen openISP：Python/C++ 风格的 ISP 学习实现，适合和本仓库 `soft_isp_stage1` 对照。
+- openISP / cruxopen openISP：Python/C++ 风格的 ISP 学习实现，适合和本仓库 `stage1_soft_isp` 对照。
   <https://github.com/cruxopen/openISP>
 - rawpy / LibRaw：RAW 解码与参考处理工具，适合建立和商业 RAW pipeline 的对照。
   <https://github.com/letmaik/rawpy>
@@ -64,6 +64,6 @@
 
 ## 本项目内对照
 
-- `soft_isp_stage1/`：传统 ISP pipeline 的学习和实验对照。
-- `ai_isp_stage2/`：AI 图像恢复、denoise baseline、训练循环和评估指标对照。
+- `stage1_soft_isp/`：传统 ISP pipeline 的学习和实验对照。
+- `stage2_ai_isp/`：AI 图像恢复、denoise baseline、训练循环和评估指标对照。
 - `study-roadmap/`：阶段化学习路线对照。

@@ -1,0 +1,39 @@
+project:
+  name: stage4_deploy_isp
+  seed: 42
+  stage2_root: ../stage2_ai_isp
+  output_dir: outputs/week0_baseline
+
+model:
+  role: primary_deploy_model
+  name: dncnn
+  checkpoint: ../stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_300/checkpoints/best_psnr.pth
+  source_config: ../stage2_ai_isp/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml
+  input_layout: NCHW
+  input_dtype: float32
+  input_range: [0.0, 1.0]
+  output_layout: NCHW
+  output_dtype: float32
+  output_range: [0.0, 1.0]
+  clamp_output: true
+
+fallback_model:
+  role: modern_restoration_reference
+  name: nafnet_lite
+  checkpoint: ../stage2_ai_isp/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_300/checkpoints/best_psnr.pth
+  source_config: ../stage2_ai_isp/configs/paired_rgb_sidd_tiny_nafnet_lite_l1_300.yaml
+
+data:
+  dataset_name: SIDD tiny paired RGB validation subset
+  noisy_dir: ../stage2_ai_isp/datasets/sidd_tiny/val/noisy
+  clean_dir: ../stage2_ai_isp/datasets/sidd_tiny/val/clean
+  max_images: 20
+  fixed_manifest: data/test_inputs/week0_fixed_manifest.csv
+
+evaluation:
+  device: auto
+  warmup_runs: 3
+  timed_runs: 10
+  save_error_maps: true
+  save_triplets: true
+

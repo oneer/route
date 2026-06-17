@@ -6,7 +6,7 @@
 >
 > **阶段目标**：能从真实 RAW / DNG 输入开始，独立完成一个 Python Soft-ISP Pipeline，并能解释每个模块的输入输出、物理意义、核心公式、参数影响、失败场景和验证方法。
 >
-> **阶段产出**：一个 `soft_isp_stage1/` 项目、一份实验报告、至少 5 张 RAW 样张的完整处理结果、每个模块的 Before / After 图、统计指标表和面试复述笔记。
+> **阶段产出**：一个 `stage1_soft_isp/` 项目、一份实验报告、至少 5 张 RAW 样张的完整处理结果、每个模块的 Before / After 图、统计指标表和面试复述笔记。
 
 ---
 
@@ -34,7 +34,7 @@
 建议阶段一结束时形成下面这个项目。它不需要一开始就很漂亮，但每个脚本都要能运行，每个输出都要能解释。
 
 ```text
-soft_isp_stage1/
+stage1_soft_isp/
 ├── README.md
 ├── requirements.txt
 ├── data/
@@ -165,7 +165,7 @@ pipeline 中涉及的模块：
 
 **具体步骤**：
 
-1. 新建 `soft_isp_stage1/` 项目目录。
+1. 新建 `stage1_soft_isp/` 项目目录。
 2. 创建虚拟环境，安装依赖。
 3. 准备 5 张 RAW / DNG 样张。
 4. 写 `scripts/01_inspect_raw.py`，能读取 RAW 并打印：
@@ -454,7 +454,7 @@ pip install numpy opencv-python rawpy matplotlib scikit-image colour-science pyy
 
 **最终交付物**：
 
-- 可运行项目：`soft_isp_stage1/`
+- 可运行项目：`stage1_soft_isp/`
 - 阶段报告：`reports/stage1_report.md`
 - 面试笔记：`reports/stage1_interview_notes.md`
 

@@ -1,2 +1,0 @@
-num_images,onnx_path,max_abs_error,mean_abs_error,mean_ort_vs_pytorch_psnr,mean_ort_quality_psnr,mean_pytorch_quality_psnr
-20,C:\Users\10439\Desktop\route\deploy_isp_stage4\models\onnx\dncnn_sidd_tiny_fp32.onnx,4.172325134277344e-07,3.4016241201584305e-08,80.0,32.9838669609468,32.98386709301477
