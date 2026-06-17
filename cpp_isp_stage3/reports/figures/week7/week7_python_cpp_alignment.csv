@@ -1,0 +1,3 @@
+module,case,max_abs_error,mean_abs_error,rmse,psnr,failed_values
+local_tone_mapping,reinhard_bilateral,0.0000001788,0.0000000089,0.0000000160,155.9191767755,0 / 73728
+hdr_merge,aligned_short_long,0.0000004768,0.0000000705,0.0000001312,137.6396907073,0 / 73728

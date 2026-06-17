@@ -1,0 +1,7 @@
+﻿base_filter,radius,width,height,ms
+box,5,640,360,362.176
+box,9,640,360,1004.940
+bilateral,3,640,360,1910.705
+bilateral,5,640,360,4456.885
+box,5,1920,1080,3330.083
+bilateral,1,1920,1080,3016.261
