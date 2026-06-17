@@ -94,30 +94,29 @@ toolchain and should not be used unless a specific legacy dependency requires it
 | GPU library directory | `D:\Env\onnxruntime\gpu_cuda13\onnxruntime-win-x64-gpu-1.26.0\lib` |
 | GPU runtime DLL | `D:\Env\onnxruntime\gpu_cuda13\onnxruntime-win-x64-gpu-1.26.0\lib\onnxruntime.dll` |
 
-## CUDA / TensorRT
-
-CUDA and TensorRT are installed as part of the NVIDIA driver package at `D:\application\cuda`.
-
-Note: this is the NVIDIA driver-package layout (components split across subdirectories).
-For CMake `find_package(CUDAToolkit)`, set:
-- `CUDAToolkit_ROOT=D:\application\cuda`
-- or pass `-DCMAKE_CUDA_COMPILER=D:\application\cuda\cuda_nvcc\nvcc\bin\nvcc.exe`
-
-To get a unified `include/` + `lib/` + `bin/` tree (easier for CMake), install the
-standalone CUDA Toolkit 12.6 from https://developer.nvidia.com/cuda-downloads.
+## CUDA / cuDNN / TensorRT
 
 | Item | Path / Version |
 |---|---|
-| NVIDIA driver / GPU | `RTX 4060 Ti` (driver 591.74) |
+| GPU | `NVIDIA GeForce RTX 4060 Ti` (8 GB, driver 591.74) |
 | `nvidia-smi.exe` | `C:\Windows\System32\nvidia-smi.exe` |
-| CUDA Toolkit root | `D:\application\cuda` |
-| `nvcc.exe` | `D:\application\cuda\cuda_nvcc\nvcc\bin\nvcc.exe` |
-| CUDA version | 12.6.20 |
-| CUDA headers (`cuda.h`) | `D:\application\cuda\cuda_cudart\cudart\include` |
-| CUDA runtime lib (`cudart.lib`) | `D:\application\cuda\cuda_cudart\cudart\lib\x64` |
-| cuBLAS lib (`cublas.lib`) | `D:\application\cuda\libcublas\cublas_dev\lib\x64` |
+| CUDA Toolkit root | `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6` |
+| `nvcc.exe` | `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin\nvcc.exe` |
+| CUDA version | **12.6.20** |
+| cuDNN root | `C:\Program Files\NVIDIA\CUDNN\v9.23` |
+| cuDNN bin (CUDA 12.x) | `C:\Program Files\NVIDIA\CUDNN\v9.23\bin\12.9\x64` |
+| cuDNN include (CUDA 12.x) | `C:\Program Files\NVIDIA\CUDNN\v9.23\include\12.9` |
+| cuDNN lib (CUDA 12.x) | `C:\Program Files\NVIDIA\CUDNN\v9.23\lib\12.9\x64` |
 | TensorRT root | `TODO` |
-| `trtexec.exe` | `TODO: where trtexec` |
+| `trtexec.exe` | `TODO` |
+
+### CMake integration
+
+Standard CUDA Toolkit layout (`include/` + `lib/` + `bin/` in one tree) — CMake finds it automatically:
+
+```powershell
+cmake -S ... -B ... -G Ninja -DCMAKE_CUDA_COMPILER="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe"
+```
 
 ## Mobile / Edge Toolchains
 
