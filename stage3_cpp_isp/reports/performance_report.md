@@ -55,6 +55,15 @@ Small synthetic 160x96 scene:
 This confirms the expected shape: local base estimation dominates the small
 pipeline, while LUT TM is cheaper than float global TM in this setup.
 
+`benchmarks/bench_pipeline.cpp` now provides a C++ benchmark entry for the same
+pipeline family. Default mode runs small/preview sizes for quick smoke checks;
+`--full` runs 1080P and 4K synthetic scenes.
+
+```powershell
+.\stage3_cpp_isp\build\bench_pipeline.exe
+.\stage3_cpp_isp\build\bench_pipeline.exe --full
+```
+
 ## Next Optimization Targets
 
 - Replace direct LTM base with guided filter or bilateral grid.

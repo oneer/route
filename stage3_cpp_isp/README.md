@@ -14,28 +14,32 @@ Python reference → C++ implementation → alignment test → benchmark → rep
 ```
 stage3_cpp_isp/
 ├── cmake/                         # CMake modules (compiler options, sanitizers)
+├── configs/                       # Reproducible reference pipeline settings
+│   └── default.yaml
 ├── include/cpp_isp/               # Public headers
 │   ├── cpf32.hpp                  #   CPF32 binary tensor format I/O
 │   ├── image.hpp                  #   Multi-channel image container
 │   ├── border.hpp                 #   Border handling (mirror / replicate)
 │   ├── fixed_point.hpp            #   Fixed-point helpers for quantized ISP paths
-│   ├── denoise.hpp                #   Denoise algorithms (Gaussian, box, bilateral, NLM)
+│   ├── denoise.hpp                #   Denoise algorithms (Gaussian, box, bilateral)
 │   ├── tone_mapping.hpp           #   Global tone mapping operators
 │   ├── tone_lut.hpp               #   Tone curve LUT approximation
 │   ├── local_tone_mapping.hpp     #   Base/detail local tone mapping
 │   ├── hdr_merge.hpp              #   Aligned short/long HDR toy merge
+│   ├── pipeline.hpp               #   Reusable denoise / HDR / TM pipeline API
 │   └── metrics.hpp                #   PSNR, max/mean error, RMSE
 ├── src/                           # Implementation
 │   ├── cpf32.cpp
 │   ├── image.cpp
 │   ├── border.cpp
 │   ├── fixed_point.cpp
-│   ├── denoise_basic.cpp          #   Gaussian / box / bilateral / NLM denoise
+│   ├── denoise_basic.cpp          #   Gaussian / box denoise
 │   ├── bilateral_denoise.cpp      #   Bilateral grid & LUT-accelerated variant
-│   ├── tone_mapping.cpp           #   Reinhard / Filmic / ACES / percentile
+│   ├── tone_mapping.cpp           #   Reinhard / Filmic / S-curve / percentile
 │   ├── tone_lut.cpp               #   10/12/14-bit tone curve LUT apply
 │   ├── local_tone_mapping.cpp     #   Box/bilateral base local tone mapping
 │   ├── hdr_merge.cpp              #   Saturation-aware aligned HDR merge
+│   ├── pipeline.cpp               #   Integrated pipeline implementation
 │   └── metrics.cpp
 ├── tests/                         # GoogleTest alignment tests
 │   ├── test_smoke.cpp
@@ -54,7 +58,8 @@ stage3_cpp_isp/
 │   ├── bench_denoise.cpp
 │   ├── bench_tone_mapping.cpp
 │   ├── bench_tone_lut.cpp
-│   └── bench_local_tone_mapping.cpp
+│   ├── bench_local_tone_mapping.cpp
+│   └── bench_pipeline.cpp
 ├── tools/                         # Standalone utilities
 │   ├── compare_with_reference.cpp #   CPF32 file diff tool (max err, RMSE, PSNR, fail count)
 │   ├── run_bilateral_lut.cpp     #   Bilateral LUT precompute + apply
@@ -62,13 +67,16 @@ stage3_cpp_isp/
 │   ├── run_tone_lut.cpp          #   Tone LUT apply + save
 │   ├── run_local_tone_mapping.cpp#   Local TM apply + save
 │   ├── run_hdr_merge.cpp         #   Aligned HDR merge + save
-│   └── run_pipeline.cpp          #   Denoise / HDR / TM integrated pipeline
+│   ├── run_pipeline.cpp          #   Denoise / HDR / TM integrated pipeline
+│   └── dump_intermediate.cpp     #   Dump source / denoised / tone / final CPF32 tensors
 ├── python_ref/                    # Python reference implementations
 │   ├── make_test_vectors.py       #   Week 0: synthetic test vectors (small / 1080P / 4K)
 │   ├── visualize_week1_layout.py  #   Week 1: image layout inspection
 │   ├── noise_model_ref.py         #   Week 2: Poisson-Gaussian noise model
 │   ├── run_week2_noise_denoise.py #   Week 2: noise model + basic denoise
-│   ├── denoise_ref.py             #   Week 3: bilateral / NLM reference
+│   ├── denoise_ref.py             #   Week 3: bilateral / small NLM reference
+│   ├── hdr_merge_ref.py           #   Aligned HDR merge reference
+│   ├── compare_outputs.py         #   CPF32 metrics + optional error map
 │   ├── run_week3_bilateral_nlm.py #   Week 3: bilateral + NLM pipeline
 │   ├── run_week3_sidd_real_data.py#   Week 3: SIDD real data bridge
 │   ├── run_week4_denoise_performance.py # Week 4: denoise benchmark analysis
@@ -91,6 +99,9 @@ stage3_cpp_isp/
 │   ├── week8_pipeline_integration.md
 │   ├── stage3_report.md
 │   ├── alignment_report.md
+│   ├── denoise_algorithm_report.md
+│   ├── tone_mapping_algorithm_report.md
+│   ├── hdr_toy_report.md
 │   ├── performance_report.md
 │   ├── stage3_interview_notes.md
 │   └── figures/                   #   week0/ through week7/ output figures
@@ -110,10 +121,11 @@ stage3_cpp_isp/
 | CPF32 I/O | `cpf32.hpp` | Float32 binary tensor format for Python ↔ C++ alignment |
 | Image | `image.hpp` | Multi-channel image container, linear `[0,1]` range |
 | Border | `border.hpp` | Mirror and replicate border extensions |
-| Denoise | `denoise.hpp` | Gaussian, box, bilateral, and NLM denoise |
-| Tone Mapping | `tone_mapping.hpp` | Reinhard, Filmic (Naughty Dog), ACES, percentile |
+| Denoise | `denoise.hpp` | Gaussian, box, bilateral, range-LUT, tile/thread variants |
+| Tone Mapping | `tone_mapping.hpp` | Reinhard, Filmic (Naughty Dog), S-curve, percentile |
 | Tone LUT / Fixed | `tone_lut.hpp`, `fixed_point.hpp` | Quantized tone curve LUT and fixed-point helpers |
 | Local TM / HDR | `local_tone_mapping.hpp`, `hdr_merge.hpp` | Base/detail LTM and aligned short/long HDR toy merge |
+| Pipeline | `pipeline.hpp` | Reusable denoise / HDR / TM / gamma execution API |
 | Metrics | `metrics.hpp` | Max error, mean error, RMSE, PSNR, failed pixel count |
 
 ## Week-by-Week Status
@@ -123,12 +135,12 @@ stage3_cpp_isp/
 | 0 | Project skeleton & verification baseline | ✅ Done | CMake + CPF32 + smoke test/bench + synthetic test vectors + `compare_with_reference` tool |
 | 1 | Image layout & border handling | ✅ Done | `Image`, `Border` classes + alignment tests + layout inspection |
 | 2 | RAW noise model & basic denoise | ✅ Done | Poisson-Gaussian noise model, Gaussian/box denoise, C++ implementation + alignment |
-| 3 | Bilateral & NLM denoise + SIDD bridge | ✅ Done | Bilateral (direct + LUT), NLM, SIDD real-data bridge from Stage 2 |
+| 3 | Bilateral & NLM denoise + SIDD bridge | ✅ Done | Bilateral (direct + LUT), small Python NLM reference, SIDD real-data bridge from Stage 2 |
 | 4 | Denoise performance benchmarking | ✅ Done | Toolchain baseline, full benchmark suite (small / 1080P / 4K), performance report |
-| 5 | Global tone mapping | ✅ Done | Reinhard, Filmic (Naughty Dog), ACES, percentile; CPF32 alignment; benchmark |
+| 5 | Global tone mapping | ✅ Done | Reinhard, Filmic (Naughty Dog), S-curve, percentile; CPF32 alignment; benchmark |
 | 6 | Tone curve LUT / fixed-point | ✅ Done | 10/12/14-bit LUT, fixed-point helpers, float-vs-LUT error, banding check, benchmark |
 | 7 | Local tone mapping / HDR toy merge | ✅ Done | Base/detail LTM, halo analysis, aligned short/long merge, HDR→TM pipeline |
-| 8 | Integration and reports | ✅ Done | `run_pipeline`, final report, alignment report, performance report, interview notes |
+| 8 | Integration and reports | ✅ Done | `pipeline.hpp`, `run_pipeline`, `bench_pipeline`, final report, algorithm reports, alignment/performance reports, interview notes |
 
 ## Data Format
 
@@ -235,6 +247,9 @@ python .\stage3_cpp_isp\python_ref\run_week8_pipeline_summary.py
 
 - `reports/stage3_report.md`
 - `reports/alignment_report.md`
+- `reports/denoise_algorithm_report.md`
+- `reports/tone_mapping_algorithm_report.md`
+- `reports/hdr_toy_report.md`
 - `reports/performance_report.md`
 - `reports/stage3_interview_notes.md`
 

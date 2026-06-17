@@ -17,9 +17,12 @@ verification, performance analysis, and engineering tradeoff explanation.
 
 ## 2. Implemented Pipeline
 
-The integrated Week 8 tool is:
+The integrated Week 8 pipeline is available both as a reusable C++ API and as a
+command-line tool:
 
 ```text
+include/cpp_isp/pipeline.hpp
+src/pipeline.cpp
 tools/run_pipeline.cpp
 ```
 
@@ -63,7 +66,7 @@ Example:
 | Tone LUT / Fixed | `tone_lut.hpp`, `fixed_point.hpp` | 10/12/14-bit LUT, quantization error, banding, speedup |
 | Local TM | `local_tone_mapping.hpp` | base/detail decomposition, halo risk, bilateral vs box base |
 | HDR toy | `hdr_merge.hpp` | aligned short/long exposure merge and HDR-to-SDR chain |
-| Pipeline | `run_pipeline.cpp` | combined denoise / HDR / TM execution path |
+| Pipeline | `pipeline.hpp`, `run_pipeline.cpp` | reusable and command-line denoise / HDR / TM execution path |
 
 ## 4. Correctness and Tests
 
@@ -138,7 +141,8 @@ correct and useful for learning but not deployable without acceleration.
 - Local TM uses direct box/bilateral base estimation, not guided filter,
   bilateral grid, pyramid, SIMD, or multithreading.
 - Tone LUT uses nearest indexing, not interpolation or dithering.
-- The pipeline uses fixed command-line parameters rather than a config file.
+- `configs/default.yaml` records the reference experiment settings, but the C++
+  tools still parse explicit command-line arguments instead of loading YAML.
 - Stage 3 focuses on CPU C++ baselines; CUDA/TensorRT/NCNN deployment belongs to
   Stage 4.
 
@@ -155,8 +159,9 @@ correct and useful for learning but not deployable without acceleration.
   performance.
 - Implemented base/detail local tone mapping and aligned short/long HDR merge,
   analyzed halo risk, saturation-aware weights, and HDR-to-SDR display mapping.
-- Built an integrated `run_pipeline` tool supporting denoise, HDR merge, global
-  TM, LUT TM, local TM, gamma output, and reproducible benchmark/report outputs.
+- Built an integrated `pipeline.hpp` API and `run_pipeline` tool supporting
+  denoise, HDR merge, global TM, LUT TM, local TM, gamma output, and
+  reproducible benchmark/report outputs.
 
 ## 10. Stage 4 Handoff
 

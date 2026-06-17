@@ -6,8 +6,14 @@ Week 8 integrates the Stage 3 modules into a single runnable pipeline and starts
 the final report set:
 
 - `run_pipeline.cpp`
+- `pipeline.hpp` / `pipeline.cpp`
+- `bench_pipeline.cpp`
+- `dump_intermediate.cpp`
 - `stage3_report.md`
 - `alignment_report.md`
+- `denoise_algorithm_report.md`
+- `tone_mapping_algorithm_report.md`
+- `hdr_toy_report.md`
 - `performance_report.md`
 - `stage3_interview_notes.md`
 
@@ -35,7 +41,9 @@ short + long exposure
 ```
 
 The tool is intentionally command-line based and compact. A config system can be
-added later, but Week 8 keeps the implementation easy to inspect.
+added later, but Week 8 keeps the implementation easy to inspect. The reference
+settings are recorded in `configs/default.yaml`; the C++ tools still take
+explicit command-line arguments for reproducibility.
 
 ## 3. Generated Outputs
 
@@ -55,6 +63,7 @@ Pipeline metrics:
 ```powershell
 python .\stage3_cpp_isp\python_ref\run_week8_pipeline_summary.py
 ctest --test-dir .\stage3_cpp_isp\build --output-on-failure
+.\stage3_cpp_isp\build\bench_pipeline.exe
 ```
 
 Direct pipeline example:
@@ -72,9 +81,10 @@ The project now has a coherent Stage 3 story:
 
 - correctness: Python-C++ alignment and CTest
 - algorithms: denoise, TM, LUT/fixed, LTM, HDR toy
-- performance: 1080P/4K tone benchmarks and LTM bottleneck analysis
+- performance: 1080P/4K tone benchmarks, LTM bottleneck analysis, and
+  integrated pipeline benchmark entry
 - presentation: final report, alignment report, performance report, interview
-  notes, and resume bullets
+  notes, algorithm reports, and resume bullets
 
 ## 6. Next Step
 
