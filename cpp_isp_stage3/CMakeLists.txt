@@ -17,8 +17,13 @@ add_library(cpp_isp_core
     src/cpf32.cpp
     src/image.cpp
     src/border.cpp
+    src/fixed_point.cpp
     src/denoise_basic.cpp
     src/bilateral_denoise.cpp
+    src/tone_mapping.cpp
+    src/tone_lut.cpp
+    src/local_tone_mapping.cpp
+    src/hdr_merge.cpp
     src/metrics.cpp
 )
 target_include_directories(cpp_isp_core PUBLIC include)
@@ -34,6 +39,31 @@ add_executable(run_bilateral_lut tools/run_bilateral_lut.cpp)
 target_link_libraries(run_bilateral_lut PRIVATE cpp_isp_core)
 cpp_isp_apply_compiler_options(run_bilateral_lut)
 cpp_isp_enable_sanitizers(run_bilateral_lut)
+
+add_executable(run_tone_mapping tools/run_tone_mapping.cpp)
+target_link_libraries(run_tone_mapping PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(run_tone_mapping)
+cpp_isp_enable_sanitizers(run_tone_mapping)
+
+add_executable(run_tone_lut tools/run_tone_lut.cpp)
+target_link_libraries(run_tone_lut PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(run_tone_lut)
+cpp_isp_enable_sanitizers(run_tone_lut)
+
+add_executable(run_local_tone_mapping tools/run_local_tone_mapping.cpp)
+target_link_libraries(run_local_tone_mapping PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(run_local_tone_mapping)
+cpp_isp_enable_sanitizers(run_local_tone_mapping)
+
+add_executable(run_hdr_merge tools/run_hdr_merge.cpp)
+target_link_libraries(run_hdr_merge PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(run_hdr_merge)
+cpp_isp_enable_sanitizers(run_hdr_merge)
+
+add_executable(run_pipeline tools/run_pipeline.cpp)
+target_link_libraries(run_pipeline PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(run_pipeline)
+cpp_isp_enable_sanitizers(run_pipeline)
 
 enable_testing()
 
@@ -76,7 +106,7 @@ cpp_isp_enable_sanitizers(test_smoke)
 cpp_isp_apply_compiler_options(bench_smoke)
 cpp_isp_enable_sanitizers(bench_smoke)
 
-foreach(test_name IN ITEMS test_image test_border test_denoise_basic)
+foreach(test_name IN ITEMS test_image test_border test_denoise_basic test_tone_mapping test_fixed_point test_tone_lut test_local_tone_mapping test_hdr_merge)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE cpp_isp_core)
     cpp_isp_apply_compiler_options(${test_name})
@@ -99,3 +129,18 @@ add_executable(bench_denoise benchmarks/bench_denoise.cpp)
 target_link_libraries(bench_denoise PRIVATE cpp_isp_core)
 cpp_isp_apply_compiler_options(bench_denoise)
 cpp_isp_enable_sanitizers(bench_denoise)
+
+add_executable(bench_tone_mapping benchmarks/bench_tone_mapping.cpp)
+target_link_libraries(bench_tone_mapping PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(bench_tone_mapping)
+cpp_isp_enable_sanitizers(bench_tone_mapping)
+
+add_executable(bench_tone_lut benchmarks/bench_tone_lut.cpp)
+target_link_libraries(bench_tone_lut PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(bench_tone_lut)
+cpp_isp_enable_sanitizers(bench_tone_lut)
+
+add_executable(bench_local_tone_mapping benchmarks/bench_local_tone_mapping.cpp)
+target_link_libraries(bench_local_tone_mapping PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(bench_local_tone_mapping)
+cpp_isp_enable_sanitizers(bench_local_tone_mapping)
