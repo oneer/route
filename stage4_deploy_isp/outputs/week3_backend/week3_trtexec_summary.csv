@@ -1,0 +1,3 @@
+precision,returncode,engine_path,engine_exists,log_path,times_path,gpu_compute_mean_ms,gpu_compute_p50_ms
+fp32,0,C:\Users\10439\Desktop\route\stage4_deploy_isp\outputs\week3_backend\dncnn_sidd_tiny_fp32_trt108.plan,True,C:\Users\10439\Desktop\route\stage4_deploy_isp\outputs\week3_backend\week3_trtexec_fp32.log,C:\Users\10439\Desktop\route\stage4_deploy_isp\outputs\week3_backend\week3_trtexec_fp32_times.json,1.964323,1.351560
+fp16,0,C:\Users\10439\Desktop\route\stage4_deploy_isp\outputs\week3_backend\dncnn_sidd_tiny_fp16_trt108.plan,True,C:\Users\10439\Desktop\route\stage4_deploy_isp\outputs\week3_backend\week3_trtexec_fp16.log,C:\Users\10439\Desktop\route\stage4_deploy_isp\outputs\week3_backend\week3_trtexec_fp16_times.json,0.869755,0.584717
