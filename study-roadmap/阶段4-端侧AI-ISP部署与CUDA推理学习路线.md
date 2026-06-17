@@ -105,6 +105,15 @@ deploy_isp_stage4/
 - 画质报告包含 PSNR / SSIM / LPIPS 和失败案例。
 - C++ 程序能读取固定输入，执行前处理、推理、后处理并保存输出图。
 
+**社招 3 年口径的硬性验收线**：
+
+- 正确性：PyTorch、ONNX Runtime Python、ONNX Runtime C++ 和目标高性能后端必须使用同一批固定输入，输出误差至少记录 max abs error、mean abs error、PSNR 和 error map。
+- 阈值：ONNX Runtime 与 PyTorch 的 max abs error 建议控制在 `1e-4` 量级；FP16 与 FP32 的 PSNR drop 建议小于 `0.1dB`；INT8 若 PSNR drop 超过 `0.5dB`，必须给出失败区域和是否接受的解释。
+- 性能：benchmark 必须同时报告模型 inference time 和 end-to-end latency，并给出 preprocess、H2D、inference、D2H、postprocess 的拆分表。
+- 设备：如果目标岗位偏 NVIDIA GPU，可以只强制 TensorRT；如果目标岗位偏手机 / 端侧 / 嵌入式，NCNN 或 MNN 的真实 Android / arm64 设备测试应从“选做”提升为“必须交付”。
+- 可复现：README 必须包含环境版本、构建命令、运行命令、输入样例、期望输出位置和一键 smoke test。
+- 表达：最终报告必须能回答“为什么这个模型适合部署、为什么这个后端合适、速度提升是否值得画质损失、失败时如何排查”。
+
 ---
 
 ## 2. 公开资源调研与使用方式
@@ -453,6 +462,8 @@ deploy_isp_stage4/
 
 **目标**：补齐国内端侧岗位常见移动端部署工具链，至少跑通一个 NCNN 或 MNN 推理链路。
 
+**社招判断**：如果你主要投 GPU 推理 / TensorRT 岗，这一周可以作为了解项；如果你投手机影像、端侧 AI、嵌入式 ISP 或国内手机厂商岗位，这一周必须留下真实设备证据，不能只在桌面端转换模型。
+
 **学习内容**：
 
 - ONNX → NCNN / MNN 转换。
@@ -473,9 +484,12 @@ deploy_isp_stage4/
    - run inference
    - save output
 5. 跑桌面端 benchmark。
-6. 有 Android 设备则选做：
+6. 如果目标岗位偏手机 / 端侧 / 嵌入式，必须在 Android / arm64 设备上完成：
    - arm64 编译
    - Vulkan 打开/关闭对比
+   - CPU / GPU 后端 latency 对比
+   - 设备型号、SoC、内存和系统版本记录
+7. 如果暂时没有 Android 设备，需要在报告中明确说明限制，并用桌面 NCNN / MNN 输出对齐和 benchmark 作为替代证据。
 
 **小实验**：
 
@@ -497,6 +511,7 @@ deploy_isp_stage4/
 - `cpp/src/ncnn_runner.cpp` 或 `mnn_runner.cpp`
 - `configs/ncnn_mobile.yaml`
 - `reports/week5_mobile_inference.md`
+- `reports/week5_device_benchmark.md`，如果目标岗位偏端侧或有真实设备
 
 ### Week 6：CUDA 前后处理、Pipeline 串联与 Profiling
 
@@ -568,6 +583,8 @@ deploy_isp_stage4/
    - 模型转换流程
    - 构建方法
    - 运行命令
+   - 一键 smoke test
+   - sample input / expected output
    - benchmark 表格
    - 画质对比
 2. 写最终报告：
@@ -591,6 +608,15 @@ deploy_isp_stage4/
    - ONNX Runtime
    - NCNN / MNN
    - GPU / CPU 型号
+5. 固定验收阈值：
+   - PyTorch vs ONNX Runtime 的误差阈值
+   - FP16 可接受的 PSNR / SSIM / LPIPS 损失
+   - INT8 可接受和不可接受的场景
+   - 端到端 latency 目标和未达标原因
+6. 准备三种岗位口径的项目表述：
+   - AI-ISP 算法岗：强调画质指标、失败案例、传统 ISP 前后处理衔接。
+   - 推理部署 / 性能优化岗：强调 C++ runtime、TensorRT / NCNN、profiling、copy bottleneck。
+   - 端侧算法岗：强调真实设备、NCNN / MNN、Vulkan、内存、功耗和算子限制。
 
 **掌握标准**：
 
@@ -607,6 +633,8 @@ deploy_isp_stage4/
 - `reports/latency_report.md`
 - `reports/quantization_report.md`
 - `reports/stage4_interview_notes.md`
+- `reports/reproducibility_checklist.md`
+- `reports/job_pitch_notes.md`
 
 ---
 
@@ -668,6 +696,10 @@ deploy_isp_stage4/
 - 我能不能用固定测试集比较不同后端的输出误差？
 - 我能不能把阶段 3 的 C++ 前后处理接到模型推理前后？
 - 我能不能用报告说明“速度提升是否值得画质损失”？
+- 我能不能给出明确阈值，而不是只说“差不多一致”？
+- 我能不能让别人按 README 在新环境里跑通 smoke test？
+- 我能不能说清当前证据更适合 AI-ISP 算法岗、部署优化岗，还是端侧算法岗？
+- 如果没有真实 Android / arm64 设备，我能不能诚实说明这个缺口，并给出后续补证计划？
 
 ---
 
@@ -680,6 +712,9 @@ deploy_isp_stage4/
 - 不要 INT8 只看速度，不看画质损失和失败案例。
 - 不要忽略 input layout / dtype / range，这些是部署偏色和输出异常的高发原因。
 - 不要把 CUDA kernel 优化放在模型部署之前；先定位瓶颈，再决定是否手写 kernel。
+- 不要只给平均 latency，不给 p50 / p90 或多次运行统计；单次耗时在面试里说服力不够。
+- 不要只放最终好图，不放失败案例；三年社招更看重你如何判断不可接受的画质损失。
+- 不要把所有岗位讲成同一个故事；算法岗、部署岗、端侧岗关注点不同。
 
 ---
 
@@ -725,3 +760,9 @@ Week 7    最终交付
 面试时不要把阶段四讲成“我会 TensorRT”。更有价值的表达是：
 
 > 我能以固定测试集为基准，保证 PyTorch、ONNX Runtime、TensorRT / NCNN 输出一致；能拆解端到端延迟；能评估 FP16 / INT8 对画质的影响；能把模型接入传统 C++ ISP 前后处理，形成可验证的 AI-ISP 推理系统。
+
+不同岗位可以这样取舍表达：
+
+- **AI-ISP 算法岗**：重点讲模型输入输出协议、画质指标、失败案例、传统 ISP 前后处理和 AI 模块如何分工。
+- **推理部署 / 性能优化岗**：重点讲 ONNX 对齐、C++ runtime、TensorRT / NCNN 后端、latency breakdown、Nsight profiling 和 copy bottleneck。
+- **端侧算法岗**：重点讲 NCNN / MNN、真实设备 latency、Vulkan / FP16、内存占用、功耗约束和算子替换。
