@@ -96,15 +96,26 @@ toolchain and should not be used unless a specific legacy dependency requires it
 
 ## CUDA / TensorRT
 
-Fill these after installing CUDA Toolkit and TensorRT.
+CUDA and TensorRT are installed as part of the NVIDIA driver package at `D:\application\cuda`.
+
+Note: this is the NVIDIA driver-package layout (components split across subdirectories).
+For CMake `find_package(CUDAToolkit)`, set:
+- `CUDAToolkit_ROOT=D:\application\cuda`
+- or pass `-DCMAKE_CUDA_COMPILER=D:\application\cuda\cuda_nvcc\nvcc\bin\nvcc.exe`
+
+To get a unified `include/` + `lib/` + `bin/` tree (easier for CMake), install the
+standalone CUDA Toolkit 12.6 from https://developer.nvidia.com/cuda-downloads.
 
 | Item | Path / Version |
 |---|---|
-| NVIDIA driver / GPU | `RTX 4060 Ti, driver visible through nvidia-smi` |
+| NVIDIA driver / GPU | `RTX 4060 Ti` (driver 591.74) |
 | `nvidia-smi.exe` | `C:\Windows\System32\nvidia-smi.exe` |
-| CUDA Toolkit root | `TODO` |
-| `nvcc.exe` | `TODO: where nvcc` |
-| CUDA version | `TODO: nvcc --version` |
+| CUDA Toolkit root | `D:\application\cuda` |
+| `nvcc.exe` | `D:\application\cuda\cuda_nvcc\nvcc\bin\nvcc.exe` |
+| CUDA version | 12.6.20 |
+| CUDA headers (`cuda.h`) | `D:\application\cuda\cuda_cudart\cudart\include` |
+| CUDA runtime lib (`cudart.lib`) | `D:\application\cuda\cuda_cudart\cudart\lib\x64` |
+| cuBLAS lib (`cublas.lib`) | `D:\application\cuda\libcublas\cublas_dev\lib\x64` |
 | TensorRT root | `TODO` |
 | `trtexec.exe` | `TODO: where trtexec` |
 
