@@ -2,56 +2,67 @@
 
 ## 目标
 
-原计划是完成 TensorRT FP32 / FP16 engine 构建、C++ runtime 和端到端 latency 对比。
+完成 NVIDIA GPU 上的 TensorRT FP32 / FP16 engine 构建、benchmark，并把 CUDA / TensorRT 输出与 ORT CPU golden output 做数值对齐。
 
 ## 当前环境结论
 
-当前机器有 RTX 4060 Ti 和 NVIDIA Driver，但阶段四当前 Python / 系统工具链缺少：
+当前 Week 3 GPU 部署环境已补齐：
 
-- CUDA 版 PyTorch：当前 `torch==2.12.0+cpu`。
-- `nvcc`。
-- `trtexec`。
-- TensorRT Python / C++ SDK。
-- CMake / C++ 编译器。
+- GPU：NVIDIA GeForce RTX 4060 Ti，driver 591.74。
+- CUDA Toolkit：12.6，`nvcc` 可见。
+- TensorRT：10.8.0，`trtexec` 可用。
+- ONNX Runtime GPU：`onnxruntime-gpu 1.21.1`。
+- ORT available providers：`TensorrtExecutionProvider; CUDAExecutionProvider; CPUExecutionProvider`。
 
-因此本周无法完成真正的 TensorRT engine 实测。为保证完整路线继续推进，本周先完成后端探测和 ONNX Runtime FP32 CPU benchmark，作为后续 TensorRT 对比基线。
+TensorRT / cuDNN DLL 需要显式加入 PATH：
+
+- `D:\Env\TensorRT\TensorRT-10.8.0.43\bin`
+- `D:\Env\TensorRT\TensorRT-10.8.0.43\lib`
+- `C:\Program Files\NVIDIA\CUDNN\v9.23\bin\12.9\x64`
+- `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin`
 
 ## 运行命令
 
 ```powershell
-python stage4_deploy_isp/scripts/05_week3_backend_probe_benchmark.py
+C:\Users\10439\.conda\envs\stage4-cuda\python.exe stage4_deploy_isp/scripts/09_week3_trt_cuda_benchmark.py --runs 5
 ```
 
 ## 输出文件
 
+- `outputs/week3_backend/dncnn_sidd_tiny_fp32_trt108.plan`
+- `outputs/week3_backend/dncnn_sidd_tiny_fp16_trt108.plan`
+- `outputs/week3_backend/week3_trtexec_summary.csv`
 - `outputs/week3_backend/week3_backend_summary.csv`
-- `outputs/week3_backend/week3_ort_cpu_latency.csv`
+- `outputs/week3_backend/week3_gpu_alignment_latency.csv`
+- `outputs/week3_backend/week3_trtexec_fp32.log`
+- `outputs/week3_backend/week3_trtexec_fp16.log`
 
-## 当前 benchmark 结果
+## trtexec engine benchmark
 
-| 项目 | 结果 |
-|---|---:|
-| ONNX Runtime providers | AzureExecutionProvider; CPUExecutionProvider |
-| `trtexec` | missing |
-| `nvcc` | missing |
-| `cmake` | missing |
-| `nvidia-smi` | available |
-| ORT CPU mean latency | 93.28 ms |
-| ORT CPU p50 latency | 90.63 ms |
-| ORT CPU p90 latency | 111.65 ms |
+| precision | engine | GPU compute mean | GPU compute p50 |
+|---|---|---:|---:|
+| FP32 | built | 1.964 ms | 1.352 ms |
+| FP16 | built | 0.870 ms | 0.585 ms |
 
-和 Week 0.5 的 PyTorch CPU p50 182.86 ms 相比，ONNX Runtime CPU baseline 已经明显更快。这说明 graph-level runtime 优化本身有收益，但这还不是端到端 GPU 部署结论。
+结论：在 `trtexec` 的纯 engine 视角下，FP16 明显快于 FP32。但这不是端到端 pipeline latency，不能直接替代真实输入、前后处理和拷贝后的总耗时。
 
-## 后续补齐标准
+## ORT CUDA / TensorRT EP 对齐与延迟
 
-等工具链补齐后，Week 3 需要补：
+| backend | active providers | mean latency | max abs error vs ORT CPU | mean abs error vs ORT CPU |
+|---|---|---:|---:|---:|
+| CPU | CPUExecutionProvider | 74.50 ms | baseline | baseline |
+| CUDA | CUDAExecutionProvider; CPUExecutionProvider | 10.91 ms | 3.58e-7 | 2.18e-8 |
+| TensorRT FP32 | TensorrtExecutionProvider; CUDAExecutionProvider; CPUExecutionProvider | 8.26 ms | 5.29e-4 | 4.94e-5 |
+| TensorRT FP16 | TensorrtExecutionProvider; CUDAExecutionProvider; CPUExecutionProvider | 7.45 ms | 1.47e-3 | 1.30e-4 |
 
-1. `trtexec --onnx=... --saveEngine=...` 构建 FP32 engine。
-2. `trtexec --fp16` 构建 FP16 engine。
-3. 记录 engine latency、H2D、D2H、end-to-end latency。
-4. TensorRT output 与 PyTorch / ORT output 做 max abs error、mean abs error、PSNR 对齐。
-5. 分析 FP16 对暗区噪声、颜色、纹理和高光的影响。
+这些误差是 TensorRT / CUDA 输出相对 ORT CPU output 的 float tensor 级误差。FP16 误差高于 FP32，符合预期；下一步需要把最差样本做 crop sheet，看暗区噪声、颜色和纹理是否出现可见问题。
+
+## 注意事项
+
+- 当前 ORT TensorRT EP 的延迟包含 Python session 调用和数据准备开销，不等同于 `trtexec` engine compute time。
+- 固定 shape ONNX 不应给 `trtexec` 传 `--shapes`，否则会报 `Static model does not take explicit shapes`。
+- `trtexec` 成功依赖 TensorRT `lib` 目录进入 PATH，否则会找不到 `nvinfer_plugin_10.dll`。
 
 ## AI-ISP / ISP 算法岗视角
 
-对于 AI-ISP / ISP 算法岗，TensorRT 不是目的。真正要讲清的是：FP16 是否改变了画质，速度提升是否值得，部署输出是否引入偏色、过平滑或暗区噪声残留。
+这一周现在可以讲成：先用 ORT CPU 做 correctness baseline，再用 CUDA EP / TensorRT EP 和 `trtexec` 分别验证数值一致性与 engine 性能。FP16 的速度收益明确，但图像恢复任务还必须看误差图和失败样本，不能只报 engine latency。

@@ -1,0 +1,2 @@
+input,width,height,channels,runs,cuda_compile,cuda_arch,cpu_preprocess_mean_ms,cuda_kernel_mean_ms,max_abs_error,mean_abs_error
+C:\Users\10439\Desktop\route\stage4_deploy_isp\outputs\week2_cpp_io\ppm_inputs\pair_00001.ppm,512,512,3,200,NVRTC,compute_89,5.030829499992251,0.009221500004059635,5.960464477539063e-08,8.220271574543858e-09

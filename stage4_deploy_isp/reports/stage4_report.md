@@ -2,7 +2,7 @@
 
 ## 1. 项目定位
 
-本阶段面向 AI-ISP / ISP 算法工程师。目标不是单纯证明“我会 ONNX / TensorRT”，而是建立一个可复现、可对齐、可解释的 AI 图像恢复部署闭环。
+本阶段面向 AI-ISP / ISP 算法工程师。目标不是单纯证明“会 ONNX / TensorRT”，而是建立一个可复现、可对齐、可测量、可解释的 AI 图像恢复部署闭环。
 
 当前阶段三尚未完全收尾，因此阶段四先使用阶段二已有 RGB denoise 模型形成独立闭环；阶段三 C++ ISP 模块后续再作为正式 preprocess / postprocess 接入。
 
@@ -13,11 +13,11 @@
 | Week 0.5 | 固定模型、固定测试集、PyTorch baseline | 已完成 |
 | Week 1 | ONNX 导出与 ORT 对齐 | 已完成 |
 | Week 2 | ONNX Runtime C++ baseline 源码、编译与输出对齐 | 已完成 |
-| Week 3 | TensorRT / FP16 | 当前环境缺 TensorRT，完成 ORT CPU benchmark |
+| Week 3 | TensorRT FP32 / FP16 与 CUDA / TensorRT EP 对齐 | 已完成 |
 | Week 4 | INT8 QDQ 量化与画质损失 | 已完成 |
 | Week 5 | NCNN / MNN 移动端路径 | 工具链缺失，完成适配性分析 |
-| Week 6 | Pipeline profiling 与 CUDA kernel 骨架 | 已完成 CPU pipeline，CUDA 编译受限 |
-| Week 7 | 报告、复现清单、面试表达 | 已完成 |
+| Week 6 | Pipeline profiling 与 CUDA preprocess kernel | 已完成 CPU pipeline + NVRTC CUDA kernel |
+| Week 7 | 报告、复现清单、面试表达 | 已完成并更新 |
 
 ## 3. 数据与模型
 
@@ -33,12 +33,6 @@
 - checkpoint：阶段二 `paired_rgb_sidd_tiny_dncnn_l2_300`。
 - 输入：RGB 3ch，`NCHW`，`float32`，`[0,1]`。
 - 输出：RGB 3ch，`NCHW`，`float32`，输出后 clamp 到 `[0,1]`。
-
-选择理由：
-
-- 当前 checkpoint 指标稳定。
-- ONNX graph 简单，适合先跑通部署闭环。
-- 残差学习可解释为 AI denoise 模块。
 
 ## 4. PyTorch Baseline
 
@@ -71,7 +65,29 @@ Sub x1
 
 结论：ONNX Runtime 和 PyTorch 输出高度一致，ORT 可以作为后续后端 correctness baseline。
 
-## 6. INT8 量化
+## 6. TensorRT / CUDA
+
+Week 3 已补齐 CUDA / TensorRT 实测。
+
+`trtexec` engine benchmark：
+
+| precision | GPU compute mean | GPU compute p50 |
+|---|---:|---:|
+| FP32 | 1.964 ms | 1.352 ms |
+| FP16 | 0.870 ms | 0.585 ms |
+
+ORT backend 对齐与延迟：
+
+| backend | active providers | mean latency | max abs error vs ORT CPU |
+|---|---|---:|---:|
+| CPU | CPUExecutionProvider | 74.50 ms | baseline |
+| CUDA | CUDAExecutionProvider; CPUExecutionProvider | 10.91 ms | 3.58e-7 |
+| TensorRT FP32 | TensorrtExecutionProvider; CUDAExecutionProvider; CPUExecutionProvider | 8.26 ms | 5.29e-4 |
+| TensorRT FP16 | TensorrtExecutionProvider; CUDAExecutionProvider; CPUExecutionProvider | 7.45 ms | 1.47e-3 |
+
+结论：FP16 engine 有明显速度收益，且 float tensor 误差仍处于较小范围。后续要补失败样本 crop sheet，看误差是否形成可见画质问题。
+
+## 7. INT8 量化
 
 | 指标 | 结果 |
 |---|---:|
@@ -86,7 +102,9 @@ Sub x1
 
 结论：当前 ORT CPU QDQ INT8 初步可接受，但还需要针对最差样本做主观画质分析，尤其关注红色高饱和区域、暗区噪声和纹理过平滑。
 
-## 7. Pipeline Profiling
+## 8. Pipeline Profiling 与 CUDA Preprocess
+
+CPU pipeline：
 
 | 阶段 | 平均耗时 |
 |---|---:|
@@ -96,29 +114,26 @@ Sub x1
 | save output | 38.32 ms |
 | end-to-end | 153.31 ms |
 
-结论：端到端时间明显不等于模型 inference time。后续接 TensorRT / CUDA 时，需要同时优化 preprocess、copy 和 postprocess。
+NVRTC CUDA preprocess：
 
-## 8. 工具链限制
+| 项目 | 结果 |
+|---|---:|
+| CPU normalize mean | 5.031 ms |
+| CUDA normalize kernel mean | 0.0092 ms |
+| max abs error | 5.96e-8 |
+| mean abs error | 8.22e-9 |
 
-当前环境限制：
+结论：CUDA normalize kernel 已完成编译、launch 和 CPU 对齐。当前数字是 kernel 本身，不含 H2D / D2H；后续端到端优化必须继续测 copy、pinned memory、stream overlap 和 Nsight timeline。
 
-- PyTorch 是 CPU build。
-- 缺少 CMake 和 C++ 编译器。
-- 缺少 CUDA Toolkit / nvcc。
-- 缺少 TensorRT / trtexec。
-- 缺少 NCNN / MNN / adb。
+## 9. 当前限制
 
-这些限制导致 Week 3 TensorRT、Week 5 移动端、Week 6 CUDA 实测尚未完成。Week 2 C++ ORT baseline 已在补齐 VS Build Tools 和 ONNX Runtime C++ SDK 后完成编译与 smoke test。
-
-## 9. 先进内容调研
-
-- DnCNN：残差学习去噪，适合解释 AI denoise 模块如何预测噪声残差。链接：https://arxiv.org/abs/1608.03981
-- NAFNet：更现代的高效图像恢复 baseline，后续可作为第二部署模型，但部署复杂度高于 DnCNN。链接：https://arxiv.org/abs/2204.04676
-- SIDD / SIDD+：真实手机噪声数据对图像恢复和 AI-ISP 更有意义，避免只在 AWGN 上做玩具实验。链接：https://arxiv.org/abs/2005.04117
+- Week 5 移动端工具链仍缺：NCNN / MNN / Android adb。
+- CMake + `nvcc` 编译 CUDA executable 的入口已补，但 CUDA 12.6 与 VS Build Tools 2026 host compiler 兼容性仍不稳定；当前通过 NVRTC 完成 CUDA kernel 编译实测。
+- 阶段三 C++ ISP 模块尚未正式接入 Week 6 pipeline。
 
 ## 10. 后续补强
 
-1. 安装 CUDA Toolkit / TensorRT，补 Week 3 FP32 / FP16 engine 实测。
-2. 用最差 INT8 样本做 failure case crop sheet。
+1. 用最差 INT8 / FP16 样本做 failure case crop sheet。
+2. 把 H2D / D2H、pinned memory、CUDA stream 和 Nsight timeline 补进 Week 6。
 3. 等阶段三完成后，把 C++ BLC / LSC / tone mapping 接入 Week 6 pipeline。
-4. 如投手机厂商端侧岗位，再补 NCNN / MNN + Android 真机测试。
+4. 如果投手机厂商端侧岗位，再补 NCNN / MNN + Android 真机测试。
