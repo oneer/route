@@ -49,14 +49,35 @@ moved.
 | PyTorch | `2.12.0+cpu` |
 | ONNX | `1.22.0` |
 | ONNX Runtime | `1.27.0` |
+| Stage 4 CUDA Python executable | `C:\Users\10439\.conda\envs\stage4-cuda\python.exe` |
+| Stage 4 CUDA ONNX Runtime GPU | `onnxruntime-gpu 1.21.1` |
+| Stage 4 CUDA ORT providers | `TensorrtExecutionProvider; CUDAExecutionProvider; CPUExecutionProvider` |
 
 ## Conda Environments
 
 | Item | Path / Version |
 |---|---|
 | Base conda | `D:\Env\miniconda3` |
-| Recommended Stage 4 CUDA env | `TODO: create e.g. stage4-cuda` |
-| Recommended command | `TODO: conda create -n stage4-cuda python=3.11` |
+| Stage 4 CUDA env | `C:\Users\10439\.conda\envs\stage4-cuda` |
+| Stage 4 CUDA env Python | `3.11.15` |
+| Stage 4 CUDA env create command | `conda create -n stage4-cuda python=3.11 pip -y` |
+| Stage 4 CUDA ORT GPU install command | `python -m pip install "onnxruntime-gpu[cuda,cudnn]==1.21.1" onnx numpy Pillow PyYAML matplotlib opencv-python` |
+
+Note: when running ORT GPU from Python, preload the NVIDIA pip package DLL
+directories before creating the session:
+
+```python
+import glob
+import os
+
+site_packages = r"C:\Users\10439\.conda\envs\stage4-cuda\Lib\site-packages"
+bin_dirs = glob.glob(site_packages + r"\nvidia\*\bin")
+bin_dirs.append(site_packages + r"\onnxruntime\capi")
+os.environ["PATH"] = ";".join(bin_dirs) + ";" + os.environ["PATH"]
+for bin_dir in bin_dirs:
+    if os.path.isdir(bin_dir):
+        os.add_dll_directory(bin_dir)
+```
 
 ## C++ Toolchain
 
@@ -107,8 +128,11 @@ toolchain and should not be used unless a specific legacy dependency requires it
 | cuDNN bin (CUDA 12.x) | `C:\Program Files\NVIDIA\CUDNN\v9.23\bin\12.9\x64` |
 | cuDNN include (CUDA 12.x) | `C:\Program Files\NVIDIA\CUDNN\v9.23\include\12.9` |
 | cuDNN lib (CUDA 12.x) | `C:\Program Files\NVIDIA\CUDNN\v9.23\lib\12.9\x64` |
-| TensorRT root | `TODO` |
-| `trtexec.exe` | `TODO` |
+| TensorRT ZIP | `D:\download\TensorRT-10.8.0.43.Windows.win10.cuda-12.8.zip` |
+| TensorRT root | `D:\Env\TensorRT\TensorRT-10.8.0.43` |
+| `trtexec.exe` | `D:\Env\TensorRT\TensorRT-10.8.0.43\bin\trtexec.exe` |
+| TensorRT version | `10.8.0` |
+| TensorRT CUDA package | `CUDA 12.0 to 12.8` |
 
 ### CMake integration
 
