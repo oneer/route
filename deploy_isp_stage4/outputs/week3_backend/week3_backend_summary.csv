@@ -1,0 +1,2 @@
+available_providers,trtexec,nvcc,nvidia_smi,cmake,ort_cpu_mean_ms,ort_cpu_std_ms,ort_cpu_p50_ms,ort_cpu_p90_ms
+AzureExecutionProvider;CPUExecutionProvider,missing,missing,C:\Windows\system32\nvidia-smi.EXE,missing,93.27728549949825,14.709559600750948,90.63019999302924,111.64741995744407

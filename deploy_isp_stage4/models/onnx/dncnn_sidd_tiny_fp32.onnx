@@ -1,0 +1,359 @@
+
+pytorch
+2.12.0+cpu:ˇv
+§	
+input
+net.0.weight
+
+net.0.biasconv2dnode_conv2d"Conv*
+group†*
+auto_pad"NOTSET†*
+	dilations@@†*
+strides@@†*
+pads@@@@†Jî
+	namespaceÜ: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.0: torch.nn.modules.conv.Conv2d/conv2d: aten.conv2d.defaultJü
+pkg.torch.onnx.class_hierarchy}['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J≤
+pkg.torch.onnx.fx_nodeó%conv2d : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%x, %p_net_0_weight, %p_net_0_bias, [1, 1], [1, 1]), kwargs = {})J<
+pkg.torch.onnx.name_scopes['', 'net', 'net.0', 'conv2d']J€
+pkg.torch.onnx.stack_traceºFile "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\conv.py", line 565, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+Ú
+conv2drelu	node_relu"ReluJî
+	namespaceÜ: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.1: torch.nn.modules.activation.ReLU/relu: aten.relu.defaultJ°
+pkg.torch.onnx.class_hierarchy['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.ReLU', 'aten.relu.default']JÉ
+pkg.torch.onnx.fx_nodei%relu : [num_users=1] = call_function[target=torch.ops.aten.relu.default](args = (%conv2d,), kwargs = {})J:
+pkg.torch.onnx.name_scopes['', 'net', 'net.1', 'relu']J”
+pkg.torch.onnx.stack_trace¥File "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\activation.py", line 143, in forward
+    return F.relu(input, inplace=self.inplace)
+∞	
+relu
+net.2.weight
+
+net.2.biasconv2d_1node_conv2d_1"Conv*
+group†*
+auto_pad"NOTSET†*
+	dilations@@†*
+strides@@†*
+pads@@@@†Jñ
+	namespaceà: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.2: torch.nn.modules.conv.Conv2d/conv2d_1: aten.conv2d.defaultJü
+pkg.torch.onnx.class_hierarchy}['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J∑
+pkg.torch.onnx.fx_nodeú%conv2d_1 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%relu, %p_net_2_weight, %p_net_2_bias, [1, 1], [1, 1]), kwargs = {})J>
+pkg.torch.onnx.name_scopes ['', 'net', 'net.2', 'conv2d_1']J€
+pkg.torch.onnx.stack_traceºFile "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\conv.py", line 565, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+Ä
+conv2d_1relu_1node_relu_1"ReluJñ
+	namespaceà: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.3: torch.nn.modules.activation.ReLU/relu_1: aten.relu.defaultJ°
+pkg.torch.onnx.class_hierarchy['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.ReLU', 'aten.relu.default']Já
+pkg.torch.onnx.fx_nodem%relu_1 : [num_users=1] = call_function[target=torch.ops.aten.relu.default](args = (%conv2d_1,), kwargs = {})J<
+pkg.torch.onnx.name_scopes['', 'net', 'net.3', 'relu_1']J”
+pkg.torch.onnx.stack_trace¥File "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\activation.py", line 143, in forward
+    return F.relu(input, inplace=self.inplace)
+¥	
+relu_1
+net.4.weight
+
+net.4.biasconv2d_2node_conv2d_2"Conv*
+group†*
+auto_pad"NOTSET†*
+	dilations@@†*
+strides@@†*
+pads@@@@†Jñ
+	namespaceà: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.4: torch.nn.modules.conv.Conv2d/conv2d_2: aten.conv2d.defaultJü
+pkg.torch.onnx.class_hierarchy}['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']Jπ
+pkg.torch.onnx.fx_nodeû%conv2d_2 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%relu_1, %p_net_4_weight, %p_net_4_bias, [1, 1], [1, 1]), kwargs = {})J>
+pkg.torch.onnx.name_scopes ['', 'net', 'net.4', 'conv2d_2']J€
+pkg.torch.onnx.stack_traceºFile "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\conv.py", line 565, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+Ä
+conv2d_2relu_2node_relu_2"ReluJñ
+	namespaceà: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.5: torch.nn.modules.activation.ReLU/relu_2: aten.relu.defaultJ°
+pkg.torch.onnx.class_hierarchy['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.ReLU', 'aten.relu.default']Já
+pkg.torch.onnx.fx_nodem%relu_2 : [num_users=1] = call_function[target=torch.ops.aten.relu.default](args = (%conv2d_2,), kwargs = {})J<
+pkg.torch.onnx.name_scopes['', 'net', 'net.5', 'relu_2']J”
+pkg.torch.onnx.stack_trace¥File "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\activation.py", line 143, in forward
+    return F.relu(input, inplace=self.inplace)
+¥	
+relu_2
+net.6.weight
+
+net.6.biasconv2d_3node_conv2d_3"Conv*
+group†*
+auto_pad"NOTSET†*
+	dilations@@†*
+strides@@†*
+pads@@@@†Jñ
+	namespaceà: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.6: torch.nn.modules.conv.Conv2d/conv2d_3: aten.conv2d.defaultJü
+pkg.torch.onnx.class_hierarchy}['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']Jπ
+pkg.torch.onnx.fx_nodeû%conv2d_3 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%relu_2, %p_net_6_weight, %p_net_6_bias, [1, 1], [1, 1]), kwargs = {})J>
+pkg.torch.onnx.name_scopes ['', 'net', 'net.6', 'conv2d_3']J€
+pkg.torch.onnx.stack_traceºFile "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\conv.py", line 565, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+Ä
+conv2d_3relu_3node_relu_3"ReluJñ
+	namespaceà: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.7: torch.nn.modules.activation.ReLU/relu_3: aten.relu.defaultJ°
+pkg.torch.onnx.class_hierarchy['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.ReLU', 'aten.relu.default']Já
+pkg.torch.onnx.fx_nodem%relu_3 : [num_users=1] = call_function[target=torch.ops.aten.relu.default](args = (%conv2d_3,), kwargs = {})J<
+pkg.torch.onnx.name_scopes['', 'net', 'net.7', 'relu_3']J”
+pkg.torch.onnx.stack_trace¥File "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\activation.py", line 143, in forward
+    return F.relu(input, inplace=self.inplace)
+¥	
+relu_3
+net.8.weight
+
+net.8.biasconv2d_4node_conv2d_4"Conv*
+group†*
+auto_pad"NOTSET†*
+	dilations@@†*
+strides@@†*
+pads@@@@†Jñ
+	namespaceà: ai_isp.models.dncnn.DnCNN/net: torch.nn.modules.container.Sequential/net.8: torch.nn.modules.conv.Conv2d/conv2d_4: aten.conv2d.defaultJü
+pkg.torch.onnx.class_hierarchy}['ai_isp.models.dncnn.DnCNN', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']Jπ
+pkg.torch.onnx.fx_nodeû%conv2d_4 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%relu_3, %p_net_8_weight, %p_net_8_bias, [1, 1], [1, 1]), kwargs = {})J>
+pkg.torch.onnx.name_scopes ['', 'net', 'net.8', 'conv2d_4']J€
+pkg.torch.onnx.stack_traceºFile "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 89, in forward
+    pred = self.net(x)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+  File "C:\Users\10439\AppData\Roaming\Python\Python314\site-packages\torch\nn\modules\conv.py", line 565, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+õ
+input
+conv2d_4outputnode_sub"SubJ=
+	namespace0: ai_isp.models.dncnn.DnCNN/sub: aten.sub.TensorJR
+pkg.torch.onnx.class_hierarchy0['ai_isp.models.dncnn.DnCNN', 'aten.sub.Tensor']JÖ
+pkg.torch.onnx.fx_nodek%sub : [num_users=1] = call_function[target=torch.ops.aten.sub.Tensor](args = (%x, %conv2d_4), kwargs = {})J)
+pkg.torch.onnx.name_scopes['', 'sub']J™
+pkg.torch.onnx.stack_traceãFile "C:\Users\10439\Desktop\route\ai_isp_stage2\ai_isp\models\dncnn.py", line 90, in forward
+    out = x - pred if self.residual else pred
+main_graph*c Bnet.0.weightj*
+locationdncnn_sidd_tiny_fp32.onnx.dataj
+offset0j
+length3456p*ì B
+net.0.biasJÄ‹¸§Ωpn>Îp>ãtö=e¨=Å–˝ΩTé‹<ì26>êêï=@∫=„„Ó∫~ç’ºñV>∞∫|< GÚ=ı¢¶<Eˆæ=àÿ…=˜!¿<;1Û=à˘‹=Å∞B>‡e$>§È;˘œæÒA2=/K%=ÌûºÖë¿;ô¶=ÿ˛=˙¨=*g  Bnet.2.weightj*
+locationdncnn_sidd_tiny_fp32.onnx.dataj
+offset6912j
+length36864p*ì B
+net.2.biasJÄ¥(<Ωü3Å=“i)=bŸSΩôW=–=Ω|Ä,=FØE=ÇD‚<ÜY=3ÉÛºﬂáΩEñ<õÓ<xa=ŒÇ«ª_©=F,5Ωqû;v|=å»gª©~f=«U)Ω)∞+ΩqfØ<V ∏ë‹Ω6Rë<ÉóVª?§<π4≠<^àΩ*h  Bnet.4.weightj*
+locationdncnn_sidd_tiny_fp32.onnx.dataj
+offset43776j
+length36864p*ì B
+net.4.biasJÄÜ	˛ºÛ=j÷˝ºˆΩÇ⁄IΩß◊MΩ™_=;ëºR∑'=*@"º„— ºÒ¬(ºí0fΩúÚ:<asoº,}<‹Ü?Ω∂ò< .:=Ú≥º»5<Ù6ΩÒ¢]º+N=ò‡<Ágù<Å¶<8€ª=bºôÖÜ=Ô∆∫ªãcº*h  Bnet.6.weightj*
+locationdncnn_sidd_tiny_fp32.onnx.dataj
+offset80640j
+length36864p*ì B
+net.6.biasJÄF=ÒˆN<Ö·éºarú<–•«ºQ\Ωª™¨ª$ÀnΩ‚RΩúÖ∂<BàΩUé≥<&Ç^=K~∏<€ΩÜËºïºç2;∫!Ω‡µºƒ8˝;~◊/Ω<KΩmû‘<ﬁ¬öº&
+˘º^i<Ø|=ÃO
+=/∞;6∫ÿ∫OÏı<*f Bnet.8.weightj*
+locationdncnn_sidd_tiny_fp32.onnx.dataj
+offset3456j
+length3456p*B
+net.8.biasJÿ˝=≤\ºÀªZ«
+input
+
+
+
+Ä
+Ä"=
+/pkg.torch.export.graph_signature.InputSpec.kind
+USER_INPUT"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"&
+!pkg.torch.onnx.original_node_namexbç
+output
+
+
+
+Ä
+Ä"?
+0pkg.torch.export.graph_signature.OutputSpec.kindUSER_OUTPUT"(
+!pkg.torch.onnx.original_node_namesubjÿ
+net.0.weight
+
+ 
+
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"3
+!pkg.torch.onnx.original_node_namep_net_0_weightj»
+
+net.0.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"1
+!pkg.torch.onnx.original_node_namep_net_0_biasjÿ
+net.2.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"3
+!pkg.torch.onnx.original_node_namep_net_2_weightj»
+
+net.2.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"1
+!pkg.torch.onnx.original_node_namep_net_2_biasjÿ
+net.4.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"3
+!pkg.torch.onnx.original_node_namep_net_4_weightj»
+
+net.4.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"1
+!pkg.torch.onnx.original_node_namep_net_4_biasjÿ
+net.6.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"3
+!pkg.torch.onnx.original_node_namep_net_6_weightj»
+
+net.6.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"1
+!pkg.torch.onnx.original_node_namep_net_6_biasjÿ
+net.8.weight
+
+
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"3
+!pkg.torch.onnx.original_node_namep_net_8_weightj»
+
+net.8.bias
+
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"1
+!pkg.torch.onnx.original_node_namep_net_8_biasj"
+conv2d
+
+
+ 
+Ä
+Äj 
+relu
+
+
+ 
+Ä
+Äj$
+conv2d_1
+
+
+ 
+Ä
+Äj"
+relu_1
+
+
+ 
+Ä
+Äj$
+conv2d_2
+
+
+ 
+Ä
+Äj"
+relu_2
+
+
+ 
+Ä
+Äj$
+conv2d_3
+
+
+ 
+Ä
+Äj"
+relu_3
+
+
+ 
+Ä
+Äj$
+conv2d_4
+
+
+
+Ä
+ÄÇµ
+0pkg.torch.export.ExportedProgram.graph_signatureÄ
+# inputs
+p_net_0_weight: PARAMETER target='net.0.weight'
+p_net_0_bias: PARAMETER target='net.0.bias'
+p_net_2_weight: PARAMETER target='net.2.weight'
+p_net_2_bias: PARAMETER target='net.2.bias'
+p_net_4_weight: PARAMETER target='net.4.weight'
+p_net_4_bias: PARAMETER target='net.4.bias'
+p_net_6_weight: PARAMETER target='net.6.weight'
+p_net_6_bias: PARAMETER target='net.6.bias'
+p_net_8_weight: PARAMETER target='net.8.weight'
+p_net_8_bias: PARAMETER target='net.8.bias'
+x: USER_INPUT
+
+# outputs
+sub: USER_OUTPUT
+Ç8
+2pkg.torch.export.ExportedProgram.range_constraints{}B
+ 

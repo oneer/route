@@ -1,0 +1,2 @@
+num_images,device,checkpoint,mean_noisy_psnr,mean_noisy_ssim,mean_model_psnr,mean_model_ssim,mean_psnr_gain,mean_ssim_gain,latency_mean_ms,latency_std_ms,latency_p50_ms,latency_p90_ms
+20,cpu,../ai_isp_stage2/runs/paired_rgb_sidd_tiny_dncnn_l2_300/checkpoints/best_psnr.pth,26.568691484303617,0.9338299820082403,32.98386709301477,0.9847913065989182,6.415175608711155,0.050961324590677926,261.65354401338845,193.22781414256292,182.86310008261353,496.39274992514396
