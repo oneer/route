@@ -10,6 +10,7 @@ A self-directed, project-driven learning repository for mastering the full Image
 route/
 ├── soft_isp_stage1/       # Stage 1: Traditional ISP pipeline (Python)
 ├── ai_isp_stage2/         # Stage 2: AI-ISP image restoration (PyTorch)
+├── cpp_isp_stage3/        # Stage 3: C++ high-performance ISP library
 ├── isp_tutorial_study/    # ISP tutorial study area (35 chapters, algorithm to RTL)
 ├── study-roadmap/         # 10-month AI-ISP career learning roadmap
 ├── README.md
@@ -31,6 +32,14 @@ The second stage shifts from hand-crafted algorithms to learned image restoratio
 **Status:** Complete (Week 0–9). The full pipeline from toy RGB denoise → real SIDD paired RGB → model comparison (DnCNN / UNet / NAFNet-lite) → pseudo RAW / ISP bridge → low-light enhancement → failure case analysis has been executed and documented. Training loop, config system, PSNR/SSIM evaluation pipeline, triplet visualizations, error maps, and a comprehensive stage-2 project summary (including resume and interview talking points) are all in place.
 
 See [ai_isp_stage2/README.md](ai_isp_stage2/README.md) for details.
+
+### [cpp_isp_stage3/](cpp_isp_stage3/) — Stage 3: C++ High-Performance ISP Library
+
+The third stage ports key ISP algorithms from Python reference to production-style C++17, with a strict loop: Python reference → C++ implementation → alignment test → benchmark → report. Uses a custom `CPF32` binary tensor format for cross-language verification.
+
+**Status:** In Progress (Week 0–5 done). Project skeleton, image layout, RAW noise modeling, basic denoise (Gaussian / box / bilateral / NLM), SIDD real-data bridge, denoise performance benchmarking, and global tone mapping (Reinhard / Filmic / ACES / percentile) are complete with Python references, alignment tests, and weekly reports.
+
+See [cpp_isp_stage3/README.md](cpp_isp_stage3/README.md) for details.
 
 ### [isp_tutorial_study/](isp_tutorial_study/) — ISP Tutorial Study Area
 
@@ -92,7 +101,8 @@ If you don't have RAW files yet, use the included download script:
 | Metrics | scikit-image (SSIM), colour-science (Delta E) |
 | Configuration | YAML |
 | Deep learning | PyTorch, torchvision |
-| Future C++ workbench | C++17, Qt 6, OpenColorIO, GoogleTest, OpenImageIO |
+| C++ workbench | C++17, CMake, Ninja, GoogleTest, Google Benchmark |
+| Future: CUDA / deployment | CUDA, TensorRT, NCNN |
 
 ## Stages
 
@@ -100,7 +110,7 @@ If you don't have RAW files yet, use the included download script:
 |---|---|---|---|
 | 1 | Traditional ISP pipeline fundamentals | Python | Complete |
 | 2 | AI-driven image restoration & denoising | Python + PyTorch | Complete |
-| 3 | C++ high-performance ISP library | C++ | Planned |
+| 3 | C++ high-performance ISP library | C++ | In Progress (Week 0–5) |
 | 4 | CUDA acceleration + TensorRT/NCNN deployment | C++ / CUDA | Planned |
 
 ## License

@@ -10,6 +10,7 @@
 route/
 ├── soft_isp_stage1/       # 阶段一：传统 ISP Pipeline（Python）
 ├── ai_isp_stage2/         # 阶段二：AI-ISP 图像恢复（PyTorch）
+├── cpp_isp_stage3/        # 阶段三：C++ 高性能 ISP 库
 ├── isp_tutorial_study/    # ISP 教程学习区（35 章，从算法到 RTL 实现）
 ├── study-roadmap/         # 10 个月 AI-ISP 社招学习路线
 ├── README.md
@@ -31,6 +32,14 @@ route/
 **状态：** 已完成（Week 0–9）。从 toy RGB 去噪 → 真实 SIDD paired RGB → 模型对比（DnCNN / UNet / NAFNet-lite）→ pseudo RAW / ISP bridge → 低光增强 → failure case 分析，全链路已跑通并沉淀文档。训练循环、配置系统、PSNR/SSIM 评估链路、三联图、error map 以及阶段二项目总结（含简历和面试表达）均已就绪。
 
 详见 [ai_isp_stage2/README.md](ai_isp_stage2/README.md)。
+
+### [cpp_isp_stage3/](cpp_isp_stage3/) — 阶段三：C++ 高性能 ISP 库
+
+第三阶段将关键 ISP 算法从 Python 参考实现移植到生产级 C++17，遵循严格闭环：Python 参考 → C++ 实现 → 对齐测试 → 性能基准 → 报告。使用自定义 `CPF32` 二进制张量格式进行跨语言验证。
+
+**状态：** 进行中（Week 0–5 完成）。项目骨架、图像布局、RAW 噪声建模、基础去噪（高斯 / box / bilateral / NLM）、SIDD 真实数据桥接、去噪性能基准测试、全局色调映射（Reinhard / Filmic / ACES / percentile）均已完成，含 Python 参考、对齐测试和周报。
+
+详见 [cpp_isp_stage3/README.md](cpp_isp_stage3/README.md)。
 
 ### [isp_tutorial_study/](isp_tutorial_study/) — ISP 教程学习区
 
@@ -92,7 +101,8 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 | 指标 | scikit-image (SSIM), colour-science (Delta E) |
 | 配置 | YAML |
 | 深度学习 | PyTorch, torchvision |
-| 未来 C++ 工作台 | C++17, Qt 6, OpenColorIO, GoogleTest, OpenImageIO |
+| C++ 工作台 | C++17, CMake, Ninja, GoogleTest, Google Benchmark |
+| 未来：CUDA / 部署 | CUDA, TensorRT, NCNN |
 
 ## 阶段规划
 
@@ -100,7 +110,7 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 |---|---|---|---|
 | 1 | 传统 ISP Pipeline 基础 | Python | 已完成 |
 | 2 | AI 驱动的图像恢复与降噪 | Python + PyTorch | 已完成 |
-| 3 | C++ 高性能 ISP 库 | C++ | 计划中 |
+| 3 | C++ 高性能 ISP 库 | C++ | 进行中（Week 0–5） |
 | 4 | CUDA 加速 + TensorRT/NCNN 部署 | C++ / CUDA | 计划中 |
 
 ## 许可
