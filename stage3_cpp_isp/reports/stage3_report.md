@@ -1,5 +1,9 @@
 # Stage 3 Final Report: C++ ISP Algorithm Engineering
 
+> Reader map: use `stage3_tutorial_audit.md` for the data-contract and
+> formula→reference→C++→test→alignment→benchmark evidence matrix. This final
+> report summarizes conclusions; it is not a substitute for the weekly tutorials.
+
 ## 1. Project Goal
 
 Stage 3 builds a C++17 ISP algorithm engineering project around:
@@ -11,7 +15,7 @@ Stage 3 builds a C++17 ISP algorithm engineering project around:
 - aligned HDR toy merge
 - Python-C++ alignment, tests, benchmarks, reports, and interview expression
 
-The project is aimed at a three-year ISP algorithm engineer interview story:
+The project is aimed at a three-year ISP algorithm engineer learning portfolio:
 not image testing, not pure IQ tuning, but algorithm implementation,
 verification, performance analysis, and engineering tradeoff explanation.
 
@@ -80,7 +84,8 @@ The project uses:
 Latest result:
 
 ```text
-100% tests passed, 0 tests failed out of 10
+June 18, 2026 Release verification:
+100% tests passed, 0 tests failed out of 11.
 ```
 
 ## 5. Key Alignment Results
@@ -117,6 +122,9 @@ Selected pipeline metrics on the 160x96 synthetic scene:
 | local | 0.4006 | 0.6241 | 0.0000 | 103.72 |
 | HDR local | 0.3982 | 0.6191 | 0.0000 | 126.64 |
 
+These Python-side pipeline timings are illustrative legacy measurements, not
+the same experiment as the C++ `bench_pipeline` harness.
+
 ## 7. Performance Summary
 
 Tone mapping:
@@ -134,6 +142,11 @@ Local tone mapping:
 Conclusion: global TM and LUT TM are practical CPU baselines; naive local TM is
 correct and useful for learning but not deployable without acceleration.
 
+The committed numbers came from an earlier best-of-few timing harness. The
+current benchmark code uses warmup + median, so the CSV set must be regenerated
+before presenting new absolute numbers. No cache-counter profiler was run;
+bottleneck labels are inferences from complexity and size scaling.
+
 ## 8. Known Limitations
 
 - No real RAW Bayer pipeline is integrated into `run_pipeline`.
@@ -145,6 +158,8 @@ correct and useful for learning but not deployable without acceleration.
   tools still parse explicit command-line arguments instead of loading YAML.
 - Stage 3 focuses on CPU C++ baselines; CUDA/TensorRT/NCNN deployment belongs to
   Stage 4.
+- No AVX/NEON/SIMD implementation, ARM measurement, cache-counter evidence, or
+  production realtime claim is present.
 
 ## 9. Resume Bullets
 

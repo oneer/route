@@ -1,0 +1,38 @@
+experiment:
+  name: fair_compare_dncnn_mse_1000
+  seed: 42
+  output_dir: runs/fair_compare_dncnn_mse_1000
+
+data:
+  dataset: paired_image
+  patch_size: 128
+  train_size: 1000
+  val_size: 200
+  augment: false
+  train:
+    noisy_dir: datasets/sidd_tiny/train/noisy
+    clean_dir: datasets/sidd_tiny/train/clean
+  val:
+    noisy_dir: datasets/sidd_tiny/val/noisy
+    clean_dir: datasets/sidd_tiny/val/clean
+  noise:
+    type: real_paired_rgb
+
+model:
+  name: dncnn
+  in_channels: 3
+  out_channels: 3
+  features: 32
+  depth: 5
+  residual: true
+
+train:
+  steps: 1000
+  batch_size: 4
+  learning_rate: 0.001
+  weight_decay: 0.0
+  loss: mse
+  log_every: 50
+  val_every: 200
+  num_workers: 0
+  device: auto

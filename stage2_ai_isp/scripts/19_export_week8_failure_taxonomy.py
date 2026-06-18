@@ -40,47 +40,26 @@ def classify(run: str, crop_mae: float, median_mae: float) -> tuple[str, str, st
             "The model must brighten, denoise, and preserve color at the same time; synthetic low-light degradation is harder than plain denoise.",
             "Add exposure/noise-specific IQ metrics, inspect dark ROI, and compare brightness/color statistics before changing model size.",
         )
-    if "unet" in run:
+    ratio = crop_mae / max(median_mae, 1e-12)
+    if ratio >= 1.1:
         return (
-            "local texture or color residual",
-            "UNet can keep structural similarity high, but crop MAE is relatively high.",
-            "Encoder-decoder structure preserves coarse structure, but direct-output training may leave pixel/color residual in local crops.",
-            "Inspect texture/edge crops; compare residual-output UNet or add local/color-aware analysis.",
+            "high local error",
+            f"Top-error crop MAE is {ratio:.2f}x the group median.",
+            "The numeric evidence locates a difficult ROI but cannot identify whether the cause is texture, color, alignment, data, loss, or model capacity.",
+            "Inspect the exact ROI and full-image error map, assign a human failure label, then design one controlled experiment.",
         )
-    if "nafnet" in run:
+    if ratio <= 0.9:
         return (
-            "under-trained modern block / residual noise",
-            "NAFNet-lite improves over input baseline but still trails the strongest DnCNN run.",
-            "The simplified NAFNet-lite setting uses limited data and 1000 steps, without full official training strategy.",
-            "Extend NAFNet-lite to 2000 steps or test Charbonnier loss before judging the architecture.",
-        )
-    if "patch64" in run:
-        return (
-            "context-limited denoise",
-            "Patch64 has competitive SSIM but lower PSNR than patch128.",
-            "Smaller patch sees less spatial context, which can limit pixel-accurate restoration on texture/edge regions.",
-            "Use patch64 for quick ablation, but keep patch128 for final-quality runs.",
-        )
-    if "dncnn_l1" in run:
-        return (
-            "strong baseline / residual local error",
-            "DnCNN L1 has the best global metrics, but crop error is still non-zero.",
-            "Residual denoise fits the task well, but local texture and color differences remain due to tiny data and simple loss.",
-            "Use it as the current baseline; inspect error map before deciding whether Charbonnier or more data is worthwhile.",
-        )
-    if "dncnn_l2" in run:
-        note = "Crop MAE is below or near the group median." if crop_mae <= median_mae else "Crop MAE is above the group median."
-        return (
-            "baseline smoothing / residual local error",
-            f"DnCNN L2 is strong globally; {note}",
-            "MSE aligns with PSNR but can slightly smooth uncertain texture.",
-            "Compare against DnCNN L1 and crop-level visual details rather than relying only on PSNR.",
+            "lower relative local error",
+            f"Top-error crop MAE is {ratio:.2f}x the group median.",
+            "This ROI is lower than peers under the current crop-mining rule, but one crop cannot establish global superiority.",
+            "Check full-image PSNR/SSIM and additional top-k ROIs before drawing a model conclusion.",
         )
     return (
-        "unclassified local error",
-        "Crop has measurable output-clean difference.",
-        "The current automatic taxonomy does not know this run type.",
-        "Inspect triplet, error map, and config manually.",
+        "moderate local error",
+        f"Top-error crop MAE is {ratio:.2f}x the group median.",
+        "Automatic metrics show severity, not semantic cause.",
+        "Inspect the ROI and label it as flat/edge/texture/dark/color/alignment before proposing a fix.",
     )
 
 

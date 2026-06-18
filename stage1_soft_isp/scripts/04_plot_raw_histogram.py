@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # bayer_pattern_from_rawpy: 根据 rawpy 的 raw_pattern/color_desc 推断 RGGB/BGGR 等 Bayer 字符串
 # split_bayer:  将 Bayer 格式的 raw 图像按颜色通道拆分为独立的子数组
 from soft_isp.stats import bayer_pattern_from_rawpy, split_bayer
+from soft_isp.cli import expand_paths
 
 
 # 四个 Bayer 通道对应的绘图颜色，取自 Tableau 10 调色板
@@ -148,7 +149,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # 遍历所有输入的 RAW 文件，逐个生成直方图
-    for raw_path in args.raw_paths:
+    for raw_path in expand_paths(args.raw_paths):
         out_path = plot_histogram(raw_path, args.out_dir, args.bins)
         print(out_path)  # 输出保存路径到 stdout，便于脚本调用者确认
 

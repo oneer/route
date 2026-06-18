@@ -83,7 +83,7 @@ def write_evidence_csv(
                 else "missing"
             ),
             "interview_value": "能把质量指标和参数量、checkpoint 大小一起讨论，而不是只报 PSNR。",
-            "next_action": "Week 10-12 补 ONNX/C++ latency 和输出一致性。",
+            "next_action": "保持 held-out test 和 ONNX/C++ 对齐证据可复现。",
         },
         {
             "module": "低光增强扩展",
@@ -265,9 +265,9 @@ def build_week9_report(
         "",
         "不能证明真实量产 ISP tuning、AE/AWB/AF 联调、平台级 ISP 调试经验或 Imatest/iQ-Analyzer 实操经验；它证明的是 AI-ISP 图像恢复方向的实验闭环、评估诊断和工程化准备能力。",
         "",
-        "## 9. Week 10-12 衔接",
+        "## 9. Week 10-12 工程证据",
         "",
-        "Week 9 之后应优先补工程化闭环：Week 10 汇总参数量、checkpoint 大小和部署候选；Week 11 导出 ONNX 并做 PyTorch/ONNX 输出对齐；Week 12 做 C++ OpenCV DNN smoke test 和 CPU latency 记录。",
+        "Week 10 已补 held-out test 和工程汇总；Week 11 已完成 ONNX 对齐；Week 12 已完成 C++ ONNX Runtime CPU 输出对齐与重复 latency。",
         "",
         "## 10. 自检问题",
         "",
@@ -292,7 +292,7 @@ def build_final_report(report: str) -> str:
         [
             "# 阶段二最终项目报告：AI-ISP 图像恢复实验闭环",
             "",
-            "这份报告是 Week 9 项目包的最终版，用于阶段二收口、作品集整理和后续 Week 10-12 工程化衔接。",
+            "这份报告用于阶段二收口；Week 10-12 工程证据已补齐。",
             "",
             body,
             "",

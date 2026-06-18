@@ -30,7 +30,10 @@ See [stage1_soft_isp/README.md](stage1_soft_isp/README.md) for details.
 
 The second stage shifts from hand-crafted algorithms to learned image restoration. Currently focused on establishing a reliable deep learning training loop with synthetic RGB denoising before moving to real sensor data (SIDD, SID).
 
-**Status:** Complete (Week 0–9). The full pipeline from toy RGB denoise → real SIDD paired RGB → model comparison (DnCNN / UNet / NAFNet-lite) → pseudo RAW / ISP bridge → low-light enhancement → failure case analysis has been executed and documented. Training loop, config system, PSNR/SSIM evaluation pipeline, triplet visualizations, error maps, and a comprehensive stage-2 project summary (including resume and interview talking points) are all in place.
+**Status:** Engineering baseline complete through Week 12, including held-out
+test evaluation, automated tests, ONNX alignment, and an ONNX Runtime C++ CPU
+inference smoke test. Independent mastery still requires completing the
+exercise and capstone track.
 
 See [stage2_ai_isp/README.md](stage2_ai_isp/README.md) for details.
 
@@ -118,7 +121,7 @@ If you don't have RAW files yet, use the included download script:
 | Stage | Focus | Language | Status |
 |---|---|---|---|
 | 1 | Traditional ISP pipeline fundamentals | Python | Complete |
-| 2 | AI-driven image restoration & denoising | Python + PyTorch | Complete |
+| 2 | AI-driven image restoration & denoising | Python + PyTorch | Engineering baseline complete |
 | 3 | C++ high-performance ISP library | C++17 | Complete |
 | 4 | ONNX Runtime deployment + CUDA inference | C++ / Python / CUDA | In Progress (Week 0–6) |
 

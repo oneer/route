@@ -169,7 +169,7 @@ def write_markdown(rows: list[RunEngineeringSummary], report_path: Path, csv_pat
         "- Use PSNR/SSIM to discuss restoration quality.",
         "- Use params and checkpoint size to discuss deployability.",
         "- Use channel count to distinguish RGB and RAW-like experiments.",
-        "- Add latency once ONNX/C++ inference is fully run.",
+        "- Merge held-out test and deployment evidence from reports/deployment_evidence.json.",
         "",
     ]
     report_path.parent.mkdir(parents=True, exist_ok=True)

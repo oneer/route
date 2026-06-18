@@ -1,9 +1,8 @@
-numpy
-opencv-python
-rawpy
-matplotlib
-scikit-image
-colour-science
-pyyaml
-imageio
-
+numpy==2.4.4
+opencv-python==4.13.0.92
+rawpy==0.27.0
+matplotlib==3.10.9
+scikit-image==0.26.0
+colour-science==0.4.7
+PyYAML==6.0.3
+imageio==2.37.3

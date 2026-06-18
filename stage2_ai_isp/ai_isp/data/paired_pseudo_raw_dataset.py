@@ -20,11 +20,13 @@ class PairedPseudoRawDataset(torch.utils.data.Dataset):
         patch_size: int,
         size: int | None = None,
         seed: int = 42,
+        augment: bool = False,
     ) -> None:
         self.noisy_dir = Path(noisy_dir)
         self.clean_dir = Path(clean_dir)
         self.patch_size = int(patch_size)
         self.seed = int(seed)
+        self.augment = bool(augment)
         if self.patch_size % 2 != 0:
             raise ValueError("paired_pseudo_raw patch_size must be even.")
 
@@ -50,6 +52,10 @@ class PairedPseudoRawDataset(torch.utils.data.Dataset):
             raise ValueError(f"Shape mismatch: {noisy_path} vs {clean_path}")
 
         noisy_rgb, clean_rgb = self._crop_pair(noisy_rgb, clean_rgb, int(index))
+        if self.augment:
+            noisy_rgb, clean_rgb = self._augment_pair(
+                noisy_rgb, clean_rgb, int(index)
+            )
         return {
             "noisy": rgb_to_rggb_pack(noisy_rgb),
             "clean": rgb_to_rggb_pack(clean_rgb),
@@ -74,3 +80,15 @@ class PairedPseudoRawDataset(torch.utils.data.Dataset):
             noisy[:, y : y + self.patch_size, x : x + self.patch_size],
             clean[:, y : y + self.patch_size, x : x + self.patch_size],
         )
+
+    def _augment_pair(
+        self, noisy: torch.Tensor, clean: torch.Tensor, index: int
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        generator = torch.Generator().manual_seed(self.seed + index + 20000)
+        if bool(torch.randint(0, 2, (1,), generator=generator)):
+            noisy, clean = noisy.flip(-1), clean.flip(-1)
+        if bool(torch.randint(0, 2, (1,), generator=generator)):
+            noisy, clean = noisy.flip(-2), clean.flip(-2)
+        if bool(torch.randint(0, 2, (1,), generator=generator)):
+            noisy, clean = noisy.transpose(-1, -2), clean.transpose(-1, -2)
+        return noisy, clean

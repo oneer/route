@@ -30,7 +30,8 @@ route/
 
 第二阶段从手工算法转向可学习图像恢复。当前阶段先用合成 RGB 去噪任务跑通深度学习训练闭环，验证工程链路后再推进到真实传感器数据（SIDD、SID）。
 
-**状态：** 已完成（Week 0–9）。从 toy RGB 去噪 → 真实 SIDD paired RGB → 模型对比（DnCNN / UNet / NAFNet-lite）→ pseudo RAW / ISP bridge → 低光增强 → failure case 分析，全链路已跑通并沉淀文档。训练循环、配置系统、PSNR/SSIM 评估链路、三联图、error map 以及阶段二项目总结（含简历和面试表达）均已就绪。
+**状态：** 工程基线已完成至 Week 12，包含 held-out test、自动化测试、ONNX 输出对齐和
+ONNX Runtime C++ CPU 推理 smoke test。个人是否真正掌握，仍需通过 exercises 和独立结项验证。
 
 详见 [stage2_ai_isp/README.md](stage2_ai_isp/README.md)。
 
@@ -118,7 +119,7 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 | 阶段 | 重点 | 语言 | 状态 |
 |---|---|---|---|
 | 1 | 传统 ISP Pipeline 基础 | Python | 已完成 |
-| 2 | AI 驱动的图像恢复与降噪 | Python + PyTorch | 已完成 |
+| 2 | AI 驱动的图像恢复与降噪 | Python + PyTorch | 工程基线完成 |
 | 3 | C++ 高性能 ISP 库 | C++17 | 已完成 |
 | 4 | ONNX Runtime 部署 + CUDA 推理 | C++ / Python / CUDA | 进行中（Week 0–6） |
 

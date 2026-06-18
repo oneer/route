@@ -153,9 +153,9 @@ Minimum evidence before using the stronger resume wording:
 | SIDD paired RGB leaderboard | Done | proves restoration baseline ability |
 | Pseudo RAW/RGGB preview | Done | connects RGB restoration to AI-ISP input shape |
 | Pseudo RAW/RGGB training metrics | Next | proves the RAW-like path is trainable |
-| ONNX export | Next | proves model can leave PyTorch |
-| C++ OpenCV DNN inference | Next | proves deployment-facing engineering |
-| Unified PSNR/SSIM/latency table | Next | proves algorithm tradeoff judgement |
+| ONNX export | Done | ONNX checker passed |
+| C++ ONNX Runtime inference | Done | proves deployment-facing engineering |
+| Unified PSNR/SSIM/latency table | Done | includes held-out test and repeated CPU latency |
 
 Recommended resume wording after completing the next items:
 

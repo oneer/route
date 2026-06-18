@@ -500,7 +500,7 @@ def mean_metric(results: list[dict], section: str, variant: str, key: str) -> fl
 
 def write_report(results: list[dict], report_path: Path, curve_path: Path) -> None:
     lines = [
-        "# Week 6 补短板实验报告",
+        "# Week 6 阶段毕业实验：综合验收与故障诊断",
         "",
         "本报告把 `module_mastery_matrix.md` 中标记为“缺实验”的能力点集中补齐。它不替代 Week1-5 的主报告，而是作为补充验证层：每个缺口都对应一个可运行实验、一个结果表或一组可视化。",
         "",
@@ -559,7 +559,7 @@ def write_report(results: list[dict], report_path: Path, curve_path: Path) -> No
     lines.extend(
         [
             "",
-            "OpenCV edge-aware 可以作为 AHD/方向自适应类方法的入门对照。它不等于完整产品 demosaic，但能说明：方向信息和边缘保护通常比单纯同色平均更适合高频纹理与斜边。",
+            "OpenCV edge-aware 是一个独立的边缘感知 baseline，不是 AHD，也不能替代 AHD/Malvar 的实现与验证。这里的对比只说明：加入边缘方向信息后，结果可能与纯 bilinear 不同；是否更好仍需结合统一 ROI、伪影和指标判断。",
             "",
             "## 5. AWB：Gray World / White Patch / Gray ROI",
             "",

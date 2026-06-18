@@ -24,6 +24,10 @@ void test_index_mapping() {
             "reflect left border failed");
     require(cpp_isp::map_border_index(4, 4, cpp_isp::BorderPolicy::Reflect) == 2,
             "reflect right border failed");
+    require(cpp_isp::map_border_index(-7, 1, cpp_isp::BorderPolicy::Reflect) == 0,
+            "1x1 reflect left border failed");
+    require(cpp_isp::map_border_index(7, 1, cpp_isp::BorderPolicy::Reflect) == 0,
+            "1x1 reflect right border failed");
 }
 
 void test_sample_with_border() {

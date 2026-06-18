@@ -1,45 +1,73 @@
-# 从这里开始
+# 从这里开始：阶段一唯一学习入口
 
-## 本阶段成功标准
+阶段一的目标不是把已有脚本全部重跑一遍，而是能从陌生 DNG 独立完成、验证并讲清一条基础 RAW-to-RGB Soft-ISP。已有 `reports/` 是实验档案和参考答案；先预测、动手和验证，再阅读结论。
 
-阶段 1 不是追求商业 ISP 效果，而是建立可解释的数据流：
+## 先完成 15 分钟冒烟验证
 
-1. 输入一张真实 RAW / DNG，能输出可观看 RGB。
-2. 每个模块能单独打开/关闭，并保存中间结果。
-3. 至少处理 5 张不同场景 RAW：日光、室内、低光、高动态范围、纹理/纯色。
-4. 每张图都有 rawpy 或 Lightroom 参考输出。
-5. 能解释你的 pipeline 和参考输出之间至少 5 类差异。
-
-## 今天先做什么
-
-1. 找 1 张 DNG 放入 `data/raw/`。
-2. 安装依赖：`pip install -r requirements.txt`。
-3. 运行：
-
-```bash
-python scripts/01_inspect_raw.py data/raw/your_sample.dng
+```powershell
+cd stage1_soft_isp
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
+python scripts/17_run_pipeline.py data/raw/T01_a0006-IMG_2787.dng
 ```
 
-4. 把输出中的 metadata 和统计结论填到 `materials/raw_sample_manifest.md`。
-5. 写第一篇笔记：`reports/week1/raw_statistics.md`。
+成功时应看到 15 项合成测试通过，并在 `outputs/pipeline/T01_a0006-IMG_2787/` 得到 `preview.png`、`metadata.json` 和逐阶段统计 JSON。若失败，先看 [环境搭建](environment_setup.md) 和 [调试手册](debugging_guide.md)。
 
-## 6 周路线
+## 先建立一张完整地图
 
-| 周期 | 主题 | 交付物 |
-|---|---|---|
-| Week 0.5 | 环境、数据和项目骨架 | 依赖、样张、metadata 检查脚本 |
-| Week 1 | RAW / Sensor 数据直觉 | 四通道统计、histogram、ROI 分析 |
-| Week 2 | BLC / DPC / LSC | 前端校正模块和 before/after |
-| Week 3 | Demosaic / AWB | Bayer 到 RGB、白平衡实验 |
-| Week 4 | CCM / Gamma / Tone | 色彩映射和显示映射 |
-| Week 5 | IQA / 模块消融 / 报告 | 指标、对比图、阶段报告 |
+```text
+RAW/DNG metadata
+  -> BLC -> DPC -> 学习版 LSC
+  -> Bilinear Demosaic -> Gray World AWB -> metadata 简化 CCM
+  -> Tone Mapping -> Gamma / sRGB OETF -> Preview
+  -> ROI IQA、消融、故障诊断
+```
 
-## 每个模块都回答这 7 个问题
+三条证据边界必须从第一天就记住：
 
-1. 输入是什么？
-2. 输出是什么？
-3. 解决什么问题？
-4. 核心假设是什么？
-5. 参数怎么调？
-6. 怎么验证？
-7. 失败场景是什么？
+- rawpy 输出是成熟渲染参考，不是 ground truth；
+- OpenCV edge-aware 是独立 demosaic baseline，不是 AHD；
+- synthetic flat-field 和相对 rawpy 的 DeltaE 都不是产品级标定证据。
+
+完整的报告—代码—参数—脚本—产物—测试关系见 [教程化审查与证据对应表](../reports/stage1_tutorial_audit.md)。
+
+## 六周学习闭环
+
+| 周次 | 学习目标 | 动手任务 | 产物与验收 |
+|---|---|---|---|
+| Week 1 | 看懂 RAW、CFA、metadata、曝光和 ROI | 完成 `exercises/week1_raw_contract.md`，手算 4×4 Bayer 拆分 | 能解释 shape/dtype/range、R/Gr/Gb/B、black/white level |
+| Week 2 | 理解 BLC/DPC/LSC 的物理来源和顺序 | 完成坏点注入；预测 black level 和 LSC gain 改动 | 测试、mask/crop、参数预测、真实标定边界 |
+| Week 3 | 从 Bayer 恢复 RGB 并理解 AWB 失败 | 补全 bilinear 练习；选纯色或高光场景分析 | edge/texture crop、AWB gain 与失败案例 |
+| Week 4 | 区分颜色校正、动态范围压缩和显示编码 | 手算一个 CCM 像素；画 Gamma/sRGB/S-curve | 数据域表、曲线、clip 风险和矩阵方向 |
+| Week 5 | 建立模块级评价而非只看最终图 | 做模块开关消融和一个参数扫描 | ROI 指标、主观标签、证据边界 |
+| Week 6 | 对未见 DNG 做阶段毕业验收 | 完成 `exercises/final_project.md` | 中间结果、测试、失败案例、报告与面试复述 |
+
+每周先读 `reports/weekN/summary.md`，再按问题进入模块报告；不要从 14 张全量结果表开始阅读。
+
+## 每个模块按同一顺序学习
+
+```text
+直觉 -> 物理来源 -> 数据域 -> 数学与小例子
+     -> 代码调用 -> 参数预测 -> 实验 -> 失败案例 -> 工程升级
+```
+
+学习记录使用 [模块学习模板](module_study_template.md)。至少回答：
+
+1. 为什么这个问题存在，为什么放在当前位置？
+2. 输入输出的域、shape、dtype、range、线性状态是什么？
+3. 公式的变量、假设和边界是什么？
+4. 参数增大/减小会发生什么，副作用是什么？
+5. 哪段代码和哪个配置真正实现了它？
+6. 图、表、JSON 支持什么结论，又没有证明什么？
+7. 典型伪影如何向下游传播？
+8. 学习版与产品级方法还差哪些数据和工程能力？
+
+## 阶段完成标准
+
+- 能对一张未见 DNG 完成 metadata 检查和基础 Pipeline；
+- 能保存并解释至少三个中间结果；
+- 能独立实现 BLC、bilinear demosaic、Gray World AWB 和 3×3 CCM；
+- 能用测试、参数实验和局部 ROI 诊断至少一个失败案例；
+- 能准确区分仓库实测、理论预期和外部方法；
+- 能在 5 分钟讲清完整 Pipeline，在 15 分钟讲深一个模块。

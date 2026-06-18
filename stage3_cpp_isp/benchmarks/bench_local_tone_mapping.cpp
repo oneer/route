@@ -1,7 +1,7 @@
 #include "cpp_isp/local_tone_mapping.hpp"
+#include "benchmark_utils.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -23,18 +23,6 @@ cpp_isp::ImageBuffer<float> make_hdr_like_rgb(std::uint32_t width, std::uint32_t
     return image;
 }
 
-template <typename Fn>
-double time_ms(Fn&& fn, int repeats) {
-    double best_ms = 1.0e30;
-    for (int i = 0; i < repeats; ++i) {
-        const auto begin = std::chrono::steady_clock::now();
-        fn();
-        const auto end = std::chrono::steady_clock::now();
-        best_ms = std::min(best_ms, std::chrono::duration<double, std::milli>(end - begin).count());
-    }
-    return best_ms;
-}
-
 void run_case(std::uint32_t width,
               std::uint32_t height,
               cpp_isp::LocalBaseFilter filter,
@@ -53,7 +41,8 @@ void run_case(std::uint32_t width,
     params.base_sigma_range = 0.35F;
     params.detail_strength = 0.75F;
 
-    const double ms = time_ms([&] { cpp_isp::local_tone_map(input_view, output.view(), params); }, 2);
+    const double ms = cpp_isp_bench::median_ms(
+        [&] { cpp_isp::local_tone_map(input_view, output.view(), params); }, 1, 3);
     std::cout << filter_name << ','
               << radius << ','
               << width << ','

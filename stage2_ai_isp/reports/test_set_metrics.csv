@@ -1,0 +1,2 @@
+split,samples,psnr,ssim,mean_latency_ms_cpu,config,checkpoint,metric_protocol
+held_out_test,20,37.004371643066406,0.911098301410675,101.28909499835572,stage2_ai_isp/configs/paired_rgb_sidd_tiny_dncnn_l2_2000.yaml,stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_2000/checkpoints/best_psnr.pth,"RGB float [0,1], full image by default, Gaussian SSIM"

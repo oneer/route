@@ -1,8 +1,17 @@
 # AI-ISP Stage 2
 
-阶段二聚焦 AI-ISP 和图像恢复。从 toy RGB 去噪起步，逐步走向真实成对 RGB 数据（SIDD），最终形成从训练到评估到总结的完整闭环。
+阶段二聚焦 AI-ISP 和图像恢复。从 toy RGB 去噪起步，逐步走向真实成对 RGB
+数据（SIDD），最终形成训练、严格评估、独立实现和部署验证闭环。
 
-**状态：** ✅ 已完成（Week 0–9）。全链路已跑通并沉淀文档，含项目总结、简历和面试表达。
+**状态：** ✅ Week 0–12 工程基线已完成。已加入 held-out test、自动化测试、
+ONNX/PyTorch 对齐以及 ONNX Runtime C++ CPU 推理与 latency。学习者仍需完成
+`exercises/` 和独立 capstone，才能证明个人独立掌握。
+
+第一次学习请从 [`stage2_start_here.md`](stage2_start_here.md) 开始。该文件是唯一执行入口，
+并包含自动化测试、独立练习和能力边界。
+
+实验事实、教程文本和待运行计划的边界见
+[`reports/stage2_tutorial_audit.md`](reports/stage2_tutorial_audit.md)。
 
 ## 学习报告
 
@@ -10,7 +19,7 @@
 
 | 顺序 | 报告 | 作用 |
 |---:|---|---|
-| 0 | `reports/stage2_learning_flow.md` | 阶段二总路线，先读这个 |
+| 0 | `stage2_start_here.md` | 唯一学习入口、真实状态和验收纪律 |
 | 1 | `reports/week0_foundation.md` | 神经网络训练基础 |
 | 2 | `reports/week1_toy_rgb_denoise.md` | Toy RGB 去噪完整闭环 |
 | 3 | `reports/week2_real_paired_rgb.md` | 真实成对 RGB 数据入口 |
@@ -21,11 +30,15 @@
 | 8 | `reports/week7_low_light_rgb_enhancement.md` | 低光 RGB 增强小实验 |
 | 9 | `reports/week8_failure_case_analysis.md` | Failure case 和局部 crop 分析 |
 | 10 | `reports/week9_stage2_project_summary.md` | 阶段二项目总结、简历和面试表达 |
+| 11 | `reports/evaluation_protocol.md` | train/val/test 与标准指标协议 |
+| 12 | `deployment/README.md` | ONNX、C++ 输出对齐和 latency |
+| 13 | `reports/stage2_tutorial_audit.md` | 证据链、范围边界和剩余缺口 |
 
 推荐阅读顺序：
 
 ```text
-stage2_learning_flow.md
+stage2_start_here.md
+  -> stage2_learning_flow.md
   -> week0_foundation.md
   -> week1_toy_rgb_denoise.md
   -> week2_real_paired_rgb.md
@@ -35,12 +48,14 @@ stage2_learning_flow.md
   -> week6_pseudo_raw_isp_bridge.md
   -> week7_low_light_rgb_enhancement.md
   -> week8_failure_case_analysis.md
+  -> exercises/06_capstone_spec.md
   -> week9_stage2_project_summary.md
+  -> deployment/README.md
 ```
 
 ## 当前进度
 
-阶段二全部完成，按周整理如下：
+当前核心学习内容和部署工具如下：
 
 | Week | 主题 | 状态 |
 |---|---|---|
@@ -54,6 +69,9 @@ stage2_learning_flow.md
 | 7 | 低光 RGB 增强实验 | ✅ 完成 |
 | 8 | Failure case 和局部 crop 分析 | ✅ 完成 |
 | 9 | 阶段二项目总结、简历和面试题库 | ✅ 完成 |
+| 10 | Engineering summary、测试集和工程指标协议 | ✅ 完成 |
+| 11 | ONNX 导出与 PyTorch/ONNX 对齐 | ✅ 完成 |
+| 12 | C++ ONNX Runtime 推理和多次 latency | ✅ 完成；OpenCV DNN 为可选 |
 
 完整闭环：
 
@@ -70,6 +88,13 @@ toy RGB denoise
 
 ```bash
 pip install -r requirements.txt
+```
+
+自动化测试：
+
+```powershell
+$env:PYTHONPATH="stage2_ai_isp"
+python -m unittest discover -s stage2_ai_isp/tests -v
 ```
 
 ## Week 1 常用命令

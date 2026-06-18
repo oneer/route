@@ -10,4 +10,6 @@
     - ccm:        颜色校正矩阵（Color Correction Matrix）
     - tone:       Gamma 校正与色调映射
     - orientation: 显示方向处理（旋转/翻转）
+    - pipeline:   配置驱动的统一学习 Pipeline
+    - metrics:    PSNR / SSIM / Mean Absolute Difference
 """

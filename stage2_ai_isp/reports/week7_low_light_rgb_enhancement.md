@@ -14,7 +14,7 @@ dark + noisy + possible color shift -> normal exposure clean
 
 也就是说，模型不只要去噪，还要恢复亮度、颜色和局部结构。
 
-## 1. 是否需要增加内容
+## 1. 本周问题、输入域与 GT
 
 需要增加。
 
@@ -28,6 +28,18 @@ dark + noisy + possible color shift -> normal exposure clean
 - 欠增强像素比例。
 - 过增强像素比例。
 - 黑场/白场 clipping 比例。
+
+任务定义：
+
+```text
+input : synthetic low-light sRGB, [B,3,H,W], float32, [0,1]
+target: 原 SIDD tiny clean sRGB,   [B,3,H,W], float32, [0,1]
+model : direct-output UNet
+loss  : L1(output, target)
+```
+
+GT 不是同一场景重新采集的真实正常曝光照片；它是已有 SIDD clean sRGB。输入由脚本
+从 target 合成，因此本周只能验证受控 synthetic degradation 下的增强闭环。
 
 ## 2. 数据生成
 
@@ -47,6 +59,20 @@ clean RGB
   -> 转回 sRGB
   -> 保存为 low-light input
 ```
+
+简化公式可写成：
+
+```text
+x_linear = inverse_oetf(x_srgb)
+x_dark   = exposure * x_linear
+variance = shot_noise * x_dark + read_noise
+y_linear = clip(x_dark + Normal(0, sqrt(variance)), 0, 1)
+y_srgb   = oetf(y_linear)
+```
+
+本次参数固定为 `exposure=0.28`、`shot_noise=0.025`、
+`read_noise=0.015`、`seed=123`。固定 seed 便于复现，但单一退化参数不能代表真实相机、
+不同 ISO、曝光时间、黑电平、色温和 ISP 的分布。
 
 输出目录：
 
@@ -200,7 +226,13 @@ PSNR/SSIM 只能说明整体像素误差和结构相似度。Diagnostics 能说�
 4. 怎么用 low-light input baseline 判断模型是否真的有效。
 5. 如何从 triplet、PSNR/SSIM 和 low-light diagnostics 分析增亮、偏色、残留噪声、过增强和 clipping。
 
-## 8. 是否达到三年社招水平
+还应完成三个练习：
+
+1. 运行前预测：把 exposure 从 `0.28` 改为 `0.15`，哪些指标最先恶化；
+2. 用 1～5 张图做 overfit，确认模型能拟合亮度映射，再扩大数据；
+3. 只改变一个退化参数，保持 split、seed、模型、loss 和 steps 不变，解释指标与主观图冲突。
+
+## 8. 结果边界与工程表达
 
 补完 diagnostics 后，Week 7 更接近三年 ISP 算法社招的表达要求：不仅能跑一个 low-light enhancement baseline，还能把低光任务拆成曝光、噪声、颜色、暗区和 clipping 几类问题，并用数字说明模型改善了什么、还剩什么。
 

@@ -24,6 +24,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--train-count", type=int, default=80)
     parser.add_argument("--val-count", type=int, default=20)
+    parser.add_argument(
+        "--test-count",
+        type=int,
+        default=20,
+        help="Held-out pairs never used for model selection.",
+    )
     parser.add_argument("--crop-size", type=int, default=512)
     return parser.parse_args()
 
@@ -66,14 +72,21 @@ def main() -> None:
     source_root = Path(args.source_root)
     output_root = Path(args.output_dir)
     pairs = find_pairs(source_root)
-    total = args.train_count + args.val_count
+    total = args.train_count + args.val_count + args.test_count
     if len(pairs) < total:
         raise ValueError(f"Need {total} pairs, found {len(pairs)} in {source_root}")
 
     manifest_rows = []
     for index, (noisy_path, clean_path) in enumerate(pairs[:total], start=1):
-        split = "train" if index <= args.train_count else "val"
-        split_index = index if split == "train" else index - args.train_count
+        if index <= args.train_count:
+            split = "train"
+            split_index = index
+        elif index <= args.train_count + args.val_count:
+            split = "val"
+            split_index = index - args.train_count
+        else:
+            split = "test"
+            split_index = index - args.train_count - args.val_count
         name = f"pair_{split_index:05d}.png"
         noisy_out = output_root / split / "noisy" / name
         clean_out = output_root / split / "clean" / name
@@ -97,7 +110,10 @@ def main() -> None:
         writer.writerows(manifest_rows)
 
     print(f"found_pairs={len(pairs)}")
-    print(f"wrote train={args.train_count} val={args.val_count} crop_size={args.crop_size}")
+    print(
+        f"wrote train={args.train_count} val={args.val_count} "
+        f"test={args.test_count} crop_size={args.crop_size}"
+    )
     print(f"output_dir={output_root}")
 
 

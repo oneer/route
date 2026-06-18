@@ -63,7 +63,10 @@ Week 8 的价值在 Week 9 里要表达成“诊断能力”：看到局部失�
 简洁版：
 
 ```text
-基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、synthetic low-light enhancement、NAFNet-lite 复现、PSNR/SSIM 评估、error map 和 failure crop 诊断；在 SIDD tiny 上 DnCNN residual baseline 达到 35.54 dB PSNR / 0.8837 SSIM，并整理参数量、checkpoint 大小和后续 ONNX/C++ 部署路径。
+基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、
+synthetic low-light enhancement、NAFNet-lite 复现、严格 test 评估、error map 和
+top-error crop 诊断；DnCNN 在 20 张 held-out SIDD tiny crop 上达到 37.00 dB /
+0.9111，并完成 ONNX Runtime Python/C++ 输出对齐与 CPU latency 验证。
 ```
 
 详细版：
@@ -99,9 +102,11 @@ Week 8 的价值在 Week 9 里要表达成“诊断能力”：看到局部失�
 
 不能证明真实量产 ISP tuning、AE/AWB/AF 联调、平台级 ISP 调试经验或 Imatest/iQ-Analyzer 实操经验；它证明的是 AI-ISP 图像恢复方向的实验闭环、评估诊断和工程化准备能力。
 
-## 9. Week 10-12 衔接
+## 9. Week 10-12 完成情况
 
-Week 9 之后应优先补工程化闭环：Week 10 汇总参数量、checkpoint 大小和部署候选；Week 11 导出 ONNX 并做 PyTorch/ONNX 输出对齐；Week 12 做 C++ OpenCV DNN smoke test 和 CPU latency 记录。
+Week 10 已补参数量、checkpoint、held-out test；Week 11 已完成 ONNX checker 和
+PyTorch/ONNX 对齐；Week 12 已完成 ONNX Runtime C++ CPU runner、输出对齐与 30 次
+latency。OpenCV DNN 保留为可选 backend，不作为阶段完成的阻塞项。
 
 ## 10. 自检问题
 

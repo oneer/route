@@ -1,13 +1,16 @@
 # stage3_cpp_isp — C++ High-Performance ISP Library
 
-Stage 3 ports key ISP algorithms from Python reference to production-style C++17.
+Stage 3 ports key ISP algorithms from Python reference to learning-oriented C++17.
 Every module follows the same loop:
 
 ```text
 Python reference → C++ implementation → alignment test → benchmark → report
 ```
 
-**Status:** Stage 3 integrated baseline done (Week 0–8).
+**Status:** Stage 3 integrated learning baseline complete (Week 0–8). It is not
+a production realtime ISP library. Start with
+[`reports/stage3_tutorial_audit.md`](reports/stage3_tutorial_audit.md) for the
+verified learning order, data contracts, evidence matrix, and known gaps.
 
 ## Project Structure
 
@@ -41,7 +44,7 @@ stage3_cpp_isp/
 │   ├── hdr_merge.cpp              #   Saturation-aware aligned HDR merge
 │   ├── pipeline.cpp               #   Integrated pipeline implementation
 │   └── metrics.cpp
-├── tests/                         # GoogleTest alignment tests
+├── tests/                         # CTest-driven unit executables
 │   ├── test_smoke.cpp
 │   ├── test_image.cpp
 │   ├── test_border.cpp
@@ -52,7 +55,7 @@ stage3_cpp_isp/
 │   ├── test_tone_lut.cpp
 │   ├── test_local_tone_mapping.cpp
 │   └── test_hdr_merge.cpp
-├── benchmarks/                    # Google Benchmark performance harness
+├── benchmarks/                    # Self-contained benchmark harnesses
 │   ├── bench_smoke.cpp
 │   ├── bench_bilateral.cpp
 │   ├── bench_denoise.cpp
@@ -149,10 +152,14 @@ stage3_cpp_isp/
 ```text
 CPF32
 <width> <height> <channels>
-<raw little-endian float32 payload>
+<raw little-endian float32 HWC payload>
 ```
 
 Values are linear normalized in `[0, 1]` unless a module explicitly documents another range.
+The file payload is contiguous interleaved HWC:
+`index=(y*width+x)*channels+c`. Internal `ImageBuffer` storage is planar and may
+have `row_stride > width`, so tools explicitly convert between the two layouts.
+CPF32 does not encode stride.
 
 ## Learning Roadmap
 
@@ -160,8 +167,8 @@ Each week follows a consistent engineering loop:
 
 1. **Python reference** — Understand the algorithm, verify correctness on synthetic/test data.
 2. **C++ implementation** — Port to C++17, matching the reference API and behavior.
-3. **Alignment test** — Export CPF32 from both Python and C++; compare with `compare_with_reference` (max error < 1e-5).
-4. **Benchmark** — Measure on small (256×256), 1080P, and 4K inputs; identify bottlenecks.
+3. **Alignment test** — Export CPF32 from both Python and C++; report max/mean/RMSE/PSNR/failed count with a module-specific threshold.
+4. **Benchmark** — Release build, one warmup, repeated median latency; record device, parameters, threads, and measured scope.
 5. **Report** — Document algorithm choices, performance findings, and engineering tradeoffs.
 
 ## Build & Test
@@ -179,6 +186,12 @@ cmake --build .\stage3_cpp_isp\build
 # Run all tests
 ctest --test-dir .\stage3_cpp_isp\build --output-on-failure
 ```
+
+By default the project uses dependency-free test executables registered with
+CTest and self-contained benchmark programs. `CPP_ISP_USE_FETCHCONTENT=ON`
+downloads GoogleTest and Google Benchmark, but currently only the smoke targets
+switch to those frameworks; the algorithm tests and benchmark programs remain
+self-contained.
 
 ## Week-by-Week Commands
 

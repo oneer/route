@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <string>
 
 namespace cpp_isp {
 
@@ -23,6 +24,10 @@ AlignmentMetrics compare_tensors(const TensorF32& reference,
     double abs_sum = 0.0;
     double sq_sum = 0.0;
     for (std::size_t i = 0; i < reference.data.size(); ++i) {
+        if (!std::isfinite(reference.data[i]) || !std::isfinite(output.data[i])) {
+            throw std::runtime_error("alignment input contains NaN or Inf at value index " +
+                                     std::to_string(i));
+        }
         const double error = static_cast<double>(output.data[i]) - reference.data[i];
         const double abs_error = std::abs(error);
         metrics.max_abs_error = std::max(metrics.max_abs_error, abs_error);

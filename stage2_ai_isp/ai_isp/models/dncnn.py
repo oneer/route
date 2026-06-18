@@ -21,7 +21,8 @@ DnCNN — 小型 DnCNN 风格图像去噪网络。
     → 可选残差连接: output = x - pred
 
 参数说明：
-    - depth:   总卷积层数（含首尾），depth=5 时有效感受野 ≈ (2×depth+1)×(2×depth+1)
+    - depth:   总卷积层数（含首尾），stride=1 时理论感受野为
+               (2×depth+1)×(2×depth+1)，例如 depth=5 时为 11×11
     - features: 中间层通道数
     - residual: 是否启用残差学习（True = 预测噪声，False = 直接预测干净图像）
 """
@@ -55,6 +56,12 @@ class DnCNN(nn.Module):
         residual: bool = True,
     ) -> None:
         super().__init__()
+        if depth < 2:
+            raise ValueError("DnCNN depth must be at least 2.")
+        if residual and in_channels != out_channels:
+            raise ValueError(
+                "Residual DnCNN requires in_channels == out_channels."
+            )
         self.residual = bool(residual)
 
         # 构建卷积层列表

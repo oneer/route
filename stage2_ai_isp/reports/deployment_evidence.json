@@ -1,0 +1,35 @@
+{
+  "model": "paired_rgb_sidd_tiny_dncnn_l2_2000",
+  "input_shape": [1, 3, 512, 512],
+  "held_out_test": {
+    "samples": 20,
+    "psnr": 37.004371643066406,
+    "ssim": 0.911098301410675,
+    "metric_protocol": "RGB float [0,1], full image, 11x11 Gaussian SSIM"
+  },
+  "onnx": {
+    "file": "deployment/onnx/dncnn_sidd_tiny.onnx",
+    "bytes": 119763,
+    "pytorch_max_abs_error": 2.384185791015625e-7,
+    "pytorch_mean_abs_error": 2.984355162993779e-8
+  },
+  "onnxruntime_python_cpu": {
+    "warmup": 5,
+    "repeats": 30,
+    "latency_mean_ms": 72.16143333280343,
+    "latency_p50_ms": 71.73669999974663,
+    "latency_p95_ms": 82.24345999624347
+  },
+  "onnxruntime_cpp_cpu": {
+    "sdk": "1.26.0",
+    "compiler": "MSVC 19.51.36248 x64",
+    "warmup": 5,
+    "repeats": 30,
+    "latency_mean_ms": 70.3157,
+    "latency_p50_ms": 70.4122,
+    "latency_p95_ms": 80.1261,
+    "pytorch_max_abs_error": 2.384185791015625e-7,
+    "pytorch_mean_abs_error": 2.984355162993779e-8
+  },
+  "boundary": "C++ timing covers ONNX Runtime Session::Run only; PNG I/O is excluded."
+}

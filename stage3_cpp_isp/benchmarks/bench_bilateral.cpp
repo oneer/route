@@ -1,6 +1,6 @@
 #include "cpp_isp/denoise.hpp"
+#include "benchmark_utils.hpp"
 
-#include <chrono>
 #include <iostream>
 
 namespace {
@@ -17,14 +17,6 @@ cpp_isp::ImageBuffer<float> make_gradient_noise(std::uint32_t width, std::uint32
     return image;
 }
 
-template <typename Fn>
-double time_ms(Fn&& fn) {
-    const auto begin = std::chrono::steady_clock::now();
-    fn();
-    const auto end = std::chrono::steady_clock::now();
-    return std::chrono::duration<double, std::milli>(end - begin).count();
-}
-
 }  // namespace
 
 int main() {
@@ -33,14 +25,14 @@ int main() {
         cpp_isp::ImageBuffer<float> output(size, size, 1);
         const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
 
-        const double direct_ms = time_ms([&] {
+        const double direct_ms = cpp_isp_bench::median_ms([&] {
             cpp_isp::bilateral_filter(input_view, output.view(), 2, 1.5F, 0.08F,
                                       cpp_isp::BorderPolicy::Replicate);
-        });
-        const double lut_ms = time_ms([&] {
+        }, 1, 5);
+        const double lut_ms = cpp_isp_bench::median_ms([&] {
             cpp_isp::bilateral_filter_range_lut(input_view, output.view(), 2, 1.5F, 0.08F, 512,
                                                 cpp_isp::BorderPolicy::Replicate);
-        });
+        }, 1, 5);
 
         std::cout << "size=" << size << "x" << size
                   << " direct_ms=" << direct_ms

@@ -37,6 +37,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from soft_isp.blc import apply_blc
+from soft_isp.cli import expand_paths
 from soft_isp.demosaic import bilinear_demosaic, rgb_preview
 from soft_isp.dpc import detect_defects, repair_defects
 from soft_isp.orientation import apply_rawpy_orientation
@@ -429,7 +430,7 @@ def main() -> None:
 
     results = [
         analyze_one(raw_path, args.out_dir, args.reference_dir, args.min_delta, args.mad_k)
-        for raw_path in args.raw_paths
+        for raw_path in expand_paths(args.raw_paths)
     ]
     write_report(results, args.report)
     print(args.report)

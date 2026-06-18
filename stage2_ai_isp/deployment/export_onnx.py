@@ -53,7 +53,15 @@ def main() -> None:
             "output": {0: "batch", 2: "height", 3: "width"},
         },
         opset_version=args.opset,
+        dynamo=False,
     )
+    try:
+        import onnx
+
+        exported = onnx.load(str(output))
+        onnx.checker.check_model(exported)
+    except ImportError:
+        print("warning: onnx is not installed; skipped onnx.checker validation")
     print(f"saved: {output}")
 
 

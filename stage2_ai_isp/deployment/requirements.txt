@@ -1,3 +1,4 @@
 onnx
 onnxscript
+onnxruntime
 opencv-python

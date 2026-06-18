@@ -1,18 +1,39 @@
 raw:
-  bayer_pattern: RGGB
+  # null 表示优先使用 DNG metadata。只有做故障注入或对照实验时才覆盖。
+  bayer_pattern: null
   black_level: null
   white_level: null
 
 pipeline:
   enable_blc: true
-  enable_dpc: false
-  enable_lsc: false
+  enable_dpc: true
+  enable_lsc: true
   enable_demosaic: true
   enable_awb: true
   enable_ccm: true
   enable_tone: true
 
+parameters:
+  dpc:
+    min_delta: 1024
+    mad_k: 12.0
+  lsc:
+    edge_gains:
+      R: 1.18
+      Gr: 1.12
+      Gb: 1.12
+      B: 1.22
+    power: 2.0
+  awb:
+    low_percentile: 5.0
+    high_percentile: 95.0
+    max_gain: 8.0
+  tone:
+    method: percentile
+    percentile: 99.5
+    gamma: 2.2
+
 output:
   save_intermediate: true
-  bit_depth: 16
-
+  save_numpy: false
+  bit_depth: 8

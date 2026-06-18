@@ -7,7 +7,7 @@ The project uses CPF32 as a simple cross-language tensor format:
 ```text
 CPF32
 <width> <height> <channels>
-<float32 payload>
+<little-endian float32 HWC payload>
 ```
 
 The alignment loop is:
@@ -27,6 +27,17 @@ Metrics:
 - RMSE
 - PSNR
 - failed values over threshold
+
+`failed values` 的单位是 scalar value，不是 RGB pixel。NaN/Inf 不属于当前
+模块契约；比较器会直接报错，不能把非有限值当作通过。
+
+阈值来源：
+
+- identity / integer code path：应接近 bit-exact；
+- Python float vs C++ float：由 dtype、运算顺序和数学函数差异决定；
+- LUT/fixed：由输入索引量化、输出 code step 和 rounding rule 决定。
+
+`1e-5` 是当前跨语言 fixture 的验收阈值，不是所有模块都应无条件复用的常数。
 
 ## Representative Results
 
@@ -60,3 +71,4 @@ When Python and C++ do not align:
 5. Confirm rounding and saturation rules.
 6. Check whether reference uses nearest LUT lookup or interpolation.
 7. Compare intermediate outputs, not only final RGB.
+8. Reject NaN/Inf before interpreting max error or failed count.

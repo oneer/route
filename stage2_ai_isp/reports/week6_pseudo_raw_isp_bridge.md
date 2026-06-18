@@ -16,6 +16,11 @@ RAW Bayer -> pack / ISP / network -> RGB
 
 所以 Week6 不急着训练 RAW 大模型，而是先用 SIDD 的 clean RGB 做一个 pseudo RAW 实验，理解数据形态怎么变。
 
+> 范围先钉死：这里的源图已经是相机 ISP 渲染后的 sRGB。当前实现只做
+> `sRGB -> Bayer 采样/pack` 的 shape bridge，没有恢复真实线性辐照度，也没有反演
+> tone mapping、CCM、white balance、black level 或 sensor gain。因此本文统一称
+> **pseudo RAW / RAW-like**，不能称为真实 sensor RAW 或完整 unprocessing。
+
 ## 1. 本周实现了什么
 
 新增脚本：
@@ -118,6 +123,33 @@ demosaic 要从邻域插值补回来。
 ```
 
 本周脚本用的是非常简单的 nearest 思路，所以 error map 还能看到细节误差。真实 ISP 会用更复杂的 demosaic 算法来减少彩色伪影、锯齿和纹理错误。
+
+### 3.4 数值域、black level 和 white level
+
+真实 RAW 常先按下面方式归一化：
+
+```text
+raw_norm = clip((raw_code - black_level) / (white_level - black_level), 0, 1)
+```
+
+`black_level` 是无光时仍存在的偏置，`white_level` 是传感器编码上限。当前 pseudo
+RAW 输入直接来自 `[0,1]` sRGB，既没有真实 code value，也没有相机 metadata，
+所以不能套用或声称完成了这一步。
+
+### 3.5 从阶段一 ISP 到完整 unprocessing
+
+阶段一正向链路与理想反向建模的对应关系如下：
+
+| 阶段一正向 ISP | 更完整的反向建模 | 当前实现 |
+|---|---|---|
+| OETF/gamma | inverse OETF，回到近似线性域 | 未实现 |
+| tone mapping | inverse tone mapping | 未实现 |
+| CCM | inverse CCM，sRGB 到 camera RGB | 未实现 |
+| white balance | inverse WB/gain | 未实现 |
+| demosaic | mosaic | 仅做固定 RGGB 采样 |
+| sensor noise reduction | shot/read noise synthesis | pseudo RAW 路径未实现 |
+
+因此，本周证明的是 4-channel 数据接口和训练闭环，不是物理可信的 RAW 合成。
 
 ## 4. 为什么这对 AI-ISP 重要
 
@@ -343,3 +375,12 @@ Week 6 是 RAW-like 输入形态训练；
 不是完整真实 RAW sensor pipeline；
 后续如果要更接近真实 RAW，需要引入 black level、white balance、CCM、noise model 和真实 RAW 数据。
 ```
+
+### 7.6 本周练习与掌握标准
+
+1. 手算一个 `4x4` RGGB mosaic pack 后四个 `2x2` 通道的位置。
+2. 打印一个 batch，确认 RGB crop `[B,3,128,128]` 变成
+   `[B,4,64,64]`，target 使用同一几何区域。
+3. 只取 1～5 对图片 overfit；若 loss 不下降，先查 pair、pack 和 residual 语义。
+4. 写出当前 pseudo RAW 与真实 RAW 至少五项 domain gap。
+5. 设计一个单变量实验：只增加 inverse OETF，保持 split、seed、模型和训练步数不变。

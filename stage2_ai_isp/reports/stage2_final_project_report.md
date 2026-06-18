@@ -1,6 +1,6 @@
 # 阶段二最终项目报告：AI-ISP 图像恢复实验闭环
 
-这份报告是 Week 9 项目包的最终版，用于阶段二收口、作品集整理和后续 Week 10-12 工程化衔接。
+这份报告用于阶段二收口。Week 10-12 的 held-out test、ONNX 和 C++ 推理验证已经补齐。
 
 # Week 9：阶段二项目总结、简历和面试表达
 
@@ -36,7 +36,10 @@ python stage2_ai_isp/scripts/20_export_week9_project_pack.py
 | week4_sidd_tiny_standard_eval | paired_rgb_sidd_tiny_nafnet_lite_l1_1000 | 33.3269 | 0.86223 | 1000 |
 | week7_low_light_eval | low_light_sidd_tiny_unet_l1_300 | 24.7821 | 0.81468 | 300 |
 
-当前 SIDD tiny denoise 最强结果是 `paired_rgb_sidd_tiny_dncnn_l2_2000`，PSNR 35.5356 dB，SSIM 0.88367。
+在这张三模型历史表中，`paired_rgb_sidd_tiny_dncnn_l2_2000` 的 validation
+PSNR 最高，为 35.5356 dB。DnCNN L1 消融曾记录 35.6334 dB，但它不在这张三模型表内；
+现有架构结果的 loss、steps 和 batch 也未完全统一，因此不能据此宣称普遍模型排名。
+当前新版协议下的 held-out test 只冻结评估了 DnCNN L2。
 
 ## 4. 工程视角汇总
 
@@ -67,7 +70,10 @@ Week 8 的价值在 Week 9 里要表达成“诊断能力”：看到局部失�
 简洁版：
 
 ```text
-基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、synthetic low-light enhancement、NAFNet-lite 复现、PSNR/SSIM 评估、error map 和 failure crop 诊断；在 SIDD tiny 上 DnCNN residual baseline 达到 35.54 dB PSNR / 0.8837 SSIM，并整理参数量、checkpoint 大小和后续 ONNX/C++ 部署路径。
+基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、
+synthetic low-light enhancement、NAFNet-lite 复现、held-out test、error map 和
+failure crop 诊断；DnCNN 在 20 张 held-out test crop 上达到 37.00 dB / 0.9111，
+并完成 ONNX Runtime Python/C++ CPU 输出对齐和 latency 验证。
 ```
 
 详细版：
@@ -103,9 +109,11 @@ Week 8 的价值在 Week 9 里要表达成“诊断能力”：看到局部失�
 
 不能证明真实量产 ISP tuning、AE/AWB/AF 联调、平台级 ISP 调试经验或 Imatest/iQ-Analyzer 实操经验；它证明的是 AI-ISP 图像恢复方向的实验闭环、评估诊断和工程化准备能力。
 
-## 9. Week 10-12 衔接
+## 9. Week 10-12 工程证据
 
-Week 9 之后应优先补工程化闭环：Week 10 汇总参数量、checkpoint 大小和部署候选；Week 11 导出 ONNX 并做 PyTorch/ONNX 输出对齐；Week 12 做 C++ OpenCV DNN smoke test 和 CPU latency 记录。
+详见 `reports/week12_onnx_cpp_deployment.md` 和
+`reports/deployment_evidence.json`。当前证据支持 ONNX Runtime CPU smoke test，
+不支持宣称端侧量产部署、TensorRT 优化或 OpenCV DNN 已验证。
 
 ## 10. 自检问题
 

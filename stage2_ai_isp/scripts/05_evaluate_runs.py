@@ -365,11 +365,11 @@ def write_markdown(
         lines.append("")
 
     lines += [
-        "## Notes To Fill",
+        "## Learner Analysis Required",
         "",
-        "- Visual conclusion: TODO",
-        "- Failure cases: TODO",
-        "- Next step: TODO",
+        "- Write one visual conclusion supported by a triplet or error map.",
+        "- Identify at least one failure case without inferring it only from the run name.",
+        "- Propose one single-variable next experiment and its acceptance criterion.",
         "",
     ]
     report_path.parent.mkdir(parents=True, exist_ok=True)

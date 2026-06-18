@@ -1,5 +1,5 @@
 """
-Checkpoint 管理 —— 保存训练状态以便恢复和评估。
+Checkpoint 管理 —— 保存并恢复训练状态。
 
 保存内容：
     - model:     模型权重（state_dict）
@@ -51,3 +51,18 @@ def save_checkpoint(
         },
         path,
     )
+
+
+def load_checkpoint(
+    path: str | Path,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer | None = None,
+    map_location: str | torch.device = "cpu",
+) -> dict:
+    """恢复模型以及可选的优化器状态，并返回完整 checkpoint。"""
+    checkpoint = torch.load(Path(path), map_location=map_location)
+    state_dict = checkpoint["model"] if "model" in checkpoint else checkpoint
+    model.load_state_dict(state_dict)
+    if optimizer is not None and "optimizer" in checkpoint:
+        optimizer.load_state_dict(checkpoint["optimizer"])
+    return checkpoint

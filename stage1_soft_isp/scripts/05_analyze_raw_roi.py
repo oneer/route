@@ -33,6 +33,7 @@ from matplotlib.patches import Rectangle
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from soft_isp.orientation import apply_rawpy_orientation, transform_box_for_orientation
+from soft_isp.cli import expand_paths
 from soft_isp.stats import bayer_pattern_from_rawpy, describe_array, split_bayer
 
 
@@ -294,7 +295,10 @@ def main() -> None:
     parser.add_argument("--stride", type=int, default=128)
     args = parser.parse_args()
 
-    results = [analyze_raw(raw_path, args.out_dir, args.roi_size, args.stride) for raw_path in args.raw_paths]
+    results = [
+        analyze_raw(raw_path, args.out_dir, args.roi_size, args.stride)
+        for raw_path in expand_paths(args.raw_paths)
+    ]
     write_report(results, args.report)
     print(args.report)
 

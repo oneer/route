@@ -1,7 +1,7 @@
 #include "cpp_isp/pipeline.hpp"
+#include "benchmark_utils.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -26,18 +26,6 @@ cpp_isp::ImageBuffer<float> make_scene(std::uint32_t width, std::uint32_t height
     return image;
 }
 
-template <typename Fn>
-double time_ms(Fn&& fn, int repeats) {
-    double best_ms = 1.0e30;
-    for (int i = 0; i < repeats; ++i) {
-        const auto begin = std::chrono::steady_clock::now();
-        fn();
-        const auto end = std::chrono::steady_clock::now();
-        best_ms = std::min(best_ms, std::chrono::duration<double, std::milli>(end - begin).count());
-    }
-    return best_ms;
-}
-
 struct BenchCase {
     const char* name;
     std::uint32_t width;
@@ -56,7 +44,8 @@ struct PipelineCase {
 
 int main(int argc, char** argv) {
     const bool full = argc > 1 && std::string(argv[1]) == "--full";
-    const int repeats = full ? 1 : 2;
+    constexpr int warmup_runs = 1;
+    const int measured_runs = full ? 3 : 5;
     const std::vector<BenchCase> sizes = full
         ? std::vector<BenchCase>{{"1080p", 1920, 1080}, {"4k", 3840, 2160}}
         : std::vector<BenchCase>{{"small", 320, 180}, {"preview", 640, 360}};
@@ -77,10 +66,10 @@ int main(int argc, char** argv) {
             params.curve = pipeline.curve;
             params.exposure = pipeline.exposure;
             params.gamma = pipeline.gamma;
-            const double ms = time_ms([&] {
+            const double ms = cpp_isp_bench::median_ms([&] {
                 volatile auto result = cpp_isp::run_pipeline_single(input, params);
                 (void)result;
-            }, repeats);
+            }, warmup_runs, measured_runs);
             std::cout << size.name << ','
                       << size.width << ','
                       << size.height << ','

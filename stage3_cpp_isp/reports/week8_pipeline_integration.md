@@ -86,7 +86,39 @@ The project now has a coherent Stage 3 story:
 - presentation: final report, alignment report, performance report, interview
   notes, algorithm reports, and resume bullets
 
-## 6. Next Step
+## 6. Output Debugging Flow
+
+When the final image is wrong, do not start by changing Tone Mapping parameters:
+
+```text
+source
+  -> denoised
+  -> tone_mapped
+  -> output (gamma)
+```
+
+Run `dump_intermediate` and compare the first stage that diverges:
+
+```powershell
+.\stage3_cpp_isp\build\dump_intermediate.exe `
+  .\stage3_cpp_isp\data\week8_pipeline\week8_scene_noisy.cpf32 `
+  .\stage3_cpp_isp\data\week8_pipeline\debug `
+  gaussian global reinhard 0.216 2.2
+```
+
+Diagnosis order:
+
+1. `source` wrong: CPF32 shape/HWC conversion/range problem.
+2. `denoised` first wrong: stride, border, radius or sigma mismatch.
+3. `tone_mapped` first wrong: exposure, curve, luma-vs-RGB or LUT rounding.
+4. only `output` wrong: gamma or output-range problem.
+5. only image edge wrong: compare exact reflect/replicate mapping.
+6. scattered NaN/Inf: stop; non-finite input is outside the current contract.
+
+This is the reusable Stage 4 interface baseline: fixed input tensor, explicit
+intermediate names, one comparator, and a first-divergence rule.
+
+## 7. Next Step
 
 The next stage should move toward Stage 4 deployment:
 

@@ -127,7 +127,7 @@ failure crop -> failure type -> evidence -> likely reason -> next step
 本次重新生成了包含 6 个 run 的 failure crop sheet：
 
 ```bash
-python stage2_ai_isp/scripts/10_make_failure_case_crops.py --runs stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l1_2000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_patch64_2000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_unet_l1_1000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 stage2_ai_isp/runs/low_light_sidd_tiny_unet_l1_300 --output-dir stage2_ai_isp/reports/figures/week8_failure_case_crops --crop-size 96 --zoom 3
+python stage2_ai_isp/scripts/10_make_failure_case_crops.py --runs stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_2000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l1_2000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_patch64_2000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_unet_l1_1000 stage2_ai_isp/runs/paired_rgb_sidd_tiny_nafnet_lite_l1_1000 stage2_ai_isp/runs/low_light_sidd_tiny_unet_l1_300 --output-dir stage2_ai_isp/reports/figures/week8_failure_case_crops --crop-size 96 --zoom 3 --crop-mode top_error
 ```
 
 输出文件：
@@ -141,14 +141,16 @@ stage2_ai_isp/reports/figures/week8_failure_case_crops/failure_case_crop_metrics
 
 | Run | Vis image | Crop MAE |
 |---|---|---:|
-| DnCNN L2 2000 | `step_2000.png` | 0.029846 |
-| DnCNN L1 2000 | `step_2000.png` | 0.028497 |
-| DnCNN L2 patch64 2000 | `step_2000.png` | 0.014191 |
-| UNet L1 1000 | `step_1000.png` | 0.036193 |
-| NAFNet-lite L1 1000 | `step_1000.png` | 0.030536 |
-| Low-light UNet L1 300 | `step_0300.png` | 0.036040 |
+| DnCNN L2 2000 | `step_2000.png` | 0.030962 |
+| DnCNN L1 2000 | `step_2000.png` | 0.029725 |
+| DnCNN L2 patch64 2000 | `step_2000.png` | 0.031930 |
+| UNet L1 1000 | `step_1000.png` | 0.036859 |
+| NAFNet-lite L1 1000 | `step_1000.png` | 0.031238 |
+| Low-light UNet L1 300 | `step_0300.png` | 0.037169 |
 
-注意：这个 crop 是中心 crop，不代表全图所有局部区域。它的作用是提供一个固定、可复查的局部观察点，而不是替代全图 PSNR / SSIM。
+新版脚本从 error map 中寻找误差最大的 ROI，而不是固定裁中心。对于只有 64×64
+可视化的 patch64 run，会使用完整 64×64 ROI，再统一缩放显示。它仍只定位“哪里错得多”，
+不能自动证明“为什么错”。
 
 ### 7.2 新增 failure taxonomy 脚本
 
@@ -175,22 +177,18 @@ stage2_ai_isp/reports/figures/week8_failure_taxonomy/week8_failure_taxonomy.md
 
 | Run | Crop MAE | Failure Type | Evidence | Likely Reason | Next Step |
 |---|---:|---|---|---|---|
-| DnCNN L2 2000 | 0.029846 | baseline smoothing / residual local error | DnCNN L2 全局指标强，局部仍有非零误差 | MSE 更贴近 PSNR，但可能平滑不确定纹理 | 和 DnCNN L1、error map、纹理 crop 一起看 |
-| DnCNN L1 2000 | 0.028497 | strong baseline / residual local error | 当前全局指标最佳，但局部仍未完全贴近 clean | residual denoise 适合任务，但 tiny 数据和简单 loss 仍有限 | 作为当前 baseline，后续再考虑 Charbonnier 或扩数据 |
-| DnCNN L2 patch64 | 0.014191 | context-limited denoise | 中心 crop MAE 低，但全图 PSNR 低于 patch128 | 小 patch 上下文较少，可能影响全图像素级恢复 | patch64 用于快速 ablation，正式结果保留 patch128 |
-| UNet L1 1000 | 0.036193 | local texture or color residual | UNet SSIM 高，但 crop MAE 较高 | encoder-decoder 保结构，但 direct output 可能留下局部颜色/纹理误差 | 检查纹理/边缘 crop，考虑 residual-output UNet |
-| NAFNet-lite L1 1000 | 0.030536 | under-trained modern block / residual noise | 已超过 input baseline，但仍落后 DnCNN | 简化 NAFNet-lite 数据少、步数少、缺少完整官方训练策略 | 延长到 2000 steps 或测试 Charbonnier |
-| Low-light UNet L1 300 | 0.036040 | dark-region enhancement / over-smoothing | 低光任务局部误差高，且任务改变曝光 | 模型同时做增亮、去噪、颜色保持，任务比普通 denoise 更难 | 补 exposure/noise/color 指标，单独看暗部 ROI |
+最新表由 `figures/week8_failure_taxonomy/week8_failure_taxonomy.md` 自动生成。普通去噪
+run 只按 top-error crop 相对中位数标记为 high/moderate/lower local error，不再根据
+`dncnn/unet/nafnet` 文件名自动编造原因。低光任务单独标记，因为它确实改变曝光目标。
 
 ### 7.4 怎么用这张表
 
 这张表不是为了给模型“打分”，而是为了指导下一步实验：
 
 ```text
-如果 DnCNN 已经很强，就不要盲目换大模型；
-如果 UNet 局部误差高，就要看 direct output 和颜色/纹理残留；
-如果 NAFNet-lite 落后，要先排除训练不足；
-如果低光增强失败，要先分开看亮度、噪声和颜色。
+自动脚本负责定位高误差 ROI 和严重程度；
+学习者人工判断它属于 flat / edge / texture / dark / color / alignment 哪一类；
+只有在人工标签和对照实验之后，才能提出数据、loss 或模型原因。
 ```
 
 Week 8 的最终判断应该长这样：
@@ -212,8 +210,24 @@ low-light enhancement 不能直接和普通 denoise 比，需要单独建立暗�
 | crop-level MAE | 已生成 |
 | error x6 crop | 已生成 |
 | failure taxonomy | 已补充 |
-| 原因假设 | 已补充 |
+| 原因假设 | 自动脚本不生成；需人工标注后填写 |
 | 下一步建议 | 已补充 |
 | 能区分 denoise 和 low-light failure | 已补充 |
 
-后续如果继续增强 Week 8，最值得补的是“多位置自动 crop mining”：从 error map 里自动找误差最大的 ROI，而不是只裁中心区域。但这可以放到后续项目增强，不阻塞进入 Week 9 总结。
+后续可扩展 top-k 非重叠 ROI；当前 top-error ROI 已解决固定中心 crop 可能完全错过
+失败区域的问题。
+
+### 7.6 人工 failure case 记录模板
+
+自动 CSV 只负责“定位”和“量化”，每个代表案例还要人工补完：
+
+| 字段 | 必填内容 |
+|---|---|
+| ROI | 图片名、坐标、crop size |
+| 现象 | 残余亮噪/色噪、过平滑、伪纹理、色偏、边缘/棋盘格、高光、domain shift 或部署误差 |
+| 数值 | input/output 的 ROI MAE、PSNR 或任务专属指标 |
+| 原因假设 | 数据、退化、模型、loss、训练、配准或部署中的一类 |
+| 验证实验 | 一次只改变一个变量，并写出预期结果 |
+| 结论 | 实验支持、反驳，还是证据不足 |
+
+没有人工语义标签和对照实验时，只能写“高误差 ROI”，不能把模型名直接翻译成失败原因。

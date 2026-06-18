@@ -7,10 +7,11 @@
 | 文件 | 用途 |
 |---|---|
 | `stage1_report.md` | 阶段一总报告 |
+| `stage1_tutorial_audit.md` | 报告—代码—配置—脚本—产物—测试对应表与数据域总表 |
 | `stage1_deep_review_improvement_plan.md` | Stage1 深度复盘、缺陷分析和后续补强路线 |
 | `module_mastery_matrix.md` | ISP 模块入门 / 掌握 / 面试可讲标准对照 |
 | `openisp_reference_notes.md` | OpenISP 模块参考和后续升级点 |
-| `week3_demosaic_report.md` | Week3 去马赛克详细报告（根目录归档版） |
+| `week3_demosaic_report.md` | Week3 去马赛克早期报告（归档；主线读 `week3/demosaic_report.md`） |
 | `figures/` | 所有生成图片、对比图和模块 JSON |
 | `raw_stats/` | RAW metadata 和统计 JSON（T01–T14） |
 
@@ -54,11 +55,11 @@
 |---|---|
 | `week5/iqa_ablation_report.md` | PSNR / SSIM / Mean Abs Diff 指标和模块消融 |
 
-## Week 6：补短板实验
+## Week 6：阶段毕业验收
 
 | 文件 | 内容 |
 |---|---|
-| `week6/mastery_gap_closure_report.md` | 静态 DPC、mesh LSC、OpenCV Demosaic、AWB ROI、CCM DeltaE、sRGB/S-curve、ROI IQA |
+| `week6/mastery_gap_closure_report.md` | 用静态/动态 DPC、synthetic mesh LSC、多个 baseline、AWB、CCM、Tone 和 ROI IQA 串联综合验收 |
 
 ## 面试准备
 

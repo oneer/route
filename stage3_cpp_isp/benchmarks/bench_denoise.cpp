@@ -1,7 +1,7 @@
 #include "cpp_isp/denoise.hpp"
+#include "benchmark_utils.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
@@ -28,19 +28,6 @@ cpp_isp::ImageBuffer<float> make_bench_input(std::uint32_t width, std::uint32_t 
         }
     }
     return image;
-}
-
-template <typename Fn>
-double time_ms(Fn&& fn, int repeats) {
-    double best_ms = 1.0e30;
-    for (int i = 0; i < repeats; ++i) {
-        const auto begin = std::chrono::steady_clock::now();
-        fn();
-        const auto end = std::chrono::steady_clock::now();
-        const double ms = std::chrono::duration<double, std::milli>(end - begin).count();
-        best_ms = std::min(best_ms, ms);
-    }
-    return best_ms;
 }
 
 double max_abs_diff(const cpp_isp::ImageBuffer<float>& a, const cpp_isp::ImageBuffer<float>& b) {
@@ -77,7 +64,8 @@ void print_row(const std::string& method,
 
 int main(int argc, char** argv) {
     const bool full = argc > 1 && std::string(argv[1]) == "--full";
-    const int repeats = full ? 1 : 2;
+    constexpr int warmup_runs = 1;
+    const int measured_runs = full ? 3 : 5;
     const std::vector<BenchCase> cases = full
         ? std::vector<BenchCase>{{256, 256, true}, {1920, 1080, false}, {3840, 2160, false}}
         : std::vector<BenchCase>{{256, 256, true}, {960, 540, false}};
@@ -99,18 +87,18 @@ int main(int argc, char** argv) {
 
         double direct_ms = 0.0;
         if (bench_case.include_direct) {
-            direct_ms = time_ms([&] {
+            direct_ms = cpp_isp_bench::median_ms([&] {
                 cpp_isp::bilateral_filter(input_view,
                                           output.view(),
                                           2,
                                           1.5F,
                                           0.08F,
                                           cpp_isp::BorderPolicy::Replicate);
-            }, repeats);
+            }, warmup_runs, measured_runs);
             print_row("direct", bench_case.width, bench_case.height, 0, 0, 1, direct_ms, 1.0, 1.0, 0.0);
         }
 
-        const double lut_ms = time_ms([&] {
+        const double lut_ms = cpp_isp_bench::median_ms([&] {
             cpp_isp::bilateral_filter_range_lut(input_view,
                                                 lut_output.view(),
                                                 2,
@@ -118,7 +106,7 @@ int main(int argc, char** argv) {
                                                 0.08F,
                                                 512,
                                                 cpp_isp::BorderPolicy::Replicate);
-        }, repeats);
+        }, warmup_runs, measured_runs);
         print_row("lut", bench_case.width, bench_case.height, 0, 0, 1, lut_ms, 1.0, 1.0, 0.0);
 
         if (bench_case.include_direct) {
@@ -136,7 +124,7 @@ int main(int argc, char** argv) {
 
         for (const auto& tile_size : tile_sizes) {
             cpp_isp::ImageBuffer<float> tiled_output(bench_case.width, bench_case.height, 1);
-            const double tiled_ms = time_ms([&] {
+            const double tiled_ms = cpp_isp_bench::median_ms([&] {
                 cpp_isp::bilateral_filter_range_lut_tiled(input_view,
                                                          tiled_output.view(),
                                                          2,
@@ -146,7 +134,7 @@ int main(int argc, char** argv) {
                                                          cpp_isp::BorderPolicy::Replicate,
                                                          tile_size.first,
                                                          tile_size.second);
-            }, repeats);
+            }, warmup_runs, measured_runs);
             print_row("tile_lut",
                       bench_case.width,
                       bench_case.height,
@@ -161,7 +149,7 @@ int main(int argc, char** argv) {
 
         for (const auto threads : thread_counts) {
             cpp_isp::ImageBuffer<float> row_output(bench_case.width, bench_case.height, 1);
-            const double row_ms = time_ms([&] {
+            const double row_ms = cpp_isp_bench::median_ms([&] {
                 cpp_isp::bilateral_filter_range_lut_threaded_rows(input_view,
                                                                   row_output.view(),
                                                                   2,
@@ -170,7 +158,7 @@ int main(int argc, char** argv) {
                                                                   512,
                                                                   cpp_isp::BorderPolicy::Replicate,
                                                                   threads);
-            }, repeats);
+            }, warmup_runs, measured_runs);
             print_row("thread_rows",
                       bench_case.width,
                       bench_case.height,
@@ -183,7 +171,7 @@ int main(int argc, char** argv) {
                       max_abs_diff(lut_output, row_output));
 
             cpp_isp::ImageBuffer<float> tile_output(bench_case.width, bench_case.height, 1);
-            const double tile_ms = time_ms([&] {
+            const double tile_ms = cpp_isp_bench::median_ms([&] {
                 cpp_isp::bilateral_filter_range_lut_threaded_tiles(input_view,
                                                                    tile_output.view(),
                                                                    2,
@@ -194,7 +182,7 @@ int main(int argc, char** argv) {
                                                                    128,
                                                                    64,
                                                                    threads);
-            }, repeats);
+            }, warmup_runs, measured_runs);
             print_row("thread_tiles",
                       bench_case.width,
                       bench_case.height,

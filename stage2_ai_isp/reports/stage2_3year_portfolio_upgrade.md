@@ -35,7 +35,7 @@ AI-ISP 图像恢复与部署验证项目
 | 图像恢复训练 | DnCNN / UNet / NAFNet-lite | 能建立 baseline 并对比不同 restoration backbone |
 | 评价体系 | PSNR / SSIM / triplet / error map / failure crop | 能用客观指标和局部可视化定位画质问题 |
 | ISP 关联 | pseudo RAW / RGGB pack / low-light | 能把 RGB restoration 连接到 ISP RAW-like 场景 |
-| 工程化升级 | ONNX export / C++ OpenCV DNN 骨架 | 能推动模型从训练侧走向部署验证 |
+| 工程化升级 | ONNX export / C++ ONNX Runtime 实测 | 已完成输出对齐和 CPU latency |
 | 实验分析 | loss、patch、steps、模型对比已有基础 | 能解释模型、loss、训练配置和结果差异 |
 
 ## 3. 已取得的核心结果
@@ -77,7 +77,7 @@ reports/stage2_upgrade_plan.md
 | 升级线 | 作用 | 对岗位的价值 |
 |---|---|---|
 | pseudo RAW / RGGB | 将 RGB paired 图转换为 4 通道 RAW-like 输入 | 对齐 AI-ISP、RAW/YUV、ISP pipeline 关键词 |
-| ONNX / C++ | 将 PyTorch 模型导出并用 C++/OpenCV DNN 推理 | 对齐 C/C++、部署、工程化关键词 |
+| ONNX / C++ | 将 PyTorch 模型导出并用 C++ ONNX Runtime 推理 | 对齐 C/C++、部署、工程化关键词 |
 | 消融与 IQ 指标计划 | 补充 loss / patch / latency / sharpness / noise 分析 | 对齐算法评审和画质调优思路 |
 
 ## 5. 社招 3 年简历写法
@@ -104,8 +104,8 @@ AI-ISP 图像恢复与部署验证项目 | PyTorch / SIDD / ONNX / C++ / OpenCV
   tiny 去噪任务上 DnCNN residual 达到 35.54 dB PSNR / 0.8837 SSIM。
 - 结合传统 ISP 成像链路，扩展 pseudo RAW/RGGB pack 数据入口和 synthetic
   low-light enhancement 实验，分析 AI 恢复模型在 ISP 链路中的应用边界。
-- 搭建 ONNX 导出与 C++ OpenCV DNN 推理验证骨架，推动模型从 PyTorch 训练侧
-  向部署评估侧迁移，并规划 latency / 模型大小 / 画质损失对比。
+- 完成 ONNX 导出与 C++ ONNX Runtime CPU 推理，对齐误差约 `2.38e-7`，
+  记录 512×512 输入的重复 latency，并明确图片 I/O 不计入核心推理时间。
 ```
 
 ## 6. 面试讲法
@@ -152,7 +152,7 @@ AI-ISP 与工程部署之间的连接。
 | PSNR / SSIM / 画质分析 | 高 | metrics、error map、failure crop | 可直接写 |
 | ISP pipeline 原理 | 中 | 阶段一 + pseudo RAW bridge | 需要和阶段一一起讲 |
 | RAW / YUV / sensor | 中低 | pseudo RAW/RGGB | 只能说 RAW-like 实验，不能说真实 sensor 调试 |
-| C/C++ | 中低到中 | ONNX/C++ 骨架 | 需要跑通 C++ inference 后再强化 |
+| C/C++ | 中 | ONNX Runtime C++ runner、输出对齐和 latency | 仍不等于端侧量产优化 |
 | AE/AWB/AF / 3A | 低 | 暂无真实 3A 调试 | 不要硬写 |
 | Imatest / iQ-Analyzer | 低 | 暂无工具经验 | 可补轻量 IQ metrics，但不能冒充工具经验 |
 | 车载实车调试 | 低 | 暂无 | 不要写 |
@@ -163,9 +163,9 @@ AI-ISP 与工程部署之间的连接。
 
 ```text
 1. 跑通 pseudo RAW/RGGB 300-step baseline，形成 RGB vs RGGB 对比表。
-2. 安装 onnx / onnxscript，导出 DnCNN ONNX。
-3. 用 C++ OpenCV DNN 跑一张 SIDD noisy 图，记录 latency。
-4. 增加参数量、模型大小、CPU latency、PSNR/SSIM 的统一 summary 表。
+2. 已完成 DnCNN ONNX 导出与 checker。
+3. 已完成 C++ ONNX Runtime 固定输入推理和多次 latency。
+4. 已加入 held-out test、模型大小、CPU latency、PSNR/SSIM 统一证据。
 5. 实现轻量 IQ metrics：sharpness、noise、exposure、color cast。
 6. 把最终报告改成“问题背景 -> 方法 -> 实验 -> 部署 -> 失败案例 -> 岗位匹配”。
 ```

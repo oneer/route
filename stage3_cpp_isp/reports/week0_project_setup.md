@@ -37,7 +37,10 @@ stage3_cpp_isp/
 - `CPP_ISP_USE_FETCHCONTENT=ON`：使用 CMake FetchContent 下载 GoogleTest 和 Google Benchmark。
 - `CPP_ISP_ENABLE_ASAN=ON`：在支持的编译器上启用 AddressSanitizer。
 
-当前机器 PATH 中未发现 `cmake`、`cl` 或 `g++`，所以 C++ 工程已完成脚手架，但本周没有进行本地编译验证。Python 数据生成已验证。
+后续已使用 Qt CMake + Ninja + MinGW GCC 的 Release 配置完成本机构建和
+CTest 验证。默认算法测试是 CTest 注册的轻量可执行文件；FetchContent 模式
+目前只把 smoke target 切换到 GoogleTest / Google Benchmark，不能把整套测试
+笼统称为 GoogleTest suite。
 
 ## 3. CPF32 数据格式
 
@@ -53,7 +56,10 @@ CPF32
 
 - 默认数据范围是 linear `[0, 1]`。
 - payload 按 `H x W x C` 连续存储。
+- payload 是 interleaved HWC，索引为 `(y * width + x) * channels + c`。
+- 数值使用 little-endian IEEE-754 float32；C++ 实现拒绝 big-endian host。
 - 单通道图也保留 shape 中的 `channels = 1`。
+- CPF32 不保存 stride；内部 planar `ImageBuffer` 需要显式做 layout 转换。
 
 这个格式的好处是：
 
@@ -156,6 +162,5 @@ ISP 算法模块很容易出现“最终图看着差不多，但中间数值已�
 
 ## 9. 当前限制
 
-- 当前机器没有暴露 C++ 构建工具，C++ 编译验证需要后续安装或配置 `cmake` + 编译器。
 - Week0 只建立 identity reference，后续每个算法模块会各自生成真实 reference。
 - `CPF32` 是项目内部格式，不是通用图像格式；它服务于对齐验证。

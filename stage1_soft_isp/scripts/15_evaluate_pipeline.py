@@ -41,7 +41,6 @@ import imageio.v3 as iio
 import matplotlib
 import numpy as np
 import rawpy
-from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -54,6 +53,7 @@ from soft_isp.ccm import apply_ccm, ccm_from_rawpy_color_matrix
 from soft_isp.demosaic import bilinear_demosaic
 from soft_isp.dpc import detect_defects, repair_defects
 from soft_isp.lsc import apply_lsc
+from soft_isp.metrics import compute_metrics
 from soft_isp.orientation import apply_rawpy_orientation
 from soft_isp.stats import bayer_pattern_from_rawpy
 from soft_isp.tone import apply_gamma, normalize_by_percentile, reinhard_tone_map, to_uint8
@@ -111,21 +111,6 @@ def load_reference(raw_path: Path, reference_dir: Path) -> np.ndarray | None:
     if not reference_path.exists():
         return None
     return iio.imread(reference_path)
-
-
-def compute_metrics(candidate: np.ndarray, reference: np.ndarray) -> dict:
-    cand = candidate.astype(np.float32) / 255.0
-    ref = reference.astype(np.float32) / 255.0
-    if cand.shape != ref.shape:
-        min_h = min(cand.shape[0], ref.shape[0])
-        min_w = min(cand.shape[1], ref.shape[1])
-        cand = cand[:min_h, :min_w, :]
-        ref = ref[:min_h, :min_w, :]
-    return {
-        "psnr": float(peak_signal_noise_ratio(ref, cand, data_range=1.0)),
-        "ssim": float(structural_similarity(ref, cand, channel_axis=2, data_range=1.0)),
-        "mean_abs_diff": float(np.mean(np.abs(ref - cand))),
-    }
 
 
 def save_grid(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -> None:

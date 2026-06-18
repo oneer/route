@@ -4,6 +4,7 @@ runs/
 datasets/sidd/
 datasets/sid/
 datasets/
+deployment/outputs/
 *.pth
 *.pt
 *.ckpt

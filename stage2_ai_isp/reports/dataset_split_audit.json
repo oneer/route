@@ -1,0 +1,32 @@
+{
+  "dataset_root": "stage2_ai_isp\\datasets\\sidd_tiny",
+  "splits": {
+    "train": {
+      "noisy_count": 80,
+      "clean_count": 80,
+      "paired_count": 80,
+      "unmatched_noisy": [],
+      "unmatched_clean": []
+    },
+    "val": {
+      "noisy_count": 20,
+      "clean_count": 20,
+      "paired_count": 20,
+      "unmatched_noisy": [],
+      "unmatched_clean": []
+    },
+    "test": {
+      "noisy_count": 20,
+      "clean_count": 20,
+      "paired_count": 20,
+      "unmatched_noisy": [],
+      "unmatched_clean": []
+    }
+  },
+  "source_scene_leakage": {
+    "train_vs_val": [],
+    "train_vs_test": [],
+    "val_vs_test": []
+  },
+  "passed": true
+}

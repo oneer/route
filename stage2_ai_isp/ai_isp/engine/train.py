@@ -7,7 +7,7 @@
     1. 种子设置与设备选择（GPU/CPU 自动检测）
     2. 数据集构建（ToyRGBDenoiseDataset，训练/验证拆分）
     3. 模型构建（通过 build_model 工厂）
-    4. 优化器与损失函数设置（AdamW + L1/MSE）
+    4. 优化器与损失函数设置（AdamW + L1/MSE/Charbonnier）
     5. 训练循环：
         - 前向传播 + 反向传播 + 参数更新
         - 定期日志输出（每 log_every 步）
@@ -35,7 +35,8 @@
         batch_size: 8           # batch size
         learning_rate: 1e-3     # 学习率
         weight_decay: 0.0       # 权重衰减
-        loss: "l1"              # 损失函数 ("l1" 或 "mse")
+        loss: "l1"              # "l1"、"mse"/"l2" 或 "charbonnier"
+        resume: null            # 可选 checkpoint 路径
         device: "auto"          # 计算设备
         num_workers: 0          # DataLoader 工作进程数
         log_every: 25           # 日志输出间隔（步）
@@ -53,7 +54,7 @@ from torch.utils.data import DataLoader
 from ai_isp.data.paired_image_dataset import PairedImageDenoiseDataset
 from ai_isp.data.paired_pseudo_raw_dataset import PairedPseudoRawDataset
 from ai_isp.data.toy_rgb_dataset import ToyRGBDenoiseDataset
-from ai_isp.engine.checkpoint import save_checkpoint
+from ai_isp.engine.checkpoint import load_checkpoint, save_checkpoint
 from ai_isp.engine.logger import CSVLogger, SummaryWriterOrNoop
 from ai_isp.engine.validate import validate
 from ai_isp.models import build_model
@@ -83,6 +84,32 @@ def resolve_project_path(project_root: Path, path: str | Path) -> Path:
     return resolved if resolved.is_absolute() else project_root / resolved
 
 
+def build_criterion(name: str) -> nn.Module:
+    """构建训练损失；未知名称必须报错，避免实验静默用错 loss。"""
+    normalized = str(name).lower()
+    if normalized == "l1":
+        return nn.L1Loss()
+    if normalized in {"l2", "mse"}:
+        return nn.MSELoss()
+    if normalized == "charbonnier":
+        return CharbonnierLoss()
+    raise ValueError(
+        f"Unknown loss '{name}'. Expected one of: l1, l2, mse, charbonnier."
+    )
+
+
+class CharbonnierLoss(nn.Module):
+    """平滑 L1：sqrt((prediction-target)^2 + eps^2)。"""
+
+    def __init__(self, eps: float = 1e-3) -> None:
+        super().__init__()
+        self.eps = float(eps)
+
+    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        difference = prediction - target
+        return torch.sqrt(difference * difference + self.eps * self.eps).mean()
+
+
 def build_dataset(config: dict, project_root: Path, split: str):
     data_cfg = config["data"]
     seed = config["experiment"].get("seed", 42)
@@ -103,6 +130,7 @@ def build_dataset(config: dict, project_root: Path, split: str):
             patch_size=data_cfg["patch_size"],
             size=data_cfg[f"{split}_size"],
             seed=seed,
+            augment=split == "train" and data_cfg.get("augment", False),
         )
 
     noise_cfg = data_cfg["noise"]
@@ -182,11 +210,13 @@ def train_from_config(config: dict) -> None:
     )
 
     # 损失函数：L1（MAE）或 MSE
-    criterion_name = config["train"].get("loss", "l1").lower()
-    criterion: nn.Module = nn.L1Loss() if criterion_name == "l1" else nn.MSELoss()
+    criterion = build_criterion(config["train"].get("loss", "l1"))
+
+    resume_path = config["train"].get("resume")
 
     # 日志：CSV（始终启用）+ TensorBoard（可选）
-    csv_logger = CSVLogger(out_dir / "metrics.csv")
+    # 断点续训时保留已有 CSV；全新实验则重建表头。
+    csv_logger = CSVLogger(out_dir / "metrics.csv", reset=not bool(resume_path))
     tb_logger = SummaryWriterOrNoop(out_dir / "tb")
 
     # ============================================================
@@ -196,6 +226,17 @@ def train_from_config(config: dict) -> None:
     step = 0                    # 全局步数计数器
     epoch = 0                   # epoch 计数器（仅用于日志显示）
     running_loss = 0.0          # 累积损失（用于 log_every 间隔平均）
+
+    if resume_path:
+        checkpoint = load_checkpoint(
+            resolve_project_path(project_root, resume_path),
+            model,
+            optimizer,
+            map_location=device,
+        )
+        step = int(checkpoint.get("step", 0))
+        best_psnr = float(checkpoint.get("best_psnr", float("-inf")))
+        print(f"resumed checkpoint={resume_path} step={step} best_psnr={best_psnr:.4f}")
 
     model.train()
 
@@ -250,17 +291,17 @@ def train_from_config(config: dict) -> None:
                         vis_dir / f"step_{step:04d}.png",
                     )
 
-                # 保存最新 checkpoint
-                save_checkpoint(
-                    ckpt_dir / "last.pth", model, optimizer, step, best_psnr, config
-                )
-
                 # 如果当前 PSNR 超过历史最佳，保存最佳 checkpoint
                 if val_psnr > best_psnr:
                     best_psnr = val_psnr
                     save_checkpoint(
                         ckpt_dir / "best_psnr.pth", model, optimizer, step, best_psnr, config
                     )
+
+                # last.pth 始终记录更新后的 best_psnr。
+                save_checkpoint(
+                    ckpt_dir / "last.pth", model, optimizer, step, best_psnr, config
+                )
 
             # 达到总步数后跳出
             if step >= config["train"]["steps"]:

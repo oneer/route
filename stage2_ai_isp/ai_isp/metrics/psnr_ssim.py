@@ -12,8 +12,9 @@ SSIM（结构相似度）：
     值越接近 1 表示结构越相似。
 
 计算方式：
-    两个函数都使用 3×3 平均池化核做局部统计（作为简化的 SSIM 实现），
-    返回 batch 内每个样本的指标值（形状为 (B,)），外层再取 mean 得到标量。
+    SSIM 使用 11×11、sigma=1.5 的 Gaussian 窗口，按 RGB 通道计算后平均。
+    该实现用于仓库内部统一评估；与外部 benchmark 对比时仍需确认颜色空间、
+    border crop、量化方式和官方评测脚本完全一致。
 """
 
 from __future__ import annotations
@@ -40,8 +41,28 @@ def batch_psnr(pred: torch.Tensor, target: torch.Tensor, eps: float = 1e-8) -> t
     return 10.0 * torch.log10(1.0 / torch.clamp(mse, min=eps))
 
 
-def batch_ssim(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    """计算 batch 内每个样本的 SSIM（简化实现，用于验证 sanity check）。
+def _gaussian_window(
+    channels: int,
+    window_size: int,
+    sigma: float,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    coordinates = torch.arange(window_size, device=device, dtype=dtype)
+    coordinates = coordinates - (window_size - 1) / 2
+    gaussian = torch.exp(-(coordinates * coordinates) / (2 * sigma * sigma))
+    gaussian = gaussian / gaussian.sum()
+    window_2d = gaussian[:, None] * gaussian[None, :]
+    return window_2d.expand(channels, 1, window_size, window_size).contiguous()
+
+
+def batch_ssim(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    window_size: int = 11,
+    sigma: float = 1.5,
+) -> torch.Tensor:
+    """计算 batch 内每个样本的标准窗口 SSIM。
 
     参数：
         pred:   预测图像，形状 (B, C, H, W)，值域 [0, 1]
@@ -51,28 +72,41 @@ def batch_ssim(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         SSIM 值，形状 (B,)，范围通常 [0, 1]（越高越好）
 
     实现细节：
-        使用 3×3 均匀卷积核计算局部均值和方差，
-        groups=channels 实现逐通道独立计算。
+        使用 11×11 Gaussian 核计算局部均值和方差，
+        groups=channels 实现逐通道独立计算。卷积不做 padding，
+        避免人工零边界影响统计。
         C₁=(0.01)², C₂=(0.03)² 参考 Wang et al. 2004 的默认参数。
     """
     # SSIM 稳定常数（参考原始论文的默认值）
     c1 = 0.01 ** 2
     c2 = 0.03 ** 2
 
-    # 3×3 均匀平均核（权重 1/9），用于局部统计
-    kernel = torch.ones((pred.shape[1], 1, 3, 3), device=pred.device, dtype=pred.dtype) / 9.0
+    if pred.shape != target.shape:
+        raise ValueError(
+            f"SSIM expects identical shapes, got {tuple(pred.shape)} and {tuple(target.shape)}"
+        )
+    if pred.ndim != 4:
+        raise ValueError(f"SSIM expects BCHW tensors, got shape {tuple(pred.shape)}")
+    effective_size = min(window_size, pred.shape[-2], pred.shape[-1])
+    if effective_size % 2 == 0:
+        effective_size -= 1
+    if effective_size < 1:
+        raise ValueError("SSIM requires non-empty spatial dimensions.")
+    kernel = _gaussian_window(
+        pred.shape[1], effective_size, sigma, pred.device, pred.dtype
+    )
 
     # --- 局部均值 ---
     # μₓ = conv(x, kernel)，groups=channels 使每个通道独立计算
-    mu_x = F.conv2d(pred, kernel, padding=1, groups=pred.shape[1])
-    mu_y = F.conv2d(target, kernel, padding=1, groups=target.shape[1])
+    mu_x = F.conv2d(pred, kernel, groups=pred.shape[1])
+    mu_y = F.conv2d(target, kernel, groups=target.shape[1])
 
     # --- 局部方差与协方差 ---
     # σₓ² = conv(x², kernel) - μₓ²（Var(X) = E[X²] - E[X]²）
-    sigma_x = F.conv2d(pred * pred, kernel, padding=1, groups=pred.shape[1]) - mu_x * mu_x
-    sigma_y = F.conv2d(target * target, kernel, padding=1, groups=target.shape[1]) - mu_y * mu_y
+    sigma_x = F.conv2d(pred * pred, kernel, groups=pred.shape[1]) - mu_x * mu_x
+    sigma_y = F.conv2d(target * target, kernel, groups=target.shape[1]) - mu_y * mu_y
     # σₓᵧ = conv(xy, kernel) - μₓμᵧ
-    sigma_xy = F.conv2d(pred * target, kernel, padding=1, groups=pred.shape[1]) - mu_x * mu_y
+    sigma_xy = F.conv2d(pred * target, kernel, groups=pred.shape[1]) - mu_x * mu_y
 
     # --- SSIM 公式 ---
     # SSIM = (2μₓμᵧ + C₁)(2σₓᵧ + C₂) / ((μₓ² + μᵧ² + C₁)(σₓ² + σᵧ² + C₂))

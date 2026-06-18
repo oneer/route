@@ -14,6 +14,7 @@ SummaryWriterOrNoop:
 from __future__ import annotations
 
 from pathlib import Path
+import warnings
 
 
 class CSVLogger:
@@ -27,11 +28,13 @@ class CSVLogger:
         path: CSV 文件输出路径（自动创建父目录并写入表头）
     """
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, reset: bool = True) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        # 写入 CSV 表头（覆盖已有文件）
-        self.path.write_text("step,train_loss,val_psnr,val_ssim\n", encoding="utf-8")
+        if reset or not self.path.exists():
+            self.path.write_text(
+                "step,train_loss,val_psnr,val_ssim\n", encoding="utf-8"
+            )
 
     def append(self, step: int, train_loss: float, val_psnr: float, val_ssim: float) -> None:
         """追加一行训练指标记录。
@@ -61,8 +64,12 @@ class SummaryWriterOrNoop:
             from torch.utils.tensorboard import SummaryWriter
 
             self.writer = SummaryWriter(str(log_dir))
-        except Exception:
-            # tensorboard 未安装或导入失败时静默退化为 None
+        except Exception as error:
+            warnings.warn(
+                f"TensorBoard disabled because SummaryWriter could not start: {error}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             self.writer = None
 
     def add_scalar(self, name: str, value: float, step: int) -> None:

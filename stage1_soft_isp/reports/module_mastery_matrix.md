@@ -68,7 +68,7 @@ hybrid：先静态修复，再动态检测剩余异常
 |---|---|---|
 | 入门 | 能实现 bilinear | 已覆盖。Week3 Demosaic 有公式、mask、卷积和结果图。 |
 | 掌握 | 能对比 OpenCV baseline 和伪影 | 已覆盖。Week6 对比本项目 bilinear、OpenCV bilinear、OpenCV edge-aware。 |
-| 面试可讲 | 能解释 AHD / 方向自适应为什么更好 | 基本覆盖。Week6 用 OpenCV edge-aware 作为方向自适应入门对照；AHD/Malvar 仍可后续实作。 |
+| 面试可讲 | 能准确区分 bilinear、Malvar、OpenCV edge-aware 与 AHD | 部分覆盖。Week6 只实测 OpenCV edge-aware；AHD/Malvar 目前是理论对比，尚未实现。 |
 
 已补实验：Week6 增加 `Bilinear vs OpenCV bilinear vs OpenCV edge-aware` 对比。下一步如果继续加深，可把 OpenISP Malvar 或 AHD 接进同一套评估。
 

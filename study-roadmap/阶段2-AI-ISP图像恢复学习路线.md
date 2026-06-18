@@ -6,7 +6,7 @@
 >
 > **阶段目标**：从“能跑通 PyTorch 图像恢复训练”升级到“能围绕 AI-ISP 图像恢复问题，完成数据构建、baseline 训练、客观评估、可视化诊断、failure case 分析、RAW-like 扩展和 ONNX/C++ 部署验证”。
 >
-> **阶段产出**：一个 `stage2_ai_isp/` 项目，一套配置驱动的训练与评估脚本，一份 SIDD paired RGB 数据构建报告，一个 DnCNN / UNet / NAFNet-lite 对比 baseline，一个 pseudo RAW/RGGB 可训练 baseline，一份 failure case 分析，一份工程 summary 表，一个 ONNX 导出产物，一个 C++ OpenCV DNN 推理 smoke test，以及一份适合社招 3 年口径的项目报告和面试复述笔记。
+> **阶段产出**：一个 `stage2_ai_isp/` 项目，一套配置驱动的训练与评估脚本，一份 SIDD paired RGB 数据构建报告，一个 DnCNN / UNet / NAFNet-lite 对比 baseline，一个 pseudo RAW/RGGB 可训练 baseline，一份 failure case 分析，一份工程 summary 表，一个 ONNX 导出产物，一个 C++ ONNX Runtime 推理 smoke test，以及一份适合社招 3 年口径的项目报告和面试复述笔记。
 
 ---
 
@@ -96,7 +96,7 @@ stage2_ai_isp/
 - 每个实验都记录：数据集、输入域、输出域、模型、loss、指标、patch size、batch size、学习率和训练步数。
 - 至少做 3 组对比：DnCNN / UNet / NAFNet-lite、L1 / L2、RGB / pseudo RGGB。
 - 至少整理一组 failure crop，按“噪声残留、过平滑、偏色、暗部脏、边缘伪影”分类。
-- 至少完成一次 ONNX 导出和 C++ OpenCV DNN 推理 smoke test，并记录 latency。
+- 至少完成一次 ONNX 导出和 C++ 推理 smoke test，并记录多次 latency。
 
 ---
 
@@ -371,19 +371,21 @@ Loss 和指标：
 
 **掌握标准**：能解释 PyTorch checkpoint 和 ONNX 文件的区别；能说明动态 shape / 固定 shape 对部署验证的影响。
 
-### Week 12：C++ OpenCV DNN Inference
+### Week 12：C++ Inference Validation
 
 **目标**：补齐 C++ 和部署 smoke test 证据，让阶段二达到更接近社招 3 年的项目口径。
 
 **重点任务**：
 
-- 用 C++ OpenCV DNN 加载 ONNX。
+- 优先用 C++ ONNX Runtime 加载 ONNX，完成不依赖图片 SDK 的推理核心验证。
+- OpenCV DNN 作为可选 backend，在具备 OpenCV C++ SDK 时再补。
 - 输入一张 SIDD noisy 图。
 - 输出 restored 图。
 - 打印 CPU latency。
 - 对比 PyTorch 与 C++ 输出差异，至少记录一次 sanity check。
 
-**交付物**：`deployment/cpp_onnx_infer/`、C++ inference output image、latency log、更新后的 deployment README。
+**交付物**：`deployment/cpp_ort_infer/`、C++ float output、PNG preview、alignment JSON、
+latency log、更新后的 deployment README。`cpp_onnx_infer/` 为 OpenCV DNN 可选样例。
 
 **掌握标准**：能说明这个 C++ 推理是 smoke test，不等于端侧量产部署；能把模型质量、模型大小、latency 放在同一张表里讨论取舍。
 
@@ -395,7 +397,7 @@ Loss 和指标：
 AI-ISP 图像恢复与部署验证 baseline 项目：
 基于 SIDD paired RGB 构建训练与评估闭环，对比 DnCNN / UNet / NAFNet-lite，
 使用 PSNR / SSIM / error map / failure crop 分析画质问题，扩展 pseudo RAW/RGGB
-RAW-like 输入，并完成 ONNX 导出与 C++ OpenCV DNN 推理 smoke test。
+RAW-like 输入，并完成 ONNX 导出与 C++ ONNX Runtime 推理 smoke test。
 ```
 
 最低验收标准：
@@ -404,14 +406,17 @@ RAW-like 输入，并完成 ONNX 导出与 C++ OpenCV DNN 推理 smoke test。
 - pseudo RAW/RGGB baseline 有训练 metrics 和 checkpoint。
 - engineering summary 有参数量、checkpoint 大小、PSNR / SSIM。
 - ONNX 文件已导出。
-- C++ 推理能输出图片并记录 latency。
+- C++ 推理能输出张量/图片并记录多次 latency。
 - 最终报告明确项目边界，不夸大量产 ISP 经验。
 
 ---
 
 ## 3.1 旧版 8 周路线参考
 
-以下内容是阶段二早期路线的展开资料，适合作为补充阅读或后续扩展。当前主执行路线以上面的 Week 0-12 为准。
+> 本节已归档，只用于理解早期规划，不应按周执行。正式学习入口为
+> `stage2_ai_isp/stage2_start_here.md`，主执行路线为上面的 Week 0-12。
+
+以下内容是阶段二早期路线的展开资料，适合作为补充阅读或后续扩展。
 
 ### Week 0.5：环境、项目骨架和最小训练闭环
 
@@ -936,7 +941,7 @@ Week 10   Engineering summary
 Week 11   ONNX export
   -> 能导出 DnCNN ONNX，并记录输入 shape、模型大小和导出命令
 
-Week 12   C++ OpenCV DNN inference
+Week 12   C++ ONNX Runtime inference
   -> 能跑通 C++ 推理 smoke test，输出图片并记录 CPU latency
 ```
 
@@ -949,6 +954,6 @@ Week 12   C++ OpenCV DNN inference
 - 优先选择 DnCNN / NAFNet-lite / UNet-lite，而不是 Restormer。
 - 输入分辨率、通道数和 patch 推理方式要固定。
 - 保存一组固定测试图，用于后续 ONNX / TensorRT / NCNN / OpenCV DNN 输出对齐。
-- 记录 PyTorch FP32 baseline、ONNX 输出和 C++ OpenCV DNN 输出的 PSNR / SSIM / latency，作为部署阶段的基准。
+- 记录 PyTorch FP32 baseline、ONNX 输出和 C++ ONNX Runtime 输出的 PSNR / SSIM / latency，作为部署阶段的基准。
 
 阶段三的目标不是重新训练更强模型，而是在阶段二 smoke test 的基础上继续做导出对齐、加速、量化、端侧推理和画质损失解释。

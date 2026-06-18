@@ -1,0 +1,28 @@
+"""Stage 1 共用图像质量指标。
+
+这些指标只表示候选图与给定参考图的接近程度，不自动等于真实画质或颜色准确性。
+"""
+
+from __future__ import annotations
+
+import numpy as np
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+
+
+def align_images(candidate: np.ndarray, reference: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    if candidate.ndim != 3 or reference.ndim != 3:
+        raise ValueError("candidate and reference must be HxWxC images")
+    min_h = min(candidate.shape[0], reference.shape[0])
+    min_w = min(candidate.shape[1], reference.shape[1])
+    return candidate[:min_h, :min_w], reference[:min_h, :min_w]
+
+
+def compute_metrics(candidate: np.ndarray, reference: np.ndarray) -> dict[str, float]:
+    candidate, reference = align_images(candidate, reference)
+    cand = candidate.astype(np.float32) / 255.0
+    ref = reference.astype(np.float32) / 255.0
+    return {
+        "psnr": float(peak_signal_noise_ratio(ref, cand, data_range=1.0)),
+        "ssim": float(structural_similarity(ref, cand, channel_axis=2, data_range=1.0)),
+        "mean_abs_diff": float(np.mean(np.abs(ref - cand))),
+    }

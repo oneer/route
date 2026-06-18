@@ -10,7 +10,7 @@
 RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> sRGB Preview
 ```
 
-已完成 14 张 MIT-Adobe FiveK DNG 样张的 RAW 统计、逐模块可视化、rawpy reference 对比和 Week5 指标/消融实验。
+仓库现有 14 张 MIT-Adobe FiveK DNG 的 RAW 统计、逐模块可视化、rawpy reference 对比、Week5 指标/消融和 Week6 局部综合实验。上述结论可追溯到 `reports/raw_stats/`、`reports/figures/*.json` 和对应脚本；证据索引见 [教程化审查与证据对应表](stage1_tutorial_audit.md)。
 
 ## 3. 样张说明
 
@@ -33,10 +33,23 @@ RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> s
 | CCM | linear RGB | linear RGB | 3x3 matrix | rawpy reference 趋势、颜色关系变化 | 矩阵方向错、光源不匹配、缺色卡标定 |
 | Tone/Gamma | linear RGB | sRGB preview | percentile、Reinhard、gamma | 中间调/高光观察、Week5 指标 | 高光压缩过度、整体偏灰、与 rawpy 曲线不一致 |
 
+### 4.1 完整数据域
+
+| 阶段 | shape / dtype | 范围与线性状态 | clip / 归一化 |
+|---|---|---|---|
+| DNG visible RAW | `(H,W)` / 通常 `uint16` | black level 到 white level，线性 Bayer 采样 | 未归一化 |
+| BLC / DPC | `(H,W)` / `uint16` | 以 0 为黑位的线性 Bayer | BLC 减逐位置 black map 并 clip；DPC 只替换检测点 |
+| 学习版 LSC | `(H,W)` / `float32` | gain 后线性 Bayer | 四通道径向 gain，按 white level 限制 |
+| Demosaic / AWB / CCM | `(H,W,3)` / `float32` | 线性 RGB 码值尺度 | AWB/CCM 可能放大或产生越界，当前实现按 white level 限制 |
+| Tone | `(H,W,3)` / `float32` | `0..1`，曲线前仍是线性量 | percentile 或 Reinhard 归一化 |
+| Gamma / sRGB OETF | `(H,W,3)` / `float32` | `0..1`，非线性显示编码 | 最后量化为 `uint8` PNG |
+
+更完整的逐模块约定见 [数据域总表](stage1_tutorial_audit.md#3-数据域总表)。
+
 ## 5. 与参考输出的主要差异
 
-1. **Tone 曲线不同**：Week5 中 `gamma_only` 平均 PSNR/SSIM 反而高于 `full`，说明 rawpy 默认渲染更接近分位归一化 + 显示编码，而不是本项目学习用 Reinhard 曲线。
-2. **AWB 是全局 Gray World**：大面积单色或混合光源会使全局均值假设失效，`no_awb` 消融通常显著拉低指标，说明白平衡影响很大。
+1. **Tone 曲线不同**：Week5 的 `gamma_only` 在该批样张上平均更接近 rawpy reference。它只说明当前 Reinhard 参数与 rawpy 渲染策略不同，不能反推出 rawpy 内部采用了哪条具体曲线。
+2. **AWB 是全局 Gray World**：大面积单色或混合光源会使全局均值假设失效。部分样张关闭 AWB 反而更接近 rawpy reference，恰好说明“均值拉平”不等于颜色正确。
 3. **CCM 没有色卡标定**：当前 CCM 来自 DNG/rawpy metadata 的简化使用，不等于标准光源下的 ColorChecker 拟合。
 4. **LSC 是径向 baseline**：没有 flat-field 标定图时，LSC 不一定让全图更接近 rawpy；它主要用于理解位置和风险。
 5. **Demosaic 是 bilinear**：边缘和高频纹理不如 rawpy/LibRaw 的高级算法，可能出现边缘糊、假彩色和拉链纹。
@@ -55,9 +68,9 @@ RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> s
 
 ## 7. 阶段复盘
 
-阶段 1 已经从“能读 RAW”推进到“能逐模块解释 RAW 到可显示图的每一步”。现在最有价值的成果不是最终图像多好看，而是每个模块都有代码、图、JSON 和报告支撑，能回答输入输出、核心假设、验证方法和失败场景。
+阶段 1 已经从“能读 RAW”推进到“主链路有代码、图、JSON 和报告支撑”。但“仓库有证据”不等于“学习者已经掌握”；掌握必须由独立实现、测试、参数预测和陌生 DNG 毕业任务证明。
 
-更细的模块掌握标准已经整理到 [ISP 模块掌握标准对照表](module_mastery_matrix.md)。这张表按“入门 / 掌握 / 面试可讲”检查 RAW、BLC、DPC、LSC、Demosaic、AWB、CCM、Gamma/Tone 和 IQA 的覆盖情况。此前标出的短板已经集中放到 [Week6 补短板实验报告](week6/mastery_gap_closure_report.md) 中验证，包括静态 defect map、合成 flat-field / mesh LSC、OpenCV demosaic baseline、AWB white patch / gray ROI、CCM DeltaE、sRGB OETF / S-curve 和 ROI IQA。
+更细的模块掌握标准已经整理到 [ISP 模块掌握标准对照表](module_mastery_matrix.md)。这张表按“入门 / 掌握 / 面试可讲”检查 RAW、BLC、DPC、LSC、Demosaic、AWB、CCM、Gamma/Tone 和 IQA 的覆盖情况。此前标出的短板已集中放到 [Week6 阶段毕业实验报告](week6/mastery_gap_closure_report.md) 中串联，包括静态/动态 DPC、合成 flat-field / mesh LSC、OpenCV demosaic baseline、AWB white patch / gray ROI、相对 rawpy 的 CCM DeltaE、sRGB OETF / S-curve 和 ROI IQA。
 
 当前仍然是学习版 pipeline。下一阶段如果继续向产品级靠近，优先顺序应是：真实 flat-field 标定版 LSC、ColorChecker CCM / DeltaE、Malvar/AHD Demosaic、RAW 域 AAF/BNF 消融、语义 ROI 主观评价、局部 tone、假彩抑制/锐化和后端 IQ 模块。
 

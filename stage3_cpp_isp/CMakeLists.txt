@@ -112,7 +112,7 @@ cpp_isp_enable_sanitizers(test_smoke)
 cpp_isp_apply_compiler_options(bench_smoke)
 cpp_isp_enable_sanitizers(bench_smoke)
 
-foreach(test_name IN ITEMS test_image test_border test_denoise_basic test_tone_mapping test_fixed_point test_tone_lut test_local_tone_mapping test_hdr_merge)
+foreach(test_name IN ITEMS test_cpf32 test_image test_border test_denoise_basic test_tone_mapping test_fixed_point test_tone_lut test_local_tone_mapping test_hdr_merge)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE cpp_isp_core)
     cpp_isp_apply_compiler_options(${test_name})

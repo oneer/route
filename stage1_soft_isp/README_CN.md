@@ -1,243 +1,155 @@
-# Soft-ISP 阶段一 — RAW 基础与传统 ISP Pipeline
+# 阶段一：RAW 基础与可解释 Soft-ISP
 
-[English Version](README.md)
+[English](README.md)
 
-从零构建一个可解释的 Python Soft-ISP Pipeline。本项目读取真实 RAW/DNG 文件，逐步实现完整的传统 ISP 处理链 —— 黑电平校正、坏点校正、镜头暗角校正、去马赛克、自动白平衡、色彩校正矩阵、Gamma/色调映射 —— 并为每个模块提供统计信息、可视化图表以及与 rawpy 参考输出的对比分析。
+阶段一用于建立 RAW 数据域、传统 ISP 主链路、模块验证和调试能力。仓库同时包含参考实现与历史实验结果，但学习目标不是重复运行这些成品，而是通过练习、测试和独立毕业任务证明自己能够解释、修改和重新实现。
 
-## 项目定位
+## 开始前先读
 
-大多数 ISP 教程止步于理论，或依赖不透明的"黑盒"库调用。本项目要求你：
+1. [前置知识与自测](materials/prerequisites.md)
+2. [可复现环境搭建](materials/environment_setup.md)
+3. [从这里开始](materials/stage1_start_here.md)
+4. [练习入口](exercises/README.md)
+5. [调试手册](materials/debugging_guide.md)
+6. [报告—代码—实验对应表](reports/stage1_tutorial_audit.md)
 
-- 读取真实传感器数据，理解 RAW 文件中每个数值的物理含义。
-- 亲手实现每个 ISP 模块，能解释其数学原理、核心假设、失败模式和参数影响。
-- 将输出与 rawpy/LibRaw 参考结果逐项对比，说清每一处差异的成因。
-- 养成撰写结构化实验报告（而不只是堆代码）的习惯，形成面试可讲的材料。
+如果前置自测不能独立完成，先补 Python/NumPy，不建议直接阅读 200 行以上实验脚本。
 
-## 目录结构
+## 学习目标
 
-```
+完成阶段一后，应能独立：
+
+- 读取陌生 DNG，解释 black/white level、Bayer pattern、shape、dtype 和值域；
+- 实现并验证 BLC、基础 DPC、学习版 LSC、bilinear demosaic、Gray World AWB、3×3 CCM、Gamma/Tone；
+- 使用 YAML 开关模块并保存中间结果；
+- 为模块设计合成测试、参数实验和失败案例；
+- 解释输出为何与 rawpy 不同，以及为什么 rawpy 只是成熟参考而非 ground truth；
+- 在空目录中重写一个简化 Soft-ISP。
+
+## 目录
+
+```text
 stage1_soft_isp/
-├── configs/
-│   └── default.yaml              # Pipeline 模块开关与参数配置
+├── configs/default.yaml       # 真正被统一 Pipeline 读取
 ├── data/
-│   ├── raw/                      # 输入 DNG/RAW 文件（不提交到 Git）
-│   └── references/               # rawpy 处理的 sRGB 参考图
-├── materials/
-│   ├── stage1_start_here.md      # 6 周路线图与每日指引
-│   ├── module_study_template.md  # 每个 ISP 模块的学习模板
-│   ├── raw_sample_manifest.md    # RAW 样张登记表（含下载链接）
-│   ├── resources.md              # 论文/课程/数据集/开源项目总索引
-│   ├── books/                    # 参考书目列表
-│   ├── datasets/                 # FiveK 索引 + 自动生成的元数据表
-│   ├── notes/                    # 论文阅读模板
-│   ├── open_source/              # OpenISP / Infinite-ISP 学习指南
-│   ├── papers/                   # 核心论文（Karaimer & Brown, HDR+, SID 等）
-│   └── slides/                   # Stanford EE367、Cornell CS6640 课件
-├── notebooks/                    # Jupyter notebooks（预留）
-├── reports/
-│   ├── stage1_report.md          # 阶段总报告模板
-│   ├── README.md                 # 报告导航
-│   ├── week1/                    # 第 1 周：RAW 统计、ROI、总结
-│   ├── week2/                    # 第 2 周：BLC、DPC、总结
-│   ├── week3/                    # 第 3 周：Demosaic、AWB、总结
-│   ├── interview/                # 面试题与复习材料
-│   ├── figures/                  # 生成的直方图 + ROI 预览图
-│   └── raw_stats/                # 每张样张的 JSON 元数据
+│   ├── raw/                   # 14 张 FiveK DNG，当前由 Git LFS 跟踪
+│   └── references/            # rawpy 成熟渲染参考，不是标准答案
+├── exercises/                 # 无完整答案的练习与毕业任务
+├── materials/                 # 前置、环境、调试、资料和学习模板
+├── reports/                   # 已完成实验档案；做完练习后再参考
 ├── scripts/
-│   ├── 01_inspect_raw.py         # 导出 RAW 元数据与通道统计为 JSON
-│   ├── 02_generate_rawpy_references.py  # 生成 rawpy sRGB 参考图
-│   ├── 03_dump_raw_metadata_table.py    # 生成 Markdown 元数据汇总表
-│   ├── 04_plot_raw_histogram.py  # 绘制双栏 RAW + Bayer 通道直方图
-│   ├── 05_analyze_raw_roi.py     # 自动选取暗部/中间调/高光 ROI 并分析
-│   ├── 06_apply_blc.py           # 黑电平校正
-│   ├── 07_apply_dpc.py           # 坏点检测与修复
-│   ├── 08_apply_demosaic.py      # 去马赛克（双线性 / OpenCV）
-│   ├── 09_apply_awb.py           # 自动白平衡
-│   ├── 10_apply_ccm.py           # 色彩校正矩阵
-│   ├── 11_apply_gamma.py         # Gamma 编码
-│   ├── 12_apply_tone_mapping.py  # 色调映射（Reinhard / percentile）
-│   ├── 13_write_week4_summary.py # 生成 Week 4 总结和综合对比图
-│   ├── 14_apply_lsc.py           # 镜头暗角校正（径向 / mesh）
-│   ├── 15_evaluate_pipeline.py   # 完整 Pipeline 评估与 IQA 指标
-│   ├── 16_close_mastery_gaps.py  # Week 6 知识盲区闭合实验
-│   ├── week4_common.py           # Week 4 脚本共享工具
-│   └── download_fivek_starter.ps1  # 下载 5 张 MIT-Adobe FiveK 入门样张
+│   ├── 01_* ... 16_*         # 历史分模块实验与报告生成脚本
+│   └── 17_run_pipeline.py     # 统一配置驱动入口
 ├── soft_isp/
-│   ├── __init__.py               # 包初始化
-│   ├── stats.py                  # 核心工具：Bayer 推断、统计、通道拆分
-│   ├── orientation.py            # CFA 排列方向检测
-│   ├── blc.py                    # 黑电平校正
-│   ├── dpc.py                    # 坏点校正（静态 / 梯度）
-│   ├── lsc.py                    # 镜头暗角校正（径向 / mesh）
-│   ├── demosaic.py               # 去马赛克（双线性 + OpenCV）
-│   ├── awb.py                    # 自动白平衡（Gray World + ROI）
-│   ├── ccm.py                    # 色彩校正矩阵（最小二乘 3×3）
-│   └── tone.py                   # Gamma 编码 + 色调映射
-├── requirements.txt
-└── README.md
+│   ├── stats.py / blc.py / dpc.py / lsc.py
+│   ├── demosaic.py / awb.py / ccm.py / tone.py
+│   ├── metrics.py             # PSNR / SSIM / MAD
+│   └── pipeline.py            # 模块组合与中间结果
+└── tests/                     # 合成单元测试
 ```
 
-## 快速开始
-
-### 1. 环境配置
-
-```bash
-# 进入项目目录
-cd stage1_soft_isp
-
-# 安装依赖（Python 3.9+）
-pip install -r requirements.txt
-```
-
-### 2. 下载 RAW 样张
-
-**方式 A — PowerShell（Windows）：**
+## 快速验证
 
 ```powershell
-.\scripts\download_fivek_starter.ps1
-```
-
-**方式 B — 手动下载：**
-
-从 [MIT-Adobe FiveK 数据集](https://data.csail.mit.edu/graphics/fivek/) 下载 5 张 DNG 文件放入 `data/raw/`。具体文件列表与 URL 见 `materials/raw_sample_manifest.md`。
-
-### 3. 生成参考输出
-
-```bash
-# 为所有 DNG 文件生成 rawpy sRGB 参考图
-python scripts/02_generate_rawpy_references.py
-```
-
-### 4. 检查第一张 RAW
-
-```bash
-# 导出完整的元数据和通道统计（JSON 格式）
+cd stage1_soft_isp
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
 python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
+python scripts/17_run_pipeline.py data/raw/T01_a0006-IMG_2787.dng
 ```
 
-### 5. 绘制直方图
+统一 Pipeline 默认输出到：
 
-```bash
-# 为一张或多张 RAW 生成双栏直方图（全局 + 分通道）
-python scripts/04_plot_raw_histogram.py data/raw/*.dng
+```text
+outputs/pipeline/T01_a0006-IMG_2787/
+├── preview.png
+├── metadata.json
+└── <stage>.json
 ```
 
-### 6. 分析 ROI
+如需保存中间数组，将 `configs/default.yaml` 中 `save_numpy` 改为 `true`。
 
-```bash
-# 自动选取并分析暗部、中间调、高光 ROI
-python scripts/05_analyze_raw_roi.py data/raw/*.dng
+## 多文件命令
+
+脚本 04–09 会在脚本内部展开通配符，因此下面命令可在 PowerShell 使用：
+
+```powershell
+python scripts/04_plot_raw_histogram.py "data/raw/T*.dng"
+python scripts/05_analyze_raw_roi.py "data/raw/T*.dng"
+python scripts/06_apply_blc.py "data/raw/T*.dng"
+python scripts/07_apply_dpc.py "data/raw/T*.dng"
+python scripts/08_apply_demosaic.py "data/raw/T*.dng"
+python scripts/09_apply_awb.py "data/raw/T*.dng"
 ```
 
-## 依赖说明
+引号用于确保通配符原样交给 Python，由项目统一展开。
 
-| 包 | 用途 |
-|---|---|
-| `numpy` | 数组运算与统计 |
-| `opencv-python` | 图像读写、色彩空间转换 |
-| `rawpy` | RAW/DNG 文件读取（libraw 的 Python 绑定） |
-| `matplotlib` | 直方图与图表绘制 |
-| `scikit-image` | SSIM 等高级图像指标 |
-| `colour-science` | 色彩科学计算 |
-| `pyyaml` | Pipeline 配置文件解析 |
-| `imageio` | 参考图像写出 |
+## 主链路和实现边界
 
-## 脚本说明
+```text
+RAW -> BLC -> DPC -> learning LSC -> Bilinear Demosaic
+    -> Gray World AWB -> approximate metadata CCM
+    -> percentile/Reinhard Tone -> Gamma -> preview
+```
 
-所有脚本位于 `scripts/`，按推荐执行顺序编号。
+- LSC 是径向学习 baseline，不是实际镜头标定结果；
+- DPC 是动态同色邻域 baseline，不是工厂 defect map；
+- Demosaic 主实现是 bilinear；OpenCV edge-aware 只在补强实验中作对照，不是 AHD；
+- CCM 使用 rawpy metadata 的简化矩阵演示矩阵校色，不等同于完整 DNG 色彩管理或 ColorChecker 标定；
+- PSNR/SSIM 只衡量与给定参考的接近程度。
 
-| 编号 | 脚本 | 输入 | 输出 | 用途 |
-|---|---|---|---|---|
-| 01 | `inspect_raw.py` | DNG 路径 + 可选 `--pattern` | JSON（stdout） | 完整元数据导出：黑/白电平、Bayer 排列、通道统计 |
-| 02 | `generate_rawpy_references.py` | `data/raw/` 下所有 `*.dng` | `data/references/` 下的 PNG | 生成 rawpy sRGB 参考图像（"标准答案"） |
-| 03 | `dump_raw_metadata_table.py` | `data/raw/` 下所有 `S*.dng` | Markdown 表格 | 数据集元数据快速索引表 |
-| 04 | `plot_raw_histogram.py` | 一张或多张 DNG 路径 | `reports/figures/` 下的 PNG | 双栏对数直方图，标注黑/白电平线 |
-| 05 | `analyze_raw_roi.py` | 一张或多张 DNG 路径 | PNG + JSON + MD 报告 | 自动选取暗/中/亮 ROI，生成标注预览与统计 |
-| 06 | `apply_blc.py` | DNG 路径 + 配置 | BLC 校正后 RAW + 前后对比图 | 黑电平减法，直方图对比 |
-| 07 | `apply_dpc.py` | DNG 路径 + 配置 | DPC 校正后 RAW + 坏点标记叠加图 | 静态 + 梯度坏点检测与修复 |
-| 08 | `apply_demosaic.py` | DNG 路径 + 配置 | RGB 图像 + 对比图 | Bilinear 和 OpenCV 去马赛克可视化对比 |
-| 09 | `apply_awb.py` | DNG 路径 + 配置 | 白平衡后 RGB + 前后对比图 | Gray World 和 ROI 白平衡 |
-| 10 | `apply_ccm.py` | DNG 路径 + 配置 | 色彩校正后 RGB + 对比图 | 最小二乘 3×3 CCM，含 Delta E 指标 |
-| 11 | `apply_gamma.py` | DNG 路径 + 配置 | Gamma 编码后 RGB + 对比图 | 标准 sRGB Gamma 和自定义 Gamma 曲线 |
-| 12 | `apply_tone_mapping.py` | DNG 路径 + 配置 | 色调映射后 RGB + 对比图 | Reinhard 和 percentile 色调映射 |
-| 13 | `write_week4_summary.py` | Pipeline 输出文件 | 总结 Markdown + 综合对比图 | 生成 Week 4 综合总结和全 Pipeline 对比 |
-| 14 | `apply_lsc.py` | DNG 路径 + 配置 | LSC 校正后 RAW + 衰减对比图 | 径向和 mesh 镜头暗角校正 |
-| 15 | `evaluate_pipeline.py` | DNG 路径 + 配置 | IQA 指标表 + 逐模块消融 | 全 Pipeline PSNR/SSIM/MAE 评估，与 rawpy 参考对比 |
-| 16 | `close_mastery_gaps.py` | DNG 路径 + 配置 | 增强模块输出 + 对比报告 | Week 6 知识盲区闭合：静态 DPC、mesh LSC、OpenCV demosaic、ROI AWB、CCM DeltaE、sRGB S-curve |
+## 推荐学习顺序
 
-## 核心库（`soft_isp/`）
-
-`soft_isp` 包提供 ISP 模块实现和所有脚本共用的基础设施：
-
-| 模块 | 所在文件 | 功能 |
+| 周次 | 内容 | 必做证据 |
 |---|---|---|
-| 统计与工具 | `stats.py` | Bayer 排列推断、数组统计、Bayer 通道拆分 |
-| 方向检测 | `orientation.py` | CFA 排列方向检测 |
-| BLC | `blc.py` | 黑电平减法，支持逐通道偏移 |
-| DPC | `dpc.py` | 静态（阈值）和梯度坏点检测与修复 |
-| LSC | `lsc.py` | 径向衰减和 mesh 镜头暗角校正 |
-| 去马赛克 | `demosaic.py` | Bilinear 插值和 OpenCV 去马赛克 |
-| AWB | `awb.py` | Gray World 和 ROI 自动白平衡 |
-| CCM | `ccm.py` | 最小二乘 3×3 色彩校正矩阵，含 Delta E 评估 |
-| Gamma / Tone | `tone.py` | sRGB Gamma 编码、Reinhard 和 percentile 色调映射 |
+| 0 | 环境、前置、自测 | 测试通过；解释 Python 与 pip 环境 |
+| 1 | RAW metadata、Bayer、histogram、ROI | 独立完成 `week1_raw_contract.md` |
+| 2 | BLC、DPC、LSC | 坏点注入、参数预测、合成测试 |
+| 3 | Demosaic、AWB | 独立补全 bilinear；纯色失败案例 |
+| 4 | CCM、Gamma、Tone | 单像素矩阵手算；曲线和数据域说明 |
+| 5 | IQA、消融、调试 | 至少四个 Debug Challenge |
+| 6 | 独立毕业项目和面试复述 | 空目录重写、测试、失败案例、Git 历史 |
 
-## 学习路线（6 周）
+## 参考答案使用规则
 
-详见 `materials/stage1_start_here.md`。
+`soft_isp/`、`scripts/` 和 `reports/` 中已有完整实现与实验档案。推荐顺序：
 
-| 周次 | 重点 | 核心交付物 |
-|---|---|---|
-| 0.5 | 环境搭建 + 样张下载 + 首次读取 RAW | 5 张 DNG 放入 `data/raw/` |
-| 1 | RAW 传感器直觉：元数据、直方图、ROI | `reports/week1/raw_statistics.md`、直方图 PNG |
-| 2 | 前端校正：BLC、DPC、LSC | 逐模块笔记 + 处理前后对比 |
-| 3 | 去马赛克 + 自动白平衡 | 可运行的双线性/AHD 去马赛克、灰度世界 AWB |
-| 4 | CCM + Gamma + 色调映射 | 端到端 Pipeline 完整输出 |
-| 5 | 画质评价、消融实验、报告 | PSNR/SSIM/DeltaE 表、rawpy 对比、失败分析 |
-| 6 | 润色 + 面试准备 | 最终报告、逐模块面试问答 |
+```text
+先读任务 -> 写预测 -> 自己实现/调试 -> 通过验收 -> 再看现有代码和报告
+```
 
-每个 ISP 模块必须回答 7 个问题（详见 `materials/module_study_template.md`）：
+直接阅读完整答案再复述，不算完成练习。
 
-1. 输入的确切规格（数据域、值域、形状）是什么？
-2. 输出的确切规格是什么？
-3. 这个模块解决什么物理或感知问题？
-4. 核心假设是什么？什么时候会失效？
-5. 各参数如何影响输出（附可视化示例）？
-6. 如何独立验证该模块的正确性（不依赖下游模块）？
-7. 有哪些失败场景？如何检测？
+## 测试
 
-## 数据约定
+```powershell
+python -m unittest discover -s tests -v
+```
 
-- **输入 RAW/DNG 文件** → `data/raw/`（不提交到 Git — 大体积二进制文件）
-- **参考输出**（rawpy、Lightroom、LibRaw）→ `data/references/`
-- **生成的图表**（直方图、ROI 预览、对比图）→ `reports/figures/`
-- **逐张统计** → `reports/raw_stats/`
-- **周报** → `reports/`
+测试覆盖：
 
-## 当前交付状态
+- Bayer 拆分与 pattern 推断；
+- per-position BLC 和无符号下溢；
+- DPC 人工 hot pixel；
+- bilinear 常量图与真实采样值保留；
+- Gray World、identity CCM、Gamma 边界；
+- IQA 指标和 YAML 配置。
 
-| 交付物 | 状态 | 说明 |
-|---|---|---|
-| RAW 样张下载脚本 | ✅ 已完成 | FiveK 入门 DNG 的 PowerShell 下载脚本 |
-| RAW 元数据检查 | ✅ 已完成 | `01_inspect_raw.py` + T01-T14 JSON 统计 |
-| 参考图像生成 | ✅ 已完成 | `02_generate_rawpy_references.py` + T01-T14 参考 PNG |
-| 元数据汇总表 | ✅ 已完成 | `03_dump_raw_metadata_table.py` → Markdown 表格 |
-| 直方图绘制 | ✅ 已完成 | S01、S03、S05 直方图，带黑/白电平标注 |
-| ROI 分析 | ✅ 已完成 | S01、S03、S05 的暗/中/亮 ROI，含 JSON + 预览图 |
-| 第 1 周报告 | ✅ 已完成 | `reports/week1/raw_statistics.md` + `reports/week1/roi_analysis.md` |
-| BLC 模块 | ✅ 已完成 | `soft_isp/blc.py` + `scripts/06_apply_blc.py` + `reports/week2/blc_report.md` |
-| DPC 模块 | ✅ 已完成 | `soft_isp/dpc.py` + `scripts/07_apply_dpc.py` + `reports/week2/dpc_report.md` |
-| LSC 模块 | ✅ 已完成 | `soft_isp/lsc.py` + `scripts/14_apply_lsc.py` + `reports/week2/lsc_report.md` |
-| 去马赛克模块 | ✅ 已完成 | `soft_isp/demosaic.py` + `scripts/08_apply_demosaic.py` + `reports/week3/demosaic_report.md` |
-| AWB 模块 | ✅ 已完成 | `soft_isp/awb.py` + `scripts/09_apply_awb.py` + `reports/week3/awb_report.md` |
-| CCM 模块 | ✅ 已完成 | `soft_isp/ccm.py` + `scripts/10_apply_ccm.py` + `reports/week4/ccm_report.md` |
-| Gamma 模块 | ✅ 已完成 | `soft_isp/tone.py` + `scripts/11_apply_gamma.py` + `reports/week4/gamma_report.md` |
-| Tone Mapping 模块 | ✅ 已完成 | `soft_isp/tone.py` + `scripts/12_apply_tone_mapping.py` + `reports/week4/tone_mapping_report.md` |
-| Week 4 总结 | ✅ 已完成 | `scripts/13_write_week4_summary.py` + `reports/week4/summary.md` |
-| Pipeline 评估 | ✅ 已完成 | `scripts/15_evaluate_pipeline.py` + `reports/week5/iqa_ablation_report.md` |
-| 知识盲区闭合 | ✅ 已完成 | `scripts/16_close_mastery_gaps.py` + `reports/week6/mastery_gap_closure_report.md` |
-| 阶段一总报告 | ✅ 已完成 | `reports/stage1_report.md` |
-| 面试准备 | ✅ 已完成 | `reports/interview/isp_algorithm_questions_week1_3.md` + `reports/interview/isp_interview_deep_notes_week1_4.md` |
+## 数据与材料
 
-## 许可
+- T01–T14 来自 MIT-Adobe FiveK，列表见 [raw_sample_manifest.md](materials/raw_sample_manifest.md)。
+- DNG、PNG、PDF 当前通过 Git LFS 跟踪；克隆后需安装 Git LFS 并执行 `git lfs pull`。
+- `materials/open_source/README.md` 说明 OpenISP 的阅读方式。
+- OpenISP 中依赖 SciPy 的参考模块使用 `requirements-openisp.txt`。
 
-本项目为个人学习作品集的一部分。所有原创代码可供参考和教育用途。
+## 求职证据
+
+历史报告可以展示项目范围，但不能单独证明本人掌握。求职前应补齐：
+
+- 独立毕业实现；
+- 模块测试和 Bug 修复；
+- 参数预测与失败案例；
+- 分阶段 Git 提交；
+- 5 分钟 Pipeline 总览和 15 分钟模块深挖。
+
+具体见 [Git 学习证据规范](materials/git_evidence_guide.md) 和 [毕业任务](exercises/final_project.md)。

@@ -17,6 +17,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", default="stage2_ai_isp/reports/figures/week8_failure_case_crops")
     parser.add_argument("--crop-size", type=int, default=96)
     parser.add_argument("--zoom", type=int, default=3)
+    parser.add_argument(
+        "--crop-mode",
+        choices=["top_error", "center"],
+        default="top_error",
+        help="Use the highest-error ROI or the historical center crop.",
+    )
     return parser.parse_args()
 
 
@@ -56,6 +62,27 @@ def center_crop(image: Image.Image, size: int) -> Image.Image:
     return image.crop((left, top, left + size, top + size))
 
 
+def top_error_box(
+    output: Image.Image, clean: Image.Image, size: int
+) -> tuple[int, int, int, int]:
+    """Find the size×size window with the largest mean absolute RGB error."""
+    out = np.asarray(output, dtype=np.float32) / 255.0
+    target = np.asarray(clean, dtype=np.float32) / 255.0
+    error = np.mean(np.abs(out - target), axis=2)
+    height, width = error.shape
+    if size > height or size > width:
+        raise ValueError(f"crop_size={size} is larger than image {width}x{height}")
+    integral = np.pad(error, ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+    sums = (
+        integral[size:, size:]
+        - integral[:-size, size:]
+        - integral[size:, :-size]
+        + integral[:-size, :-size]
+    )
+    y, x = np.unravel_index(np.argmax(sums), sums.shape)
+    return int(x), int(y), int(x + size), int(y + size)
+
+
 def error_image(output: Image.Image, clean: Image.Image) -> tuple[Image.Image, float]:
     out = np.asarray(output, dtype=np.float32) / 255.0
     tgt = np.asarray(clean, dtype=np.float32) / 255.0
@@ -85,21 +112,72 @@ def main() -> None:
         run = Path(run_text)
         vis = pick_last_vis(run)
         noisy, output, clean = split_triplet(vis)
-        noisy_c = center_crop(noisy, args.crop_size)
-        output_c = center_crop(output, args.crop_size)
-        clean_c = center_crop(clean, args.crop_size)
+        selected_size = min(args.crop_size, output.width, output.height)
+        if args.crop_mode == "top_error":
+            box = top_error_box(output, clean, selected_size)
+        else:
+            left = (output.width - selected_size) // 2
+            top = (output.height - selected_size) // 2
+            box = (left, top, left + selected_size, top + selected_size)
+        noisy_c = noisy.crop(box)
+        output_c = output.crop(box)
+        clean_c = clean.crop(box)
         error_c, mae = error_image(output_c, clean_c)
-        rows.append((run.name, vis.name, noisy_c, output_c, clean_c, error_c, mae))
-        run_rows.append([run.name, vis.name, f"{mae:.6f}"])
+        if selected_size != args.crop_size:
+            display_size = (args.crop_size, args.crop_size)
+            noisy_c = noisy_c.resize(display_size, Image.Resampling.NEAREST)
+            output_c = output_c.resize(display_size, Image.Resampling.NEAREST)
+            clean_c = clean_c.resize(display_size, Image.Resampling.NEAREST)
+            error_c = error_c.resize(display_size, Image.Resampling.NEAREST)
+        rows.append(
+            (
+                run.name,
+                vis.name,
+                noisy_c,
+                output_c,
+                clean_c,
+                error_c,
+                mae,
+                box,
+                selected_size,
+            )
+        )
+        run_rows.append(
+            [
+                run.name,
+                vis.name,
+                args.crop_mode,
+                box[0],
+                box[1],
+                selected_size,
+                f"{mae:.6f}",
+            ]
+        )
 
     panel_w = args.crop_size * args.zoom
     label_h = 34
     row_h = panel_w + label_h + 44
     sheet = Image.new("RGB", (panel_w * 4, row_h * len(rows)), (238, 242, 246))
     draw = ImageDraw.Draw(sheet)
-    for row_idx, (run_name, vis_name, noisy, output, clean, err, mae) in enumerate(rows):
+    for row_idx, (
+        run_name,
+        vis_name,
+        noisy,
+        output,
+        clean,
+        err,
+        mae,
+        box,
+        selected_size,
+    ) in enumerate(rows):
         y = row_idx * row_h
-        draw.text((10, y + 6), f"{run_name} / {vis_name} / crop MAE={mae:.6f}", fill=(30, 42, 55), font=font(18, True))
+        draw.text(
+            (10, y + 6),
+            f"{run_name} / {vis_name} / {args.crop_mode} "
+            f"({box[0]},{box[1]},{selected_size}) / MAE={mae:.6f}",
+            fill=(30, 42, 55),
+            font=font(18, True),
+        )
         panels = [
             labeled("noisy/low", noisy, args.zoom),
             labeled("output", output, args.zoom),
@@ -114,7 +192,9 @@ def main() -> None:
     csv_path = output_dir / "failure_case_crop_metrics.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["run", "vis_image", "crop_mae"])
+        writer.writerow(
+            ["run", "vis_image", "crop_mode", "x", "y", "roi_size", "crop_mae"]
+        )
         writer.writerows(run_rows)
     print(f"wrote {figure_path}")
     print(f"wrote {csv_path}")

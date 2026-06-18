@@ -43,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from soft_isp.awb import apply_awb, gray_world_gains
 from soft_isp.blc import apply_blc
+from soft_isp.cli import expand_paths
 from soft_isp.demosaic import bilinear_demosaic, rgb_preview
 from soft_isp.dpc import detect_defects, repair_defects
 from soft_isp.orientation import apply_rawpy_orientation
@@ -291,7 +292,7 @@ def main() -> None:
             args.low_percentile,
             args.high_percentile,
         )
-        for raw_path in args.raw_paths
+        for raw_path in expand_paths(args.raw_paths)
     ]
     write_report(results, args.report)
     print(args.report)

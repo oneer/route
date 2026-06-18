@@ -38,14 +38,16 @@ class PairedImageDenoiseDataset(Dataset):
         self,
         noisy_dir: str | Path,
         clean_dir: str | Path,
-        patch_size: int,
+        patch_size: int | None,
         size: int | None = None,
         seed: int = 42,
+        augment: bool = False,
     ) -> None:
         self.noisy_dir = Path(noisy_dir)
         self.clean_dir = Path(clean_dir)
-        self.patch_size = int(patch_size)
+        self.patch_size = int(patch_size) if patch_size is not None else None
         self.seed = int(seed)
+        self.augment = bool(augment)
 
         noisy_files = _list_images(self.noisy_dir)
         clean_files = _list_images(self.clean_dir)
@@ -69,7 +71,10 @@ class PairedImageDenoiseDataset(Dataset):
         if noisy.shape != clean.shape:
             raise ValueError(f"Shape mismatch: {noisy_path} vs {clean_path}")
 
-        noisy, clean = self._crop_pair(noisy, clean, int(index))
+        if self.patch_size is not None:
+            noisy, clean = self._crop_pair(noisy, clean, int(index))
+        if self.augment:
+            noisy, clean = self._augment_pair(noisy, clean, int(index))
         return {
             "noisy": noisy,
             "clean": clean,
@@ -80,6 +85,7 @@ class PairedImageDenoiseDataset(Dataset):
         self, noisy: torch.Tensor, clean: torch.Tensor, index: int
     ) -> tuple[torch.Tensor, torch.Tensor]:
         _, h, w = clean.shape
+        assert self.patch_size is not None
         if h < self.patch_size or w < self.patch_size:
             raise ValueError(
                 f"Image is smaller than patch_size={self.patch_size}: {h}x{w}"
@@ -92,3 +98,15 @@ class PairedImageDenoiseDataset(Dataset):
             noisy[:, y : y + self.patch_size, x : x + self.patch_size],
             clean[:, y : y + self.patch_size, x : x + self.patch_size],
         )
+
+    def _augment_pair(
+        self, noisy: torch.Tensor, clean: torch.Tensor, index: int
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        generator = torch.Generator().manual_seed(self.seed + index + 20000)
+        if bool(torch.randint(0, 2, (1,), generator=generator)):
+            noisy, clean = noisy.flip(-1), clean.flip(-1)
+        if bool(torch.randint(0, 2, (1,), generator=generator)):
+            noisy, clean = noisy.flip(-2), clean.flip(-2)
+        if bool(torch.randint(0, 2, (1,), generator=generator)):
+            noisy, clean = noisy.transpose(-1, -2), clean.transpose(-1, -2)
+        return noisy, clean
