@@ -1,4 +1,4 @@
-# Week 2 ONNX Runtime C++ 推理 Baseline
+# 第 2 周：ONNX Runtime C++ 推理基线
 
 ## 目标
 
@@ -84,10 +84,10 @@ stage4_deploy_isp\build_ninja_release\stage4_ort_runner.exe ^
 
 | 项目 | 结果 |
 |---|---:|
-| C++ ORT single-image inference | 151.85 ms |
-| C++ output vs Python ORT reference max abs error | 0.0 |
-| C++ output vs Python ORT reference mean abs error | 0.0 |
-| C++ output vs Python ORT reference PSNR | 80.0 dB |
+| C++ ORT 单图推理延迟 | 151.85 ms |
+| C++ 输出与 Python ORT reference 最大绝对误差 | 0.0 |
+| C++ 输出与 Python ORT reference 平均绝对误差 | 0.0 |
+| C++ 输出与 Python ORT reference 对齐 PSNR | 80.0 dB |
 
 说明：这里的对齐基于保存后的 8-bit PPM / PNG 图像比较，结果完全一致。后续如果要做 float tensor 级别对齐，可以让 C++ runner 额外 dump `.bin` tensor。
 

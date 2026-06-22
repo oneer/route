@@ -1,139 +1,168 @@
-# Week 7: Local Tone Mapping and Aligned HDR Toy Merge
+# 第 7 周：Local Tone Mapping 与已对齐 HDR Toy Merge
 
-## 1. Learning Goal
+## 1. 学习目标
 
-Week 7 extends global tone mapping into two related topics:
+本周包含两个相关主题：
 
-- Local Tone Mapping (LTM): preserve local detail by compressing a smooth base
-  layer instead of applying one global curve to the whole image.
-- HDR toy merge: combine already aligned short/long exposure images into an
-  HDR-like linear radiance image, then connect it back to Tone Mapping.
+- Local Tone Mapping：压缩平滑 base，同时保留 local detail；
+- HDR toy merge：融合已对齐 short/long exposure，再连接 Tone Mapping。
 
-This week intentionally does not implement motion alignment, ghost removal, or
-commercial HDR+. The goal is an interview-ready engineering baseline with clear
-input/output definitions, Python-C++ alignment, tests, visual artifacts, and
-performance analysis.
+本周不实现 motion alignment、ghost removal 或商用 HDR+。目标是建立输入输出明确、
+可测试、可对齐、能解释 artifact 和性能的工程 baseline。
 
-## 2. Background and Problem Definition
+## 2. 问题背景
 
-Global tone mapping maps every pixel using the same curve:
+Global TM 对所有像素使用同一 curve：
 
 ```text
-Y' = f(exposure * Y)
-RGB' = RGB * Y' / max(Y, eps)
+Y' = f(exposure*Y)
+RGB' = RGB * Y' / max(Y,eps)
 ```
 
-It is simple and stable, but it can struggle when one image contains a bright
-window and dark foreground. Local tone mapping estimates a low-frequency base
-layer:
+当场景同时有 bright window 和 dark foreground 时，单一 global curve 很难兼顾。
+
+Local TM 先估计低频 base：
 
 ```text
 Y = base * detail
-base' = f(exposure * base)
+base' = f(exposure*base)
 Y' = base' * detail^detail_strength
-RGB' = RGB * Y' / max(Y, eps)
+RGB' = RGB * Y' / max(Y,eps)
 ```
 
-The benefit is better local contrast control. The risk is halo: if the base
-layer crosses strong edges, reconstructing detail around those edges can create
-bright or dark rims.
+它能更灵活地控制 local contrast，但 base 跨越强边缘时，detail reconstruction
+可能产生 bright/dark rim，也就是 halo。
 
-HDR merge solves a different problem. A long exposure keeps shadows clean but
-clips highlights. A short exposure protects highlights but is noisy/dark in
-shadows. For an already aligned toy pair:
+HDR merge 解决另一问题：
+
+- long exposure：暗部信号强，但高光易饱和；
+- short exposure：保护高光，但暗部更暗、噪声更重。
+
+已对齐 exposure pair：
 
 ```text
-short_radiance = short_image / short_exposure
-long_radiance  = long_image  / long_exposure
-HDR = weighted_average(short_radiance, long_radiance)
+short_radiance = short / short_exposure
+long_radiance  = long / long_exposure
+HDR = weighted_average(short_radiance,long_radiance)
 ```
 
-Then HDR still needs tone mapping because the merged radiance can exceed display
-range.
+merge 后仍需 Tone Mapping，因为 radiance 可能超过 display range。
 
-## 3. Input and Output Definition
+## 3. 输入输出
 
-Local TM input:
+Local TM 输入：
 
-- float32 linear RGB or single-channel image
-- values may exceed 1 before display mapping
-- output is float32 `[0, 1]`
+- float32 linear RGB 或 single-channel；
+- Tone Mapping 前允许大于 1；
+- 输出 float32 `[0,1]`。
 
-HDR merge input:
+HDR merge 输入：
 
-- `short_image`: short exposure LDR image in `[0, 1]`
-- `long_image`: long exposure LDR image in `[0, 1]`
-- same width, height, channels, and alignment
-- known scalar exposure times
+- short image `[0,1]`；
+- long image `[0,1]`；
+- shape 与 channel 相同；
+- 假设已经对齐；
+- exposure time 已知。
 
-HDR merge output:
+HDR merge 输出：
 
-- float32 HDR-like linear radiance
-- values may exceed 1
-- must be followed by global or local tone mapping for display
+- float32 HDR-like linear radiance；
+- 允许大于 1；
+- 后续必须接 Global 或 Local TM。
 
-## 4. Algorithms
+## 4. 算法
 
-### 4.1 Base Layer
+### 4.1 Base 层
 
-Week 7 supports two base filters:
-
-- Box base: simple local average, fast to understand, but crosses edges and can
-  create halo.
-- Bilateral base: weights by spatial distance and luminance difference, reducing
-  cross-edge leakage.
-
-Box:
+Box base：
 
 ```text
-base(p) = mean(Y(q)), q in window(p)
+base(p) = mean(Y(q)), q ∈ window(p)
 ```
 
-Bilateral:
+简单，但会跨强边缘。
+
+Bilateral base：
 
 ```text
-base(p) = sum_q Gs(||p-q||) * Gr(Y(q)-Y(p)) * Y(q)
-          / sum_q Gs(||p-q||) * Gr(Y(q)-Y(p))
+base(p) = sum_q Gs(||p-q||) * Gr(Yq-Yp) * Yq
+          / sum_q Gs(||p-q||) * Gr(Yq-Yp)
 ```
 
-### 4.2 Local Reconstruction
+利用 range weight 减少 cross-edge leakage，但 direct implementation 很慢。
+
+### 4.2 局部重建
 
 ```text
-detail = Y / max(base, eps)
-mapped_base = curve(exposure * base)
-mapped_y = clamp(mapped_base * detail^detail_strength, 0, 1)
-RGB_out = clamp(RGB * mapped_y / max(Y, eps), 0, 1)
+detail = Y / max(base,eps)
+mapped_base = curve(exposure*base)
+mapped_y = clamp(mapped_base * detail^detail_strength,0,1)
+RGB_out = clamp(RGB * mapped_y / max(Y,eps),0,1)
 ```
 
-`detail_strength < 1` damps texture and halo risk. `detail_strength = 1`
-preserves detail more aggressively.
+`detail_strength<1` 会抑制 texture 与 halo；`=1` 更积极地恢复 detail。
 
-### 4.3 HDR Weights
+### 4.3 HDR 权重
 
-Long exposure weight is reduced near saturation:
+Long exposure 接近 saturation 时降权：
 
 ```text
-w_long = 1, if max(long_rgb) <= saturation_threshold
-w_long = (1 - max(long_rgb)) / (1 - saturation_threshold), otherwise
+w_long = 1, max(long_rgb) <= threshold
+w_long = (1-max(long_rgb))/(1-threshold), otherwise
 ```
 
-Short exposure weight is reduced in very dark regions:
+Short exposure 过暗时降权：
 
 ```text
-w_short = 1, if max(short_rgb) >= underexposure_threshold
-w_short = max(short_rgb) / underexposure_threshold, otherwise
+w_short = 1, max(short_rgb) >= threshold
+w_short = max(short_rgb)/threshold, otherwise
 ```
 
-Merged radiance:
+融合：
 
 ```text
-HDR = (w_short * short / short_exposure + w_long * long / long_exposure)
-      / (w_short + w_long + eps)
+HDR = (w_short*short/short_exposure
+     + w_long*long/long_exposure)
+    / (w_short+w_long+eps)
 ```
 
-## 5. Implementation
+### 4.4 HDR 单像素手算
 
-New C++ files:
+真实 radiance 约为 1：
+
+```text
+short_exposure=0.18, short_pixel=0.18
+long_exposure=0.72, long_pixel=0.72
+
+short_radiance=1
+long_radiance=1
+```
+
+两帧都未饱和时，合法权重下 merge 应接近 1。这是重要 test invariant。
+
+如果 long frame 被 clamp 到 1：
+
+```text
+long_radiance = 1/0.72 = 1.389
+```
+
+它会低估更高的真实 radiance，因此 saturation weight 必须下降，让 short frame
+提供高光信息。
+
+### 4.5 Halo 形成链路
+
+```text
+base 跨强边缘混合
+-> detail=Y/base 在边缘两侧异常
+-> mapped_base * detail reconstruction
+-> bright/dark rim
+```
+
+排查 halo 要同时看 `base`、`detail`、`mapped_base` 和 output。
+
+## 5. 实现
+
+新增：
 
 - `include/cpp_isp/local_tone_mapping.hpp`
 - `src/local_tone_mapping.cpp`
@@ -144,176 +173,169 @@ New C++ files:
 - `tools/run_local_tone_mapping.cpp`
 - `tools/run_hdr_merge.cpp`
 - `benchmarks/bench_local_tone_mapping.cpp`
-
-New Python file:
-
 - `python_ref/run_week7_ltm_hdr_toy.py`
 
-The implementation reuses existing project concepts:
+复用：
 
-- `ImageBuffer<float>` and `ImageView`
-- `BorderPolicy::Reflect`
-- Week 5 tone curves through `apply_tone_curve`
-- CPF32 for Python-C++ alignment
+- `ImageBuffer<float>` / `ImageView`；
+- `BorderPolicy::Reflect`；
+- Week 5 `apply_tone_curve`；
+- CPF32 alignment。
 
-## 6. Test Method
+## 6. 测试
 
-CTest covers:
+CTest 覆盖：
 
-- constant input produces constant base layer
-- LTM keeps output display-bounded and preserves highlight ordering
-- bilateral base leaks less across a step edge than box base
-- HDR weight helper functions
-- aligned short/long merge recovers radiance when neither frame is clipped
-- saturated long exposure defers to short exposure radiance
+- constant input 产生 constant base；
+- LTM output bounded，highlight ordering 不变；
+- bilateral base 在 step edge 上比 box leakage 小；
+- HDR weight helper；
+- 未 clipping 时恢复 radiance；
+- long exposure 饱和时依赖 short radiance。
 
-Result:
+早期结果：
 
 ```text
-100% tests passed, 0 tests failed out of 10
+100% tests passed
+0 tests failed out of 10
 ```
 
-## 7. Python-C++ Alignment
+## 7. Python-C++ 对齐
 
-Alignment uses a 192x128 HDR-like synthetic scene and CPF32 outputs.
+使用 192×128 synthetic HDR-like scene：
 
-| module | case | max abs error | PSNR | failed values |
+| 模块 | Case | 最大绝对误差 | PSNR | Failed |
 |---|---|---:|---:|---:|
 | Local TM | Reinhard bilateral | 1.79e-7 | 155.92 dB | 0 / 73728 |
 | HDR merge | aligned short/long | 4.77e-7 | 137.64 dB | 0 / 73728 |
 
-The errors are implementation differences only. They are far below a display
-visible threshold and mainly come from float arithmetic order.
+这些属于 implementation difference，并低于当前 numerical acceptance threshold。
+不能直接宣称为通用“人眼不可见阈值”，因为可见性还依赖 display bit depth、gamma、
+观察距离和误差分布。
 
-## 8. Visual Results
-
-Global TM vs local TM:
+## 8. 视觉结果
 
 ![Local TM comparison](figures/week7/week7_ltm_global_comparison.png)
 
-HDR toy pipeline:
-
 ![HDR merge pipeline](figures/week7/week7_hdr_merge_pipeline.png)
 
-The HDR figure shows:
+HDR 图中包含：
 
-- short exposure: highlight-safe but dark
-- long exposure: brighter shadows but clipped highlights
-- short/long weight maps
-- merged HDR radiance after global TM
-- merged HDR radiance after local TM
+- short exposure：高光安全但暗；
+- long exposure：暗部更亮但高光 clipping；
+- short/long weight map；
+- merged HDR + Global TM；
+- merged HDR + Local TM。
 
-## 9. ROI and Halo Observations
+## 9. ROI 与 Halo
 
-Selected luminance statistics:
-
-| method | mean luma | p95 luma | clip fraction | edge-band std |
+| 方法 | Mean luma | P95 | Clip fraction | Edge-band std |
 |---|---:|---:|---:|---:|
 | Global | 0.1530 | 0.3632 | 0.0000 | 0.1429 |
 | LTM box | 0.1535 | 0.3653 | 0.0000 | 0.1428 |
 | LTM bilateral | 0.1530 | 0.3633 | 0.0000 | 0.1430 |
 
-In this synthetic setup the LTM parameters are conservative, so the global and
-local outputs stay close. This is intentional: the goal is to demonstrate a
-controlled base/detail implementation before pushing aggressive local contrast.
+当前参数较保守，因此 global/local output 接近。目的先是验证 controlled
+base/detail implementation，再逐步增强 local contrast。
 
-Halo risk:
+Halo 风险：
 
-- Box base can cross strong edges, so detail reconstruction may create local
-  rims near highlight boundaries.
-- Bilateral base reduces cross-edge leakage, but direct bilateral is much more
-  expensive.
-- Increasing `detail_strength` increases local contrast and halo risk.
+- Box base 跨越 highlight edge，reconstruction 可能产生 rim；
+- Bilateral base 减少 leakage，但 direct bilateral 昂贵；
+- 增大 `detail_strength` 会同时增强 local contrast 与 halo risk。
 
-## 10. Benchmark
+## 10. 性能测试
 
-C++ Release benchmark:
+Legacy C++ Release benchmark：
 
-| base filter | radius | size | time ms |
+| Base filter | Radius | 尺寸 | 耗时 |
 |---|---:|---:|---:|
-| box | 5 | 640x360 | 340.577 |
-| box | 9 | 640x360 | 847.893 |
-| bilateral | 3 | 640x360 | 1757.533 |
-| bilateral | 5 | 640x360 | 4465.713 |
-| box | 5 | 1920x1080 | 3304.228 |
-| bilateral | 1 | 1920x1080 | 3632.998 |
+| box | 5 | 640×360 | 340.577 ms |
+| box | 9 | 640×360 | 847.893 ms |
+| bilateral | 3 | 640×360 | 1757.533 ms |
+| bilateral | 5 | 640×360 | 4465.713 ms |
+| box | 5 | 1920×1080 | 3304.228 ms |
+| bilateral | 1 | 1920×1080 | 3632.998 ms |
 
-Interpretation:
+解释：
 
-- Direct LTM is expensive because every pixel visits a local window and then
-  reconstructs RGB.
-- Bilateral base is much slower than box base because each neighbor needs
-  spatial and range weights.
-- Radius has quadratic cost: `(2r + 1)^2` samples per pixel.
-- This naive Week 7 implementation is correct and explainable, but not a
-  production-speed LTM.
+- 每像素访问 local window；
+- bilateral 每邻居还需 spatial/range weight；
+- radius 成本近似 `(2r+1)^2`；
+- naive Week 7 LTM 正确、可解释，但不具备 production speed。
 
-## 11. Research Notes
+正式绝对 latency 仍需用 warmup+median harness 重跑。
 
-Implemented this week:
+## 11. 延伸资料
 
-- base/detail local tone mapping with box and bilateral base
-- halo-oriented comparison and base preview
-- aligned two-exposure HDR toy merge
-- saturation-aware and underexposure-aware weights
-- HDR output connected back to global and local TM
+已实现：
 
-Extended reading, not fully implemented:
+- box/bilateral base-detail LTM；
+- halo comparison；
+- aligned dual-exposure merge；
+- saturation/underexposure-aware weight；
+- HDR output 连接 Global/Local TM。
 
-- Durand and Dorsey, "Fast Bilateral Filtering for the Display of High-Dynamic-
-  Range Images" motivates bilateral base/detail decomposition for HDR display:
-  https://people.csail.mit.edu/fredo/PUBLI/Siggraph2002/
-- Debevec and Malik, "Recovering High Dynamic Range Radiance Maps from
-  Photographs" is the classic multi-exposure HDR radiance work:
-  https://www.pauldebevec.com/Research/HDR/
-- Mertens, Kautz, and Van Reeth exposure fusion explains a practical alternative
-  to explicit HDR radiance reconstruction:
-  https://www.tommertens.com/old-academic/exposure_fusion/index.html
-- Hasinoff et al., HDR+ is useful for understanding burst HDR and mobile low
-  light pipelines, but Week 7 does not reproduce burst alignment or merge:
-  `stage1_soft_isp/materials/papers/Hasinoff_2016_HDRPlus_Burst_Photography.pdf`
+延伸阅读：
 
-## 12. Limitations
+- Durand and Dorsey：Fast Bilateral Filtering for HDR Display；
+- Debevec and Malik：HDR radiance map；
+- Mertens exposure fusion；
+- Hasinoff HDR+。
 
-- HDR merge assumes perfect alignment. Moving objects would ghost.
-- No camera response calibration is implemented; exposure relation is a simple
-  scalar toy model.
-- No noise model is used in HDR weights, so short-frame dark noise is only
-  approximated by underexposure weighting.
-- Local TM uses direct box/bilateral windows, so performance is not deployable at
-  1080P/4K.
-- No guided filter, bilateral grid, mip pyramid, or tile/halo optimized LTM is
-  implemented yet.
+这些资料用于理解产品方向，不表示本周已实现 burst alignment 或 ghost removal。
 
-## 13. Interview Recap
+## 12. 限制
 
-Useful three-year ISP algorithm engineer wording:
+- HDR 假设 perfect alignment；
+- 无 camera response calibration；
+- HDR weight 没有显式 noise model；
+- Local TM 是 direct window；
+- 无 guided filter、bilateral grid、mip pyramid、optimized tile/halo。
 
-- "I implemented local tone mapping as base/detail decomposition. The base is
-  compressed by a tone curve, then detail is multiplied back with a tunable
-  strength."
-- "Box base is easy but can create halo across high-contrast edges. Bilateral
-  base reduces edge leakage using range weights, but the direct implementation is
-  much slower."
-- "HDR merge and tone mapping solve different problems. Merge reconstructs a
-  wider linear radiance range; tone mapping maps that range back to display."
-- "The toy HDR merge assumes aligned short/long frames. Long exposure is down-
-  weighted near saturation, and short exposure is down-weighted in dark regions."
-- "For production, I would replace direct bilateral LTM with a faster guided
-  filter, bilateral grid, pyramid, or tile/halo implementation, and add ghost
-  detection for moving regions."
+## 13. 面试复述
 
-## 14. Next Week
+> 我把 Local TM 实现为 base/detail decomposition：压缩 base，再按可调强度恢复
+> detail。Box base 简单但会跨边缘产生 halo；bilateral base 更保边，但 direct
+> 实现很慢。HDR toy merge 假设 short/long frame 已对齐，long 在 saturation 区域
+> 降权，short 在 underexposed 区域降权。Merge 恢复更宽 radiance，Tone Mapping
+> 再把它映射到 display。
 
-Week 8 should integrate the modules into a small runnable pipeline:
+## 14. 下一周
+
+Week 8 集成：
 
 ```text
 linear / RAW-like input
 -> optional denoise
 -> optional HDR merge
--> global TM / local TM
+-> global / local / LUT TM
 -> gamma / output
 ```
 
-It should also start consolidating the final reports: alignment, algorithm
-summary, performance summary, and interview notes.
+## 15. 故障注入
+
+### A. 错误 Exposure
+
+把 `short_exposure` 从 `0.18` 改成 `0.36`，观察 short radiance 缩小一半。
+
+### B. 去掉 Long Saturation Weight
+
+令 `w_long=1`，检查高光 radiance 是否被系统性低估。
+
+### C. 制造 Ghost
+
+将 long exposure 平移 1–2 pixel。shape 仍合法，但 edge 出现 double image。
+
+### D. 定位 Halo
+
+导出 `Y/base/detail/mapped_base/output`，逐步增大 `detail_strength`，记录第一个异常
+tensor。
+
+## 16. 章末自测
+
+1. HDR merge 与 Tone Mapping 分别改变什么？
+2. 为什么 short 更可信于高光，long 更可信于暗部？
+3. shape 相同为什么不等于 frame 已对齐？
+4. box base 与 bilateral base 的质量/性能取舍？
+5. 为什么 `detail_strength=1` 不保证无损恢复？

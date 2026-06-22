@@ -1,79 +1,69 @@
-# Week 4: Toolchain and Baseline Benchmark
+# 第 4 周补充：工具链与性能基线
 
-## Goal
+## 目标
 
-Before optimizing denoise kernels, Week 4 first makes the C++ project buildable
-and measurable on the local machine. The success criteria are:
+本报告记录阶段 3 C++ 项目第一次在本机完整配置、编译和测试的过程，确保后续
+tile、thread、cache 和参数实验建立在可重复的 Release baseline 上。
 
-- CMake can configure the project with a known compiler.
-- Week 0-3 C++ tests pass through CTest.
-- Existing smoke and bilateral benchmarks produce baseline timings.
+## 本机工具链
 
-## Local Toolchain
+- CMake：`D:\Env\QT\Tools\CMake_64\bin\cmake.exe`
+- Ninja：`D:\Env\QT\Tools\Ninja\ninja.exe`
+- C++ compiler：`D:\Env\MinGW32\mingw\bin\g++.exe`
+- Compiler version：MinGW.org GCC 9.2.0
+- Build type：Release
 
-Verified tools:
+该 compiler 可用于当前 C++17 和测试，但属于较旧的 32-bit MinGW 工具链。这里的
+性能数字只能作为学习基线，不能代表现代 x64 desktop 或 mobile SoC。
 
-- CMake: `D:\Env\QT\Tools\CMake_64\bin\cmake.exe`, version 3.30.5
-- Ninja: `D:\Env\QT\Tools\Ninja\ninja.exe`, version 1.12.1
-- C++ compiler: `D:\Env\MinGW32\mingw\bin\g++.exe`, MinGW.org GCC 9.2.0
-
-The compiler is usable for C++17 and current tests. It appears to be a 32-bit
-MinGW.org toolchain, so later large-image and SIMD performance results should
-be treated as a local baseline rather than a final production x64 baseline.
-
-## Build Commands
+## 构建命令
 
 ```powershell
 $env:PATH="D:\Env\QT\Tools\CMake_64\bin;D:\Env\QT\Tools\Ninja;D:\Env\MinGW32\mingw\bin;$env:PATH"
-cmake -S .\stage3_cpp_isp -B .\stage3_cpp_isp\build -G Ninja -DCMAKE_CXX_COMPILER="D:/Env/MinGW32/mingw/bin/g++.exe" -DCMAKE_BUILD_TYPE=Release
+
+cmake -S .\stage3_cpp_isp `
+  -B .\stage3_cpp_isp\build `
+  -G Ninja `
+  -DCMAKE_CXX_COMPILER="D:/Env/MinGW32/mingw/bin/g++.exe" `
+  -DCMAKE_BUILD_TYPE=Release
+
 cmake --build .\stage3_cpp_isp\build
 ctest --test-dir .\stage3_cpp_isp\build --output-on-failure
 ```
 
-MinGW executables were linked with `-static-libgcc -static-libstdc++` so CTest
-does not depend on runtime DLL discovery through `PATH`.
+## 测试结果
 
-## Test Result
-
-CTest result:
+首次 bring-up 时：
 
 ```text
-100% tests passed, 0 tests failed out of 5
+100% tests passed
+0 tests failed out of 5
 ```
 
-Covered tests:
+后续阶段 3 已扩展到 11 个测试；总报告记录了 2026-06-22 的 clean Release
+verification。
 
-- `test_smoke`
-- `test_image`
-- `test_border`
-- `test_denoise_basic`
-- `test_bilateral_denoise`
+## 基线性能测试
 
-## Baseline Benchmark
+首次 baseline 用于确认：
 
-Smoke benchmark:
+- Release binary 可以执行；
+- benchmark 输出格式可被脚本读取；
+- 256×256、1080P、4K case 能进入同一测量链路；
+- correctness 与 performance 可以在同一 commit 下复查。
 
-```text
-values: 2073600
-elapsed_ms: 3.998
-```
+绝对数字后来被 Week 4 完整 CSV 取代。当前又已把 harness 更新为 warmup + median，
+因此早期结果只保留为历史证据。
 
-Bilateral benchmark:
+## Bring-up 中修复的问题
 
-```text
-size=128x128 direct_ms=42.349 lut_ms=29.895
-size=256x256 direct_ms=183.247 lut_ms=121.258
-```
+- CMake、Ninja、compiler 未在系统 PATH；
+- MinGW toolchain 不支持预期的 `std::thread` 路径，改用 Windows
+  `_beginthreadex` wrapper；
+- benchmark 与 test target 的输出位置需要统一；
+- 目录重命名后旧 CMake cache 仍指向原绝对路径，需要重新 configure。
 
-Initial observation:
+## 学习结论
 
-- The LUT range-weight approximation is already faster than direct `exp`.
-- The 256x256 timing is roughly 4x the 128x128 timing, matching the pixel-count
-  scaling expected for the same radius and implementation structure.
-- This baseline is now suitable for Week 4 tile, cache, and parameter-sweep work.
-
-## Fixes Made During Bring-up
-
-- `ImageView<T>` now supports conversion from mutable view to const view.
-- `sample_with_border` now accepts both mutable and const `ImageView` inputs.
-- MinGW executable targets link libgcc/libstdc++ statically to make CTest stable.
+工具链验证不是“环境杂事”。如果 build type、compiler architecture、运行库或
+benchmark binary 不明确，后面的性能结论就没有可复现基础。

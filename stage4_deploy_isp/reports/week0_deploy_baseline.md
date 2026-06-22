@@ -1,4 +1,4 @@
-# Week 0.5 部署模型与固定测试基准
+# 第 0.5 周：部署模型与固定测试基准
 
 ## 目标
 
@@ -35,7 +35,7 @@ NAFNet-lite 保留为现代图像恢复结构参考，后续用于讲解 NAFNet 
 2. ONNX Runtime、C++、TensorRT / NCNN 输出都和它对齐。
 3. FP16 / INT8 的画质损失必须在这批固定样本上解释。
 
-## Week 0.5 输出
+## 第 0.5 周输出
 
 运行脚本：
 
@@ -58,15 +58,15 @@ python stage4_deploy_isp/scripts/01_week0_pytorch_baseline.py --config configs/w
 | 项目 | 结果 |
 |---|---:|
 | 固定测试图像 | 20 对 |
-| Noisy input mean PSNR | 26.57 dB |
-| PyTorch output mean PSNR | 32.98 dB |
-| PSNR gain | +6.42 dB |
-| Noisy input mean SSIM | 0.934 |
-| PyTorch output mean SSIM | 0.985 |
-| SSIM gain | +0.051 |
-| CPU latency mean | 261.65 ms |
-| CPU latency p50 | 182.86 ms |
-| CPU latency p90 | 496.39 ms |
+| 含噪输入平均 PSNR | 26.57 dB |
+| PyTorch 输出平均 PSNR | 32.98 dB |
+| PSNR 提升 | +6.42 dB |
+| 含噪输入平均 SSIM | 0.934 |
+| PyTorch 输出平均 SSIM | 0.985 |
+| SSIM 提升 | +0.051 |
+| CPU 平均延迟 | 261.65 ms |
+| CPU 延迟 p50 | 182.86 ms |
+| CPU 延迟 p90 | 496.39 ms |
 
 ![Week 0.5 PSNR comparison](../outputs/week0_baseline/figures/week0_psnr_comparison.png)
 

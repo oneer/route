@@ -53,7 +53,7 @@ index(y, x, c) = (y * width + x) * channels + c
 转换，写出时反向转换。CPF32 不保存 stride；文件 payload 必须连续。当前
 C++ reader/writer 明确要求 little-endian host，并拒绝 shape 与 payload 长度不一致的文件。
 
-### 2.2 ImageBuffer / ImageView
+### 2.2 ImageBuffer / ImageView 内存模型
 
 内部地址公式：
 
@@ -160,7 +160,7 @@ latency 或 throughput
 3. 只选择一个热点做真实优化：优先 persistent thread pool 或 guided-filter LTM；
    每次优化后重跑单测、Python-C++ 对齐和 benchmark。
 
-## 8. Capstone
+## 8. 综合实践任务
 
 在干净目录独立实现一个 3×3 finite-input 模块，例如 unsharp mask：
 

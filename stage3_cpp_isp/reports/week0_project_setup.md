@@ -164,3 +164,36 @@ ISP 算法模块很容易出现“最终图看着差不多，但中间数值已�
 
 - Week0 只建立 identity reference，后续每个算法模块会各自生成真实 reference。
 - `CPF32` 是项目内部格式，不是通用图像格式；它服务于对齐验证。
+
+## 10. 常见构建故障：移动目录后的 CMake Cache
+
+CMake cache 会记录绝对 source/build 路径。若项目目录从 `cpp_isp_stage3` 重命名为
+`stage3_cpp_isp`，旧 `build/CMakeCache.txt` 仍可能指向不存在的路径。典型症状：
+
+```text
+current CMakeCache.txt directory is different
+source directory ".../cpp_isp_stage3" does not exist
+```
+
+这不是源码编译错误。正确处理方式是在新的 build directory 重新 configure。为了
+保留旧产物，可以先使用独立目录验证：
+
+```powershell
+$env:PATH="D:\Env\QT\Tools\Ninja;D:\Env\MinGW32\mingw\bin;$env:PATH"
+& "D:\Env\QT\Tools\CMake_64\bin\cmake.exe" `
+  -S .\stage3_cpp_isp `
+  -B "$env:TEMP\route-stage3-check" `
+  -G Ninja `
+  -DCMAKE_CXX_COMPILER="D:/Env/MinGW32/mingw/bin/g++.exe" `
+  -DCMAKE_BUILD_TYPE=Release
+```
+
+然后 build/CTest。不要因为目录里还留有 `.exe` 就认为它们对应当前源码。
+
+## 11. Week 0 动手检查
+
+1. 手写一个 `2x1x3` CPF32 payload 顺序。
+2. 故意在 payload 末尾追加一个 float，确认 reader 拒绝多余数据。
+3. 构造 NaN，确认 comparator 不会把它误记为“0 failed”。
+4. 对 identity、float 算法和 LUT 分别写出阈值来源。
+5. 在新临时 build 目录完成 configure、build、CTest。

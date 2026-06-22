@@ -1,4 +1,4 @@
-# Week 6 CUDA 前后处理、Pipeline 串联与 Profiling
+# 第 6 周：CUDA 前后处理、Pipeline 串联与性能剖析
 
 ## 目标
 
@@ -24,7 +24,7 @@ PNG noisy input
 
 `normalize.cu` 是 RGB preprocess 的 CUDA 替换点；`pack_raw.cu` 是后续 RAW / RGGB AI-ISP 模型的替换点。
 
-## CPU pipeline profiling
+## CPU Pipeline 分阶段性能剖析
 
 运行命令：
 
@@ -44,7 +44,7 @@ python stage4_deploy_isp/scripts/07_week6_pipeline_profile.py
 
 这个结果说明，模型 inference 只占端到端流程的一部分。即使后续 TensorRT 把 inference 降到很低，如果 preprocess、copy、postprocess 或 I/O 不优化，端到端收益也会被稀释。
 
-## CUDA preprocess benchmark
+## CUDA 前处理性能测试
 
 由于当前 CUDA 12.6 + VS Build Tools 2026 的 `nvcc` host compiler 路径仍会早退，本次先采用 NVRTC runtime compilation 编译同一个 normalize kernel，并通过 CUDA Driver API launch。
 
@@ -62,14 +62,14 @@ C:\Users\10439\.conda\envs\stage4-cuda\python.exe stage4_deploy_isp/scripts/10_w
 
 | 项目 | 结果 |
 |---|---:|
-| input | `pair_00001.ppm` |
-| size | 512 x 512 x 3 |
-| runs | 200 |
-| CUDA compile path | NVRTC |
-| CPU preprocess mean | 5.031 ms |
-| CUDA kernel mean | 0.0092 ms |
-| max abs error | 5.96e-8 |
-| mean abs error | 8.22e-9 |
+| 输入 | `pair_00001.ppm` |
+| 尺寸 | 512 x 512 x 3 |
+| 测量次数 | 200 |
+| CUDA 编译路径 | NVRTC |
+| CPU 前处理平均耗时 | 5.031 ms |
+| CUDA kernel 平均耗时 | 0.0092 ms |
+| 最大绝对误差 | 5.96e-8 |
+| 平均绝对误差 | 8.22e-9 |
 
 说明：这里的 CUDA 数字是 normalize kernel 本身，不包含 H2D / D2H 和完整 pipeline 调度。它证明 kernel 逻辑、layout 和数值对齐已经跑通；后续要继续补 copy、pinned memory、stream overlap 和 Nsight timeline。
 

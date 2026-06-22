@@ -8,7 +8,7 @@
 
 ## 2. 已完成内容总览
 
-| Week | 内容 | 状态 |
+| 周次 | 内容 | 状态 |
 |---|---|---|
 | Week 0.5 | 固定模型、固定测试集、PyTorch baseline | 已完成 |
 | Week 1 | ONNX 导出与 ORT 对齐 | 已完成 |
@@ -34,16 +34,16 @@
 - 输入：RGB 3ch，`NCHW`，`float32`，`[0,1]`。
 - 输出：RGB 3ch，`NCHW`，`float32`，输出后 clamp 到 `[0,1]`。
 
-## 4. PyTorch Baseline
+## 4. PyTorch 基线
 
 | 指标 | 结果 |
 |---|---:|
-| Noisy mean PSNR | 26.57 dB |
-| PyTorch output mean PSNR | 32.98 dB |
-| PSNR gain | +6.42 dB |
-| Noisy mean SSIM | 0.934 |
-| PyTorch output mean SSIM | 0.985 |
-| CPU latency p50 | 182.86 ms |
+| 含噪输入平均 PSNR | 26.57 dB |
+| PyTorch 输出平均 PSNR | 32.98 dB |
+| PSNR 提升 | +6.42 dB |
+| 含噪输入平均 SSIM | 0.934 |
+| PyTorch 输出平均 SSIM | 0.985 |
+| CPU 延迟 p50 | 182.86 ms |
 
 结论：模型在固定测试集上有明确画质提升，可作为部署 golden baseline。
 
@@ -59,9 +59,9 @@ Sub x1
 
 | 指标 | 结果 |
 |---|---:|
-| ORT vs PyTorch max abs error | 4.17e-7 |
-| ORT vs PyTorch mean abs error | 3.40e-8 |
-| ORT quality PSNR | 32.98 dB |
+| ORT 与 PyTorch 最大绝对误差 | 4.17e-7 |
+| ORT 与 PyTorch 平均绝对误差 | 3.40e-8 |
+| ORT 输出画质 PSNR | 32.98 dB |
 
 结论：ONNX Runtime 和 PyTorch 输出高度一致，ORT 可以作为后续后端 correctness baseline。
 
@@ -69,16 +69,16 @@ Sub x1
 
 Week 3 已补齐 CUDA / TensorRT 实测。
 
-`trtexec` engine benchmark：
+`trtexec` 引擎性能测试：
 
-| precision | GPU compute mean | GPU compute p50 |
+| 精度 | GPU 平均计算耗时 | GPU 计算耗时 p50 |
 |---|---:|---:|
 | FP32 | 1.964 ms | 1.352 ms |
 | FP16 | 0.870 ms | 0.585 ms |
 
 ORT backend 对齐与延迟：
 
-| backend | active providers | mean latency | max abs error vs ORT CPU |
+| 后端 | 实际启用的 provider | 平均延迟 | 相对 ORT CPU 最大绝对误差 |
 |---|---|---:|---:|
 | CPU | CPUExecutionProvider | 74.50 ms | baseline |
 | CUDA | CUDAExecutionProvider; CPUExecutionProvider | 10.91 ms | 3.58e-7 |
@@ -91,18 +91,18 @@ ORT backend 对齐与延迟：
 
 | 指标 | 结果 |
 |---|---:|
-| Calibration images | 10 |
-| FP32 mean PSNR | 32.98 dB |
-| INT8 mean PSNR | 32.89 dB |
-| Mean PSNR drop | 0.091 dB |
-| Max PSNR drop | 0.337 dB |
-| Worst sample | pair_00005 |
-| FP32 p50 latency | 93.91 ms |
-| INT8 p50 latency | 87.06 ms |
+| 校准图像数 | 10 |
+| FP32 平均 PSNR | 32.98 dB |
+| INT8 平均 PSNR | 32.89 dB |
+| 平均 PSNR 损失 | 0.091 dB |
+| 最大 PSNR 损失 | 0.337 dB |
+| 最差样本 | pair_00005 |
+| FP32 延迟 p50 | 93.91 ms |
+| INT8 延迟 p50 | 87.06 ms |
 
 结论：当前 ORT CPU QDQ INT8 初步可接受，但还需要针对最差样本做主观画质分析，尤其关注红色高饱和区域、暗区噪声和纹理过平滑。
 
-## 8. Pipeline Profiling 与 CUDA Preprocess
+## 8. Pipeline 性能剖析与 CUDA 前处理
 
 CPU pipeline：
 
@@ -118,10 +118,10 @@ NVRTC CUDA preprocess：
 
 | 项目 | 结果 |
 |---|---:|
-| CPU normalize mean | 5.031 ms |
-| CUDA normalize kernel mean | 0.0092 ms |
-| max abs error | 5.96e-8 |
-| mean abs error | 8.22e-9 |
+| CPU normalize 平均耗时 | 5.031 ms |
+| CUDA normalize kernel 平均耗时 | 0.0092 ms |
+| 最大绝对误差 | 5.96e-8 |
+| 平均绝对误差 | 8.22e-9 |
 
 结论：CUDA normalize kernel 已完成编译、launch 和 CPU 对齐。当前数字是 kernel 本身，不含 H2D / D2H；后续端到端优化必须继续测 copy、pinned memory、stream overlap 和 Nsight timeline。
 

@@ -1,4 +1,4 @@
-# Week 4 INT8 量化与画质损失分析
+# 第 4 周：INT8 量化与画质损失分析
 
 ## 目标
 
@@ -32,17 +32,17 @@ python stage4_deploy_isp/scripts/06_week4_quantization_eval.py
 
 | 项目 | 结果 |
 |---|---:|
-| evaluation images | 20 |
-| calibration images | 10 |
-| FP32 mean PSNR | 32.98 dB |
-| INT8 mean PSNR | 32.89 dB |
-| mean PSNR drop | 0.091 dB |
-| max PSNR drop | 0.337 dB |
-| worst sample | pair_00005 |
-| FP32 mean latency | 96.72 ms |
-| INT8 mean latency | 91.83 ms |
-| FP32 p50 latency | 93.91 ms |
-| INT8 p50 latency | 87.06 ms |
+| 评估图像数 | 20 |
+| 校准图像数 | 10 |
+| FP32 平均 PSNR | 32.98 dB |
+| INT8 平均 PSNR | 32.89 dB |
+| 平均 PSNR 损失 | 0.091 dB |
+| 最大 PSNR 损失 | 0.337 dB |
+| 最差样本 | pair_00005 |
+| FP32 平均延迟 | 96.72 ms |
+| INT8 平均延迟 | 91.83 ms |
+| FP32 延迟 p50 | 93.91 ms |
+| INT8 延迟 p50 | 87.06 ms |
 
 结论：当前 DnCNN 在 ORT CPU QDQ INT8 下平均 PSNR drop 低于 `0.1dB`，最大 drop 未超过 `0.5dB` 警戒线。这个结果可以作为“初步可接受”，但还不能直接代表端侧 NPU / GPU / TensorRT INT8 的最终画质，因为不同后端的量化 kernel、scale 处理和融合策略可能不同。
 

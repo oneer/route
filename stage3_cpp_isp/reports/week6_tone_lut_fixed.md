@@ -1,67 +1,97 @@
-# Week 6: Tone Curve LUT and Fixed-Point Helpers
+# 第 6 周：Tone Curve LUT 与 Fixed-Point
 
-## 1. Learning Goal
+## 1. 学习目标
 
-Week 6 turns the Week 5 float tone mapping curves into a deployment-oriented
-approximation path. The goal is not to invent a new tone style. The goal is to
-understand how ISP firmware or hardware can replace expensive curve evaluation
-with quantized lookup tables while keeping the error measurable.
-
-Implemented path:
+本周把 Week 5 float tone curve 转换为更接近部署的 approximation path。目标不是
+创造新风格，而是理解 ISP firmware/hardware 如何用 quantized LUT 替代昂贵 curve
+evaluation，同时让误差可测量。
 
 ```text
 linear RGB / HDR-like input
--> percentile exposure from Week 5
--> float reference tone curve
--> input quantization to 10 / 12 / 14 bit LUT index
--> output quantization to 8 / 10 / 12 / 16 bit code
--> optional luminance-preserving RGB reconstruction
--> Python-C++ alignment, error analysis, banding check, benchmark
+-> percentile exposure
+-> float reference curve
+-> quantize 到 10/12/14-bit LUT index
+-> quantize 到 8/10/12/16-bit output code
+-> optional luminance-preserving reconstruction
+-> alignment / error / banding / benchmark
 ```
 
-## 2. Background and Problem Definition
+## 2. LUT 问题定义
 
-Global tone mapping curves are nonlinear. Reinhard and filmic curves use several
-floating point operations per pixel, and S-curve uses `exp`. On large frames,
-especially 4K, this can be expensive. A LUT replaces:
+原始公式：
 
 ```text
 y = f(x)
 ```
 
-with:
+LUT 路径：
 
 ```text
-code_in  = round(clamp(x, 0, input_max) / input_max * (2^input_bits - 1))
+code_in  = round(clamp(x,0,input_max) / input_max * (2^input_bits-1))
 code_out = LUT[code_in]
-y        = code_out / (2^output_bits - 1)
+y        = code_out / (2^output_bits-1)
 ```
 
-The engineering question becomes:
+需要回答：
 
-- how many input bits are enough
-- how many output bits avoid obvious banding
-- how much speed is gained
-- where quantization error is visible
+- input bits 多少才够；
+- output bits 是否会 banding；
+- speedup 有多大；
+- quantization error 集中在哪里。
 
-## 3. Input and Output Definition
+### 2.1 10-bit → 8-bit 手算
 
-Input:
+假设 LUT domain `[0,8]`、输入 `x=2.0`：
 
-- float32 planar image using the project `ImageBuffer<float>` layout
-- linear RGB or single-channel signal
-- values are non-negative and may exceed 1 before tone mapping
-- LUT domain is `[0, input_max]`, set to `8.0` for HDR-like Week 5 scenes
+```text
+input_max_code = 1023
+output_max_code = 255
+index = round((2/8)*1023) = 256
+```
 
-Output:
+Reinhard：
 
-- float32 image in `[0, 1]`
-- values represent quantized LUT output converted back to normalized float
-- optional luminance-preserving mode maps `Y` through the LUT and rescales RGB
+```text
+curve(2) = 2/(1+2) = 0.6667
+output_code = round(0.6667*255) = 170
+output_float = 170/255 = 0.6667
+```
 
-## 4. Implementation
+输入 quantization 与输出 quantization 是两处独立误差。
 
-New C++ files:
+### 2.2 Q 格式
+
+Q4.12 的 scale 为 `2^12=4096`：
+
+```text
+1.5 -> round(1.5*4096) = 6144
+6144/4096 = 1.5
+```
+
+两个 Q4.12 相乘，中间结果带 24 个 fraction bits，需要 round-shift 12 bit 才回到
+原 scale。accumulator 位宽不足会 overflow，直接 truncate 会产生 bias。
+
+本项目只实现 arithmetic helper，不代表整条 Tone Mapping kernel 已完成硬件定点化。
+
+## 3. 输入输出契约
+
+输入：
+
+- float32 planar；
+- linear RGB 或 single-channel；
+- 非负；
+- Tone Mapping 前允许超过 1；
+- LUT domain 本实验为 `[0,8]`。
+
+输出：
+
+- float32 `[0,1]`；
+- 实际含义是 quantized output code 再转回 normalized float；
+- luminance-preserving mode 映射 Y，再重建 RGB。
+
+## 4. 实现
+
+新增：
 
 - `include/cpp_isp/fixed_point.hpp`
 - `src/fixed_point.cpp`
@@ -71,12 +101,9 @@ New C++ files:
 - `tests/test_tone_lut.cpp`
 - `tools/run_tone_lut.cpp`
 - `benchmarks/bench_tone_lut.cpp`
-
-New Python file:
-
 - `python_ref/run_week6_tone_lut_fixed.py`
 
-The fixed-point helper includes:
+Fixed-point helper：
 
 - `float_to_fixed`
 - `fixed_to_float`
@@ -84,61 +111,61 @@ The fixed-point helper includes:
 - `max_value_for_bits`
 - `saturate_to_bits`
 
-The LUT class caches `input_max_code`, `output_max_code`, and scale factors so
-the per-pixel hot path stays small:
+Hot path：
 
 ```text
 clamped = clamp(value, 0, input_max)
-code    = uint32(clamped * input_scale + 0.5)
-output  = lut[min(code, input_max_code)] * output_inv_scale
+code = uint32(clamped * input_scale + 0.5)
+output = lut[min(code,input_max_code)] * output_inv_scale
 ```
 
-This matters: the first implementation used heavier per-pixel helper calls and
-was slower than the float path. After caching constants and simplifying index
-generation, the S-curve LUT path became much faster than evaluating `exp` per
-pixel.
+第一版使用较重 helper，可能比 float 更慢。缓存 scale 和 max code、简化 index 后，
+S-curve LUT 才明显快于每像素 `exp`。
 
-## 5. Test Method
+## 5. 测试
 
-CTest covers:
+CTest 覆盖：
 
-- fixed-point round-trip
-- signed `round_shift`
-- unsigned saturation to bit depth
-- invalid fixed-point parameters
-- LUT size and known Reinhard values
-- LUT input-domain clamping
-- float vs LUT tone mapping error on odd-sized RGB input
-- invalid LUT parameters
+- fixed-point round trip；
+- signed `round_shift`；
+- unsigned saturation；
+- invalid parameter；
+- LUT size 与 known Reinhard value；
+- input-domain clamp；
+- odd-size RGB float-vs-LUT；
+- invalid LUT parameter。
 
-Result:
+早期结果：
 
 ```text
-100% tests passed, 0 tests failed out of 8
+100% tests passed
+0 tests failed out of 8
 ```
 
-## 6. Python-C++ Alignment
+## 6. Python-C++ 实现对齐
 
-The Python script writes a CPF32 HDR-like input and Python LUT outputs. C++
-`run_tone_lut` runs the same LUT configuration and writes CPF32 outputs.
-Alignment is checked with `compare_with_reference`.
-
-| curve | mode | input bits | output bits | max abs error | PSNR | failed values |
+| Curve | Mode | Input bits | Output bits | 最大绝对误差 | PSNR | Failed |
 |---|---|---:|---:|---:|---:|---:|
-| Reinhard | luma | 10 | 10 | 1.19e-7 | 158.01 dB | 0 / 184320 |
-| Reinhard | luma | 12 | 12 | 1.79e-7 | 157.70 dB | 0 / 184320 |
-| Filmic | luma | 12 | 12 | 8.94e-8 | 163.59 dB | 0 / 184320 |
-| S-curve | luma | 12 | 12 | 1.79e-7 | 158.67 dB | 0 / 184320 |
+| Reinhard | luma | 10 | 10 | 1.19e-7 | 158.59 dB | 0 / 184320 |
+| Reinhard | luma | 12 | 12 | 1.19e-7 | 157.85 dB | 0 / 184320 |
+| Filmic | luma | 12 | 12 | 8.94e-8 | 164.08 dB | 0 / 184320 |
+| S-curve | luma | 12 | 12 | 2.38e-7 | 157.83 dB | 0 / 184320 |
 
-These are implementation alignment errors, not float-vs-LUT approximation
-errors. The remaining differences are from float arithmetic order and CPF32
-rounding.
+这些是 implementation alignment error，不是 float-vs-LUT approximation error。
 
-## 7. LUT Size Ablation
+| 比较对象 | 回答的问题 |
+|---|---|
+| Python LUT vs C++ LUT | 两端是否实现相同 index/round/saturate |
+| Float curve vs LUT | 查表近似损失多少精度 |
 
-Float curve vs LUT approximation, sampled on `[0, 8]`, output fixed at 12 bit:
+第一张表误差大，应先查实现；只有第二张表误差大，才调整 bit depth、domain 或
+interpolation。
 
-| curve | input bits | max abs error | mean abs error | PSNR |
+## 7. LUT 尺寸消融
+
+Float curve 与 LUT approximation，domain `[0,8]`，output 12-bit：
+
+| Curve | Input bits | 最大绝对误差 | 平均绝对误差 | PSNR |
 |---|---:|---:|---:|---:|
 | Reinhard | 8 | 1.54e-2 | 8.76e-4 | 54.66 dB |
 | Reinhard | 10 | 3.89e-3 | 2.35e-4 | 66.44 dB |
@@ -150,111 +177,114 @@ Float curve vs LUT approximation, sampled on `[0, 8]`, output fixed at 12 bit:
 | S-curve | 10 | 7.41e-3 | 2.44e-4 | 60.35 dB |
 | S-curve | 12 | 1.22e-4 | 7.41e-6 | 92.27 dB |
 
-The S-curve is most sensitive near its steep mid-tone section. Low input bit
-depth causes larger local jumps even when the average error is not large.
+S-curve 在陡峭 mid-tone 区域最敏感。低 input bits 会造成更大局部跳变。
 
 ![LUT error curves](figures/week6/week6_lut_error_curves.png)
 
-## 8. Banding Check
+## 8. Banding 检查
 
-Week 6 uses a shadow gradient because banding is easiest to see where the signal
-changes slowly and has few available output codes. The 8-bit LUT introduces
-visible steps in the amplified error map. The 10-bit and 12-bit versions reduce
-that risk.
+Shadow gradient 最容易暴露 banding，因为信号变化慢、可用 output code 少。
 
 ![Shadow banding comparison](figures/week6/week6_shadow_banding_compare.png)
 
-Example S-curve LUT result on the Week 5 HDR-like scene:
-
 ![S-curve LUT scene](figures/week6/week6_scurve_lut_scene.png)
 
-## 9. Benchmark
+8-bit LUT 的 amplified error map 出现明显台阶，10/12-bit 风险降低。
 
-C++ Release benchmark:
+## 9. 性能测试
 
-| method | curve | mode | size | time ms |
+Legacy C++ Release benchmark：
+
+| 方法 | Curve | Mode | 尺寸 | 耗时 |
 |---|---|---|---:|---:|
-| float | Reinhard | luma | 1920x1080 | 50.117 |
-| LUT 12->12 | Reinhard | luma | 1920x1080 | 47.524 |
-| float | Filmic | luma | 1920x1080 | 69.585 |
-| LUT 12->12 | Filmic | luma | 1920x1080 | 49.933 |
-| float | S-curve | luma | 1920x1080 | 350.182 |
-| LUT 12->12 | S-curve | luma | 1920x1080 | 58.136 |
-| float | Reinhard | luma | 3840x2160 | 223.545 |
-| LUT 12->12 | Reinhard | luma | 3840x2160 | 210.099 |
-| float | Filmic | luma | 3840x2160 | 263.099 |
-| LUT 12->12 | Filmic | luma | 3840x2160 | 229.784 |
-| float | S-curve | luma | 3840x2160 | 1404.841 |
-| LUT 12->12 | S-curve | luma | 3840x2160 | 205.724 |
+| float | Reinhard | luma | 1920×1080 | 50.117 ms |
+| LUT 12→12 | Reinhard | luma | 1920×1080 | 47.524 ms |
+| float | Filmic | luma | 1920×1080 | 69.585 ms |
+| LUT 12→12 | Filmic | luma | 1920×1080 | 49.933 ms |
+| float | S-curve | luma | 1920×1080 | 350.182 ms |
+| LUT 12→12 | S-curve | luma | 1920×1080 | 58.136 ms |
+| float | S-curve | luma | 3840×2160 | 1404.841 ms |
+| LUT 12→12 | S-curve | luma | 3840×2160 | 205.724 ms |
 
-Interpretation:
+解释：
 
-- LUT helps most for curves with expensive math. S-curve avoids per-pixel `exp`
-  and speeds up by about 6.8x at 4K.
-- Reinhard is already cheap, so LUT gives only a small gain.
-- Luminance-preserving mode still needs luma computation, scale division, and
-  RGB reconstruction, so the LUT is not the only cost.
+- S-curve 4K 约 `6.8×`，因为移除每像素 `exp`；
+- Reinhard 本身便宜，收益小；
+- luma-preserving 仍有 luma、division、RGB reconstruction；
+- LUT 不是 pipeline 唯一成本。
 
-## 10. Research Notes
+正式引用绝对 latency 前，应使用 warmup+median harness 重跑。
 
-Implemented in this project:
+## 10. 延伸资料
 
-- uniform nearest-index tone curve LUT
-- 10 / 12 / 14 bit input experiments
-- quantized output code converted back to normalized float
-- fixed-point helper functions
-- Python-C++ LUT alignment
-- banding and error visualization
+已实现：
 
-Extended reading, not fully implemented this week:
+- uniform nearest-index LUT；
+- 10/12/14-bit input；
+- quantized output 转回 float；
+- fixed-point helper；
+- Python-C++ LUT alignment；
+- banding/error visualization。
 
-- Reinhard et al., "Photographic Tone Reproduction for Digital Images" defines
-  the classic photographic tone reproduction problem and relates scene dynamic
-  range to display limitations:
-  https://www.cs.utah.edu/docs/techreports/2002/pdf/UUCS-02-001.pdf
-- John Hable's Filmic Worlds post explains several filmic tone mapping
-  operators used in real-time rendering practice:
-  https://filmicworlds.com/blog/filmic-tonemapping-operators/
-- AMD FidelityFX LPM is a production-oriented luminance preserving mapper. It is
-  useful as an advanced reference for deployment-style tone mapping, but this
-  week only implements a small educational LUT path:
-  https://github.com/GPUOpen-Effects/FidelityFX-LPM
+未完整实现：
 
-## 11. Limitations
+- linear interpolation；
+- non-uniform LUT；
+- dithering；
+- hardware integer pipeline；
+- SIMD/thread optimization。
 
-- The LUT uses nearest indexing only. Linear interpolation can reduce error at
-  the cost of extra arithmetic.
-- The LUT domain is manually chosen as `[0, 8]`. A production ISP would tie this
-  to exposure policy and sensor bit depth.
-- The output is converted back to float for project alignment. A real hardware
-  path would usually keep integer codes between stages.
-- No dithering is implemented, so low-bit output can show banding on smooth
-  gradients.
-- No SIMD or thread-level optimization is used in the LUT module yet.
+## 11. 限制
 
-## 12. Interview Recap
+- nearest indexing；
+- domain `[0,8]` 手工设定；
+- output 为了对齐又转回 float；
+- 无 dithering；
+- 无 SIMD / thread-level optimization。
 
-Useful three-year ISP algorithm engineer wording:
+## 12. 面试复述
 
-- "I implemented a tone curve LUT path and measured both approximation error and
-  Python-C++ implementation alignment."
-- "For a 12-bit input / 12-bit output LUT, the approximation error is below
-  about 1.3e-4 for Reinhard and filmic on the sampled curve domain."
-- "LUT speedup depends on the original curve cost. It is huge for S-curve because
-  it removes per-pixel `exp`, but small for Reinhard because the float formula is
-  already cheap."
-- "Banding comes from insufficient output codes or steep curve slopes mapping a
-  small input interval to visibly separated output levels."
-- "If fixed-point and float do not align, I first check scale definition, rounding
-  rule, saturation point, LUT domain, and whether the reference uses nearest or
-  interpolated indexing."
+> 我实现了 Tone curve LUT，并分别测量 approximation error 和 Python-C++
+> implementation alignment。12-bit LUT 在当前 domain 上精度较好。LUT 对 S-curve
+> 收益大，因为移除 `exp`；对 Reinhard 收益小。排查 fixed-point 时优先检查 scale、
+> rounding、saturation、domain 和 lookup rule。
 
-## 13. Next Week
+## 13. 后续方向
 
-Week 7 should move from global curves to local tone mapping and HDR toy merge:
+Week 7 进入：
 
-- base/detail decomposition
-- halo risk analysis
-- aligned short/long exposure merge
-- saturation-aware weights
-- HDR-like output connected back into global or local tone mapping
+- base/detail Local TM；
+- halo；
+- aligned short/long HDR；
+- saturation-aware weight；
+- HDR output 再连接 Tone Mapping。
+
+## 14. 故障注入
+
+### A. Round 改为 Truncate
+
+观察 gradient error 是否出现单向 bias。系统偏差比随机误差更容易形成 banding。
+
+### B. 忘记最高索引 Clamp
+
+测试：
+
+```text
+0
+input_max
+略小于 input_max
+略大于 input_max
+```
+
+### C. Domain 选错
+
+真实最大值为 8，却把 domain 配成 `[0,1]`。大量值会 clamp 到最后 code，高光细节
+消失；但 Python-C++ LUT alignment 仍可能完全通过。
+
+## 15. 章末自测
+
+1. 12-bit input LUT 与 12-bit output 有什么区别？
+2. nearest lookup 的 input quantization step 怎么算？
+3. S-curve 为什么更容易从 LUT 获得 speedup？
+4. Python/C++ 完全对齐，为什么仍可能 banding？
+5. fixed-point multiply 为什么需要更宽 accumulator？

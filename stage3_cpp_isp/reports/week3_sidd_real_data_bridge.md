@@ -1,36 +1,47 @@
-# Week 3.5: SIDD Tiny sRGB Real Data Bridge
+# 第 3.5 周：SIDD Tiny sRGB 真实数据桥接
 
-## Goal
+## 目标
 
-This bridge connects Stage 3 traditional ISP denoise experiments to the existing Stage 2 SIDD tiny paired dataset. The data is real phone sRGB noisy/GT pairs, so it is stronger than synthetic noise for visual sanity checks, while still not being RAW sensor-domain data.
+把阶段 2 的 SIDD tiny paired dataset 接入阶段 3 传统去噪实验，用真实手机图像做
+视觉与指标检查。
 
-## Dataset
+必须明确：这些输入已经是 sRGB noisy/GT pair，不是 sensor Bayer RAW。它比纯
+synthetic noise 更接近真实手机噪声，但不能据此声称完成了真实 RAW denoise。
 
-- Pair count discovered: 100
-- Stage3 manifest: `C:/Users/10439/Desktop/route/stage3_cpp_isp/data/real_cases/sidd_tiny/manifest.csv`
-- Format: `train/val` paired `noisy` and `clean` PNG crops
-- Current use: validate denoise behavior on real sRGB noise and texture
-- Limitation: black level, CFA, gain map, and RAW noise calibration are not available in this sRGB subset
+## 数据集
 
-## Baseline
+- Stage 2 source：SIDD tiny paired validation data；
+- Stage 3 manifest：
+  `C:/Users/10439/Desktop/route/stage3_cpp_isp/data/real_cases/sidd_tiny/manifest.csv`
+- 输入域：sRGB；
+- paired clean target：有；
+- RAW metadata、black level、Bayer pattern：无。
 
-For a small validation subset, this report compares noisy input, Gaussian filtering, and bilateral filtering. The bilateral implementation is the same Python reference used in Week 3, applied per RGB channel on center crops to keep runtime reasonable.
+## 基线结果
 
-- Mean noisy PSNR: 26.391 dB
-- Mean Gaussian PSNR: 32.116 dB
-- Mean bilateral PSNR: 29.650 dB
-- Best bilateral sample: `pair_00002.png` at 40.767 dB
+| 指标 | 结果 |
+|---|---:|
+| Noisy 平均 PSNR | 26.391 dB |
+| Gaussian 平均 PSNR | 32.116 dB |
+| Bilateral 平均 PSNR | 29.650 dB |
 
-![SIDD real comparison](figures/week3_sidd_real/week3_sidd_real_comparison.png)
+结果只说明当前参数在这批 sRGB pair 上的行为。Gaussian PSNR 更高，不代表它在
+所有纹理和边缘区域主观质量都更好；仍需观察 texture smoothing、color noise 与
+edge preservation。
 
-## Engineering Notes
+## 工程说明
 
-- This is intentionally a bridge, not a dataset copy. The manifest points to the existing Stage 2 files.
-- The same metric code now runs on synthetic vectors and real paired crops, which makes later C++ parity checks easier.
-- For an ISP algorithm interview, describe this as a real-image validation set for denoise artifacts, not as RAW ISP evidence.
+- Stage 2 与 Stage 3 通过 manifest 显式连接；
+- 数据域在报告中标记为 sRGB，避免与 RAW-like synthetic 主线混淆；
+- 真实数据只用于 sanity check，不替代 Python-C++ correctness fixture；
+- 参数若从 `[0,1]` normalized synthetic 迁移到其他 range，必须重新解释
+  `sigma_range`。
 
-## Outputs
+## 输出
 
-- Metrics CSV: `C:/Users/10439/Desktop/route/stage3_cpp_isp/reports/figures/week3_sidd_real/week3_sidd_real_metrics.csv`
-- Figure: `C:/Users/10439/Desktop/route/stage3_cpp_isp/reports/figures/week3_sidd_real/week3_sidd_real_comparison.png`
-- Data card: `C:/Users/10439/Desktop/route/stage3_cpp_isp/data/real_cases/sidd_tiny/README.md`
+- Metrics：
+  `reports/figures/week3_sidd_real/week3_sidd_real_metrics.csv`
+- Figure：
+  `reports/figures/week3_sidd_real/week3_sidd_real_comparison.png`
+- Data card：
+  `data/real_cases/sidd_tiny/README.md`

@@ -1,4 +1,4 @@
-# Week 5 NCNN / MNN 移动端推理路径
+# 第 5 周：NCNN / MNN 移动端推理路径
 
 ## 目标
 
@@ -71,4 +71,3 @@ MNNConvert -f ONNX ^
 3. 跑 CPU / Vulkan / FP16 对比。
 4. 报告设备型号、SoC、内存、系统版本和温度状态。
 5. 与 ORT / PyTorch golden output 做误差对齐。
-

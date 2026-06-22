@@ -1,11 +1,9 @@
-# Week 4: Denoise Performance Engineering and 4K Analysis
+# 第 4 周：去噪性能工程与 4K 分析
 
-## 1. Learning Goal
+## 1. 学习目标
 
-Week 4 turns the Week 3 bilateral denoise module from an algorithm prototype
-into a measurable engineering component. The goal is not to chase the fastest
-possible bilateral filter, but to build a correctness-preserving optimization
-loop:
+本周把 Week 3 bilateral 从算法原型推进到可测量的工程模块。重点不是追求最快实现，
+而是建立“优化不破坏正确性”的闭环：
 
 ```text
 scalar bilateral
@@ -14,245 +12,262 @@ scalar bilateral
 -> row / tile parallel execution
 -> Python-C++ alignment
 -> 256 / 1080P / 4K benchmark
--> interview-ready performance explanation
+-> 可复述的性能结论
 ```
 
-## 2. Problem Definition
+## 2. 问题定义
 
-Input:
+输入契约：
 
-- Single-channel float image in `[0, 1]`.
-- Replicate border.
-- Radius `r = 2`, spatial sigma `1.5`, range sigma `0.08`.
-- Range LUT size `512`.
+- single-channel float `[0,1]`；
+- replicate border；
+- radius `r=2`；
+- `sigma_spatial=1.5`；
+- `sigma_range=0.08`；
+- range LUT size `512`。
 
-Output:
+输出：
 
-- Same shape float image in `[0, 1]`.
-- Each output pixel is written exactly once.
+- shape 不变；
+- float `[0,1]`；
+- 每个 output pixel 只写一次。
 
-The bilateral filter is expensive because every output pixel performs a
-neighborhood traversal, and each neighbor needs both spatial and range weights:
+Bilateral 每个输出像素都遍历邻域：
 
 ```text
-out(p) = sum_q Ws(p, q) * Wr(Ip - Iq) * Iq
-         / sum_q Ws(p, q) * Wr(Ip - Iq)
+out(p) = sum_q Ws(p,q) * Wr(Ip-Iq) * Iq
+         / sum_q Ws(p,q) * Wr(Ip-Iq)
 ```
 
-For radius 2, each pixel visits 25 neighbors. At 4K, that is about
-`3840 * 2160 * 25 = 207M` neighbor samples per frame, before counting channels
-or extra arithmetic.
+radius=2 时，每像素访问 25 个邻居。4K 一帧约为：
 
-## 3. Implementation
+```text
+3840 * 2160 * 25 ≈ 207M neighbor samples
+```
 
-Added C++ APIs:
+这还没有计算多通道和额外 arithmetic。
+
+## 3. 实现
+
+新增 API：
 
 - `bilateral_filter_range_lut_tiled`
 - `bilateral_filter_range_lut_threaded_rows`
 - `bilateral_filter_range_lut_threaded_tiles`
 
-The implementation keeps one shared rectangular kernel:
+所有版本复用同一个矩形 kernel：
 
 ```text
 bilateral_lut_rect(input, output, y0:y1, x0:x1)
 ```
 
-The optimized variants only change the traversal schedule:
+变化的只是 traversal schedule：
 
-- Untiled LUT: full image rectangle.
-- Tiled LUT: a sequence of tile rectangles.
-- Row split: each worker owns a row band.
-- Tile split: workers pull tile rectangles from an atomic counter.
+- Untiled LUT：整图 rectangle；
+- Tiled LUT：依次执行多个 tile rectangle；
+- Row split：每个 worker 负责连续 row band；
+- Tile split：worker 通过 atomic counter 获取 tile。
 
-Halo handling:
+### 3.1 Halo 处理
 
-- No temporary tile buffer is created.
-- Every tile writes only its own interior rectangle.
-- Neighbor reads are still from the original full input image.
-- Therefore halo is logically `radius`, and correctness is preserved by
-  reading across tile boundaries.
+- 当前不创建 temporary tile buffer；
+- 每个 tile 只写自己的 interior rectangle；
+- 邻域读取仍来自原始完整 input；
+- 因此逻辑 halo 等于 radius；
+- tile boundary correctness 通过跨 tile 读取原图保证。
 
-On this MinGW.org GCC 9.2 toolchain, `std::thread` is unavailable, so the
-worker launcher uses a thin Windows `_beginthreadex` wrapper. The algorithm API
-is not tied to that launcher.
+当前 MinGW.org GCC 9.2 环境下，`std::thread` 不可用，因此 worker launcher 使用
+Windows `_beginthreadex` wrapper；算法 API 本身不依赖该 launcher。
 
-## 4. Unit Tests
+## 4. 单元测试
 
-Week 4 extends `test_bilateral_denoise` with a non-even image size:
+使用不能整除的尺寸：
 
 ```text
-23x19 input
-tile size 7x5 / 8x6
-thread count 3 / 4
+input: 23x19
+tile: 7x5 / 8x6
+thread count: 3 / 4
 ```
 
-The test compares:
+比较：
 
-- LUT baseline
-- tiled LUT
-- row-threaded LUT
-- tile-threaded LUT
+- LUT baseline；
+- tiled LUT；
+- row-threaded LUT；
+- tile-threaded LUT。
 
-Acceptance threshold:
+验收阈值：
 
 ```text
 max per-pixel difference <= 1e-6
 ```
 
-CTest result:
+早期 Week 4 结果：
 
 ```text
-100% tests passed, 0 tests failed out of 5
+100% tests passed
+0 tests failed out of 5
 ```
 
-## 5. Python-C++ Alignment
+阶段 3 后续已扩展到 11 个测试。
 
-The Python reference creates a `64x64` synthetic edge/texture CPF32 input and
-computes the golden bilateral LUT output. C++ then runs four modes:
+## 5. Python-C++ 对齐
+
+Python 生成 `64x64` synthetic edge/texture CPF32，并计算 golden bilateral LUT。
+C++ 运行四种模式：
 
 - `lut`
 - `tile`
 - `rows`
 - `tiles`
 
-Alignment summary:
-
-| mode | max abs error | mean abs error | PSNR | failed values |
+| Mode | 最大绝对误差 | 平均绝对误差 | PSNR | Failed |
 |---|---:|---:|---:|---:|
 | lut | 3.576e-7 | 4.22e-8 | 144.05 dB | 0 / 4096 |
 | tile | 3.576e-7 | 4.22e-8 | 144.05 dB | 0 / 4096 |
 | rows | 3.576e-7 | 4.22e-8 | 144.05 dB | 0 / 4096 |
 | tiles | 3.576e-7 | 4.22e-8 | 144.05 dB | 0 / 4096 |
 
-This proves that the Week 4 traversal and threading changes do not change the
-algorithm output beyond float accumulation-level error.
+这说明 traversal 和 threading 没有改变算法输出，差异仍处于 float accumulation
+量级。
 
-## 6. Benchmark Results
+## 6. Benchmark 结果
 
-Toolchain:
+工具链：
 
-- CMake 3.30.5
-- Ninja 1.12.1
-- MinGW.org GCC 9.2.0
-- Release build
+- CMake 3.30.5；
+- Ninja 1.12.1；
+- MinGW.org GCC 9.2.0；
+- Release build。
 
-Full benchmark CSV:
+本节表格来自 early best-of-few harness，只适合学习 scaling、thread trend 和数量级。
+正式引用绝对 latency 前，应使用当前 warmup + median harness 重新生成。
+
+完整 CSV：
 
 - `reports/figures/week4/week4_denoise_benchmark_full.csv`
 
-Key results:
-
-| size | method | threads | time ms | speedup |
+| 尺寸 | 方法 | Threads | 耗时 | Speedup |
 |---|---|---:|---:|---:|
-| 256x256 | direct | 1 | 170.265 | 1.00 |
-| 256x256 | LUT | 1 | 120.504 | 1.00 |
-| 256x256 | LUT vs direct | 1 | 120.504 | 1.41 |
-| 1920x1080 | LUT | 1 | 3969.032 | 1.00 |
-| 1920x1080 | tile split | 8 | 683.066 | 5.81 |
-| 3840x2160 | LUT | 1 | 16084.102 | 1.00 |
-| 3840x2160 | tile split | 8 | 2611.992 | 6.16 |
+| 256×256 | direct | 1 | 170.265 ms | 1.00 |
+| 256×256 | LUT | 1 | 120.504 ms | 1.41 vs direct |
+| 1920×1080 | LUT | 1 | 3969.032 ms | 1.00 |
+| 1920×1080 | tile split | 8 | 683.066 ms | 5.81 |
+| 3840×2160 | LUT | 1 | 16084.102 ms | 1.00 |
+| 3840×2160 | tile split | 8 | 2611.992 ms | 6.16 |
 
 ![Thread speedup](figures/week4/week4_thread_speedup.png)
 
-Tile-size sensitivity:
-
 ![Tile sensitivity](figures/week4/week4_tile_sensitivity.png)
 
-## 7. Analysis
+## 7. 结果分析
 
-Direct `exp` vs LUT:
+### 7.1 Direct `exp` 与 LUT
 
-- On 256x256, LUT gives about `1.41x` speedup over direct range-weight `exp`.
-- Max error versus direct bilateral is around `7.15e-7`, so the LUT
-  approximation is effectively invisible at this configuration.
+- 256×256 下 LUT 约快 `1.41×`；
+- 相对 direct bilateral 的最大误差约 `7.15e-7`；
+- LUT 对 expensive range function 有收益，但仍需大量邻域读取。
 
-Tile traversal:
+### 7.2 Tile 遍历
 
-- On small `256x256` input, tiling can be slower because scheduling and loop
-  overhead dominate.
-- On 4K input, tile traversal gives about `1.06x` single-thread speedup for the
-  tested tile sizes.
-- This is a modest gain because the current kernel still reads directly from
-  the full input and does not stage a tile + halo buffer into cache-local
-  scratch memory.
+- 256×256 小图可能更慢，因为 loop 与 scheduling overhead 占比高；
+- 4K 下 tested tile size 的 single-thread gain 约 `1.06×`；
+- 收益有限，因为没有把 tile+halo 搬入 cache-local scratch。
 
-Threading:
+### 7.3 多线程
 
-- On 1080P, 8-thread tile split reaches about `5.81x`.
-- On 4K, 8-thread tile split reaches about `6.16x`.
-- Efficiency is below ideal because of thread launch overhead, memory traffic,
-  scalar arithmetic, and limited hardware scaling.
-- 256x256 does not benefit from 8 threads; the workload is too small.
+- 1080P 8-thread tile split：约 `5.81×`；
+- 4K 8-thread tile split：约 `6.16×`；
+- efficiency 低于理想值，候选原因包括 thread launch、memory traffic、scalar math；
+- 256×256 工作量太小，8 threads 不一定有收益。
 
-Row split vs tile split:
+### 7.4 Row Split 与 Tile Split
 
-- Row split is simple and has contiguous writes.
-- Tile split gives better load balancing when tiles have uneven cost or future
-  algorithms add per-tile decisions.
-- For this scalar bilateral kernel, both are valid; benchmark decides.
+- Row split：简单，write 连续；
+- Tile split：适合未来存在 per-tile decision 或不均匀 workload；
+- 当前 scalar bilateral 两者都可用，最终由 benchmark 决定。
 
-## 8. Research Notes
+### 7.5 先预测再实验
 
-Implemented this week:
+| 改动 | 预期 | 可能不成立的原因 |
+|---|---|---|
+| direct → LUT | 更快 | 建表、索引和访存抵消收益 |
+| full image → tile | 大图略快 | 无 scratch 时 locality 改善有限 |
+| 1 → 8 threads | 大图加速 | 启动开销、带宽、核心数 |
+| radius 2 → 4 | 邻域样本约 3.24× | 常数项和 cache 使时间不严格同比 |
 
-- Direct bilateral range LUT.
-- Tile traversal with implicit halo.
-- Row/tile parallel execution.
-- Python-C++ alignment and 4K benchmark.
+radius 2 的邻域是 25，radius 4 是 81：
 
-Extension reading:
+```text
+81 / 25 = 3.24
+```
 
-- Tomasi and Manduchi introduced bilateral filtering as an edge-preserving
-  combination of spatial closeness and photometric similarity.
-- Durand and Dorsey's fast bilateral filtering work shows that practical fast
-  bilateral implementations often approximate or restructure the direct filter
-  rather than merely threading the naive loop.
-- OpenCV's `parallel_for_` tutorial uses convolution to explain that each
-  output pixel can be written by exactly one worker while neighboring pixels are
-  read-only, which matches the safety model used here.
-- Google Benchmark is still a better long-term choice for stable
-  microbenchmarking; this project currently keeps a no-download fallback
-  benchmark because the local environment is intentionally lightweight.
+这是分析 benchmark 合理性的基线，不是性能保证。
 
-Sources:
+### 7.6 证据等级
 
-- OpenCV parallelization tutorial: https://docs.opencv.org/4.x/dc/ddf/tutorial_how_to_use_OpenCV_parallel_for_new.html
-- Google Benchmark project: https://github.com/google/benchmark
-- Durand and Dorsey, Fast Bilateral Filtering: https://people.csail.mit.edu/fredo/PUBLI/Siggraph2002/DurandBilateral.pdf
-- Bilateral filter overview and references: https://en.wikipedia.org/wiki/Bilateral_filter
+```text
+可观察：
+输入放大约 4 倍，时间如何变化
 
-## 9. Limitations
+可从复杂度推断：
+每像素访问 (2r+1)^2 个邻居
 
-- Current 4K timings are from a 32-bit MinGW.org GCC 9.2 local toolchain, not a
-  production x64 compiler baseline.
-- The implementation is scalar; no AVX/NEON/SIMD yet.
-- Tile traversal does not copy tile + halo into scratch memory.
-- Thread creation happens per call; a real ISP runtime would use a persistent
-  thread pool.
-- Only single-channel data is benchmarked in Week 4.
+当前不能声称：
+已经实测 cache miss 是主瓶颈
 
-## 10. Interview Recap
+不能泛化：
+单台 32-bit MinGW 结果 -> ARM/NEON/mobile SoC
+```
 
-You can say:
+## 8. 延伸资料
 
-> Week4 focused on denoise performance engineering. I kept the bilateral LUT
-> algorithm fixed, then changed traversal and scheduling: serial full image,
-> serial tile traversal, row-split threading, and tile-split threading. For
-> correctness, I compared all optimized variants against the LUT baseline and
-> also aligned C++ output with a Python reference CPF32 golden output. The max
-> Python-C++ error was about 3.6e-7 with zero failed values under 1e-5. On this
-> local MinGW build, 4K single-thread LUT took about 16.1 seconds, while
-> 8-thread tile split took about 2.61 seconds, about 6.16x faster. I can explain
-> why this is still not ideal: scalar math, memory traffic, thread overhead, and
-> lack of SIMD/thread-pool/scratch-tile optimization.
+本周已经实现：
 
-Common follow-up answers:
+- direct bilateral range LUT；
+- implicit halo tile traversal；
+- row/tile parallel execution；
+- Python-C++ alignment；
+- 4K benchmark。
 
-- 4K bilateral is slow because each pixel visits many neighbors and computes
-  data-dependent range weights.
-- Tile halo is needed because output pixels near a tile boundary read neighbors
-  outside the tile.
-- Optimization correctness is proven by unit tests, Python-C++ alignment, and
-  max-error/failed-pixel reports.
-- More threads are not always faster because overhead and memory bandwidth can
-  dominate, especially on small images.
+可继续阅读：
+
+- Tomasi and Manduchi：bilateral filtering；
+- Durand and Dorsey：fast bilateral approximation；
+- OpenCV `parallel_for_`；
+- Google Benchmark。
+
+## 9. 限制
+
+- 旧 4K 数据来自 32-bit MinGW GCC 9.2；
+- scalar implementation，无 AVX/NEON/SIMD；
+- tile 不复制 halo 到 scratch；
+- 每次调用都创建 thread，没有 persistent thread pool；
+- 只 benchmark single-channel；
+- legacy CSV 需要按新 harness 重跑。
+
+## 10. 面试复述
+
+> Week 4 保持 bilateral LUT 算法不变，只改变 traversal 和 scheduling：整图、
+> serial tile、row-split 和 tile-split。优化后先跑 unit test，再与 Python golden
+> 对齐。旧 MinGW 实验中，4K single-thread LUT 约 16.1 s，8-thread tile split
+> 约 2.61 s，约 6.16×。我不会把它包装成产品实时实现，因为仍有 scalar math、
+> thread creation、memory traffic、无 scratch tile 和无 SIMD 等限制。
+
+## 11. 性能练习
+
+1. 用当前 median harness 重跑 256×256、1080P、4K；
+2. 记录 CPU、compiler、Release flags、radius、LUT bins、threads；
+3. 计算：
+
+```text
+speedup(N) = T1 / TN
+efficiency(N) = speedup(N) / N
+time_per_megapixel = time_ms / megapixels
+```
+
+4. 优化前后先跑 test，再跑 alignment；
+5. 若 8 threads 更慢，检查 workload、thread creation、logical cores 和 memory
+   traffic，不要直接写成 cache miss。
+
+完成标准：把性能结论写成“实验条件 + 数字 + correctness 证据 + 适用边界”。

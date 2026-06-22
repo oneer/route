@@ -61,9 +61,9 @@ RAW denoise 通常放在 demosaic 之前或附近，原因是：
 
 本周生成 `reports/figures/week2/week2_basic_denoise_metrics.csv`，包含：
 
-- PSNR
-- residual std
-- edge gradient mean
+- PSNR；
+- 残差标准差 `residual std`；
+- 边缘梯度均值 `edge gradient mean`。
 
 解释方式：
 

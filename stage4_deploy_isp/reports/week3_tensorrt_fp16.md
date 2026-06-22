@@ -1,4 +1,4 @@
-# Week 3 TensorRT / 高性能后端与 FP16
+# 第 3 周：TensorRT、高性能后端与 FP16
 
 ## 目标
 
@@ -37,9 +37,9 @@ C:\Users\10439\.conda\envs\stage4-cuda\python.exe stage4_deploy_isp/scripts/09_w
 - `outputs/week3_backend/week3_trtexec_fp32.log`
 - `outputs/week3_backend/week3_trtexec_fp16.log`
 
-## trtexec engine benchmark
+## trtexec 引擎性能测试
 
-| precision | engine | GPU compute mean | GPU compute p50 |
+| 精度 | 引擎状态 | GPU 平均计算耗时 | GPU 计算耗时 p50 |
 |---|---|---:|---:|
 | FP32 | built | 1.964 ms | 1.352 ms |
 | FP16 | built | 0.870 ms | 0.585 ms |
@@ -48,7 +48,7 @@ C:\Users\10439\.conda\envs\stage4-cuda\python.exe stage4_deploy_isp/scripts/09_w
 
 ## ORT CUDA / TensorRT EP 对齐与延迟
 
-| backend | active providers | mean latency | max abs error vs ORT CPU | mean abs error vs ORT CPU |
+| 后端 | 实际启用的 provider | 平均延迟 | 相对 ORT CPU 最大绝对误差 | 相对 ORT CPU 平均绝对误差 |
 |---|---|---:|---:|---:|
 | CPU | CPUExecutionProvider | 74.50 ms | baseline | baseline |
 | CUDA | CUDAExecutionProvider; CPUExecutionProvider | 10.91 ms | 3.58e-7 | 2.18e-8 |

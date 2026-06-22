@@ -1,4 +1,4 @@
-# Week 1 ONNX 导出与语义对齐
+# 第 1 周：ONNX 导出与语义对齐
 
 ## 目标
 
@@ -38,14 +38,14 @@ python stage4_deploy_isp/scripts/03_week1_export_validate_onnx.py --config confi
 | 项目 | 结果 |
 |---|---:|
 | 固定测试图像 | 20 对 |
-| ONNX opset | 18 |
-| ONNX nodes | 10 |
+| ONNX opset 版本 | 18 |
+| ONNX 节点数 | 10 |
 | Conv / Relu / Sub | 5 / 4 / 1 |
-| ORT vs PyTorch max abs error | 4.17e-7 |
-| ORT vs PyTorch mean abs error | 3.40e-8 |
-| ORT vs PyTorch PSNR | 80.00 dB |
-| ORT output mean quality PSNR | 32.98 dB |
-| PyTorch output mean quality PSNR | 32.98 dB |
+| ORT 与 PyTorch 最大绝对误差 | 4.17e-7 |
+| ORT 与 PyTorch 平均绝对误差 | 3.40e-8 |
+| ORT 与 PyTorch 对齐 PSNR | 80.00 dB |
+| ORT 输出平均画质 PSNR | 32.98 dB |
+| PyTorch 输出平均画质 PSNR | 32.98 dB |
 
 结论：ONNX Runtime 与 PyTorch 输出高度一致，误差远低于 `1e-4` 验收线。这个结果说明当前 DnCNN 部署模型的 ONNX 表达没有引入可见数值语义变化，后续可以把 ORT 作为 C++、TensorRT 和 NCNN 的 correctness baseline。
 

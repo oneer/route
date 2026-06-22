@@ -1,208 +1,205 @@
-# Week 5: Global Tone Mapping
+# 第 5 周：Global Tone Mapping
 
-## 1. Learning Goal
+## 1. 学习目标
 
-Week 5 builds the global tone mapping module for the Stage 3 C++ ISP project.
-The goal is to understand tone mapping as dynamic-range compression, not as
-manual image tuning.
+本周实现 Global Tone Mapping，重点是理解“动态范围压缩”，不是手工调风格。
 
-Implemented path:
+完整路径：
 
 ```text
-HDR-like linear RGB input
+HDR-like linear RGB
 -> percentile exposure normalization
--> Reinhard / filmic / S-curve global tone curve
--> RGB per-channel or luminance-preserving application
--> optional display gamma for visualization
--> Python-C++ alignment and benchmark
+-> Reinhard / Filmic / S-curve
+-> RGB per-channel 或 luminance-preserving
+-> optional display gamma
+-> Python-C++ alignment
+-> benchmark
 ```
 
-## 2. Background and Problem Definition
+## 2. 问题背景
 
-RAW or linear RGB values can represent scene-referred radiance with values far
-above display range. A normal SDR display or 8-bit image expects a bounded
-display-referred value, usually in `[0, 1]` before gamma encoding.
+RAW 或 linear RGB 可以表达远高于显示范围的 scene-referred radiance；普通 SDR
+显示或 8-bit image 需要 bounded display-referred value。
 
-Tone mapping solves:
+Tone Mapping 解决：
 
-- highlight compression
-- mid-tone contrast placement
-- shadow visibility
-- clipping reduction
+- highlight compression；
+- mid-tone contrast placement；
+- shadow visibility；
+- clipping reduction。
 
-It is different from gamma:
+它与 Gamma 不同：
 
-- Tone mapping maps scene-referred dynamic range into display-referred range.
-- Gamma is a display/perceptual encoding step applied after the scene has
-  already been mapped into a displayable range.
+- Tone Mapping 把 scene dynamic range 映射到 display range；
+- Gamma 是之后的显示/感知编码。
 
-Input:
+输入：
 
-- linear RGB or single-channel float image
-- values may be greater than 1
-- expected non-negative range
+- linear RGB 或 single-channel float；
+- 非负；
+- 允许大于 1。
 
-Output:
+输出：
 
-- float image in `[0, 1]`
-- same shape and channel count
+- float `[0,1]`；
+- shape 与 channel count 不变。
 
-## 3. Algorithms
+## 3. 算法
 
-### 3.1 Percentile Exposure
-
-Before applying a global tone curve, Week 5 estimates an exposure scale from
-the high luminance percentile:
+### 3.1 百分位曝光（Percentile Exposure）
 
 ```text
 exposure = target / percentile(Y, p)
+Y = 0.2126R + 0.7152G + 0.0722B
 ```
 
-For RGB input:
+使用高亮 percentile，而不是单个最大值，可以避免极端 hot pixel 或小高光完全控制
+整图曝光。
+
+### 3.2 Reinhard 曲线
 
 ```text
-Y = 0.2126 R + 0.7152 G + 0.0722 B
+f(x) = x / (1+x)
 ```
 
-This avoids letting a single extreme highlight define the whole exposure.
+特点：
 
-### 3.2 Reinhard Curve
+- simple；
+- monotonic；
+- smooth highlight compression；
+- exposure 不合适时容易显灰。
+
+手算：
 
 ```text
-f(x) = x / (1 + x)
+f(0)=0
+f(1)=0.5
+f(4)=0.8
 ```
 
-Properties:
+### 3.3 Filmic 曲线
 
-- simple and monotonic
-- compresses highlights smoothly
-- can make images look low-contrast or gray if exposure is not chosen well
-
-### 3.3 Filmic Curve
-
-Week 5 uses a Hable-style filmic curve:
+使用 Hable-style curve：
 
 ```text
-f(x) = ((x(Ax + CB) + DE) / (x(Ax + B) + DF)) - E/F
+f_raw(x) = ((x(Ax+CB)+DE) / (x(Ax+B)+DF)) - E/F
+f(x) = clamp(f_raw(x) / f_raw(11.2), 0, 1)
 ```
 
-The result is normalized by a white point. This gives a softer shoulder than
-plain Reinhard and is useful for understanding film-like highlight roll-off.
+Filmic 的 highlight shoulder 比简单 clipping 或 Reinhard 更柔和。
 
-### 3.4 S-Curve
-
-The S-curve is applied on normalized input:
+### 3.4 S-Curve 曲线
 
 ```text
-f(x) = normalized sigmoid(contrast * (x - midpoint))
+s(x) = 1 / (1 + exp(-contrast*(x-midpoint)))
+f(x) = (s(x)-s(0)) / (s(1)-s(0))
 ```
 
-It boosts mid-tone contrast, but values near 0 or 1 can compress strongly.
-Because it uses `exp`, it is also a good setup for Week 6 LUT optimization.
+端点 normalization 让 black/white 回到 0/1。S-curve 能增强 mid-tone contrast，
+但也更容易 clipping、banding，而且每像素 `exp` 成本高。
 
-### 3.5 RGB vs Luminance-Preserving TM
+### 3.5 RGB 与 Luminance-Preserving
 
-Per-channel RGB:
+Per-channel：
 
 ```text
-R' = f(exposure * R)
-G' = f(exposure * G)
-B' = f(exposure * B)
+R' = f(exposure*R)
+G' = f(exposure*G)
+B' = f(exposure*B)
 ```
 
-Luminance-preserving:
+Luminance-preserving：
 
 ```text
-Y  = luma(R, G, B)
-Y' = f(exposure * Y)
-scale = Y' / max(Y, eps)
+Y = luma(R,G,B)
+Y' = f(exposure*Y)
+scale = Y' / max(Y,eps)
 RGB' = RGB * scale
 ```
 
-Luminance-preserving tone mapping is often better for keeping hue ratios stable.
+对 `RGB=[2,1,0.5]` 做 per-channel Reinhard 约得到：
 
-## 4. Implementation
+```text
+[0.667, 0.500, 0.333]
+```
 
-New C++ files:
+原始通道比例改变。luminance-preserving 对 RGB 乘同一 scale，在未触发 clamp 时
+更能保持 hue ratio。
+
+## 4. 实现
+
+新增：
 
 - `include/cpp_isp/tone_mapping.hpp`
 - `src/tone_mapping.cpp`
 - `tests/test_tone_mapping.cpp`
 - `tools/run_tone_mapping.cpp`
 - `benchmarks/bench_tone_mapping.cpp`
-
-New Python files:
-
 - `python_ref/tone_mapping_ref.py`
 - `python_ref/run_week5_tone_mapping.py`
 
-The implementation is intentionally float-only. LUT and fixed-point conversion
-belong to Week 6.
+| 数学步骤 | C++ 函数 | 易错点 |
+|---|---|---|
+| curve | `apply_tone_curve` | Filmic constants、white point、S-curve normalization |
+| percentile | `compute_percentile_exposure` | rank rounding、luma/RGB sample |
+| luma preserve | `tone_map` | epsilon、common scale、final clamp |
+| gamma | `apply_gamma` | `1/gamma`，且必须在 TM 之后 |
 
-## 5. Data and Visualization
+本周先保持 float-only；LUT/fixed-point 放到 Week 6。
 
-Week 5 uses a synthetic HDR-like linear RGB scene with:
+## 5. 数据与可视化
 
-- smooth color gradients
-- a strong sun-like highlight
-- a bright window-like region
-- a shadow patch
-- low-amplitude texture
+synthetic HDR-like scene 包含：
 
-This synthetic scene is better than a normal clipped PNG for this week because
-it preserves values greater than 1 and makes dynamic-range compression visible.
+- smooth color gradient；
+- sun-like highlight；
+- bright window region；
+- shadow patch；
+- low-amplitude texture。
 
-Tone curves:
+这种 scene 保留大于 1 的 linear value，比普通 clipped PNG 更适合观察 dynamic-range
+compression。
 
 ![Tone curves](figures/week5/week5_tone_curves.png)
 
-Visual comparison:
-
 ![Tone mapping comparison](figures/week5/week5_tone_mapping_comparison.png)
-
-Luminance histogram:
 
 ![Luminance histograms](figures/week5/week5_luminance_histograms.png)
 
-## 6. Test Method
+## 6. 测试
 
-CTest covers:
+CTest 覆盖：
 
-- curve monotonicity
-- Reinhard known values
-- percentile exposure
-- luminance-preserving RGB ratio
-- gamma correction
+- curve monotonicity；
+- Reinhard known value；
+- percentile exposure；
+- luminance-preserving RGB ratio；
+- gamma correction。
 
-Result:
+早期结果：
 
 ```text
-100% tests passed, 0 tests failed out of 6
+100% tests passed
+0 tests failed out of 6
 ```
 
-## 7. Python-C++ Alignment
+## 7. Python-C++ 对齐
 
-The Python script writes CPF32 input and golden references. C++ `run_tone_mapping`
-runs the same curves and writes CPF32 outputs. Alignment is checked with
-`compare_with_reference`.
+Python 写 CPF32 input 与 golden reference；C++ 运行同一 curve，再由
+`compare_with_reference` 比较。
 
-Alignment result:
-
-| curve | mode | max abs error | PSNR | failed values |
+| Curve | Mode | 最大绝对误差 | PSNR | Failed |
 |---|---|---:|---:|---:|
 | Reinhard | RGB | 5.96e-8 | 161.30 dB | 0 / 184320 |
 | Reinhard | luma | 1.79e-7 | 158.04 dB | 0 / 184320 |
 | Filmic | luma | 1.79e-7 | 154.29 dB | 0 / 184320 |
 | S-curve | luma | 2.98e-7 | 155.78 dB | 0 / 184320 |
 
-The small differences come from float math and library implementations of
-`exp` / arithmetic order.
+差异主要来自 float math、`exp` implementation 和 arithmetic order。
 
-## 8. ROI Metrics
+## 8. ROI 指标
 
-Selected ROI observations:
-
-| method | highlight mean | shadow mean | clip fraction |
+| 方法 | Highlight mean | Shadow mean | Clip fraction |
 |---|---:|---:|---:|
 | linear clipped | 0.7548 | 0.1679 | 0.0129 |
 | Reinhard RGB | 0.4310 | 0.1420 | 0.0000 |
@@ -210,93 +207,80 @@ Selected ROI observations:
 | Filmic luma | 0.2513 | 0.0628 | 0.0000 |
 | S-curve luma | 0.8063 | 0.0499 | 0.0151 |
 
-Interpretation:
+解释：
 
-- Reinhard removes clipping and compresses highlight energy strongly.
-- Filmic is more conservative in this exposure setup and produces a darker
-  display image.
-- S-curve increases contrast but can push highlights close to saturation.
+- Reinhard 消除 clipping，但强烈压缩高光；
+- Filmic 在当前 exposure 下更暗、更保守；
+- S-curve 提升对比，但可能把高光推近 saturation。
 
-## 9. Benchmark
+## 9. 性能测试
 
-C++ Release benchmark:
+以下为 legacy C++ Release benchmark：
 
-| curve | mode | size | time ms |
+| Curve | Mode | 尺寸 | 耗时 |
 |---|---|---:|---:|
-| Reinhard | RGB | 1920x1080 | 66.004 |
-| Reinhard | luma | 1920x1080 | 46.936 |
-| Filmic | luma | 1920x1080 | 61.000 |
-| S-curve | luma | 1920x1080 | 330.219 |
-| Reinhard | RGB | 3840x2160 | 259.933 |
-| Reinhard | luma | 3840x2160 | 190.576 |
-| Filmic | luma | 3840x2160 | 247.998 |
-| S-curve | luma | 3840x2160 | 1307.219 |
+| Reinhard | RGB | 1920×1080 | 66.004 ms |
+| Reinhard | luma | 1920×1080 | 46.936 ms |
+| Filmic | luma | 1920×1080 | 61.000 ms |
+| S-curve | luma | 1920×1080 | 330.219 ms |
+| Reinhard | RGB | 3840×2160 | 259.933 ms |
+| Reinhard | luma | 3840×2160 | 190.576 ms |
+| Filmic | luma | 3840×2160 | 247.998 ms |
+| S-curve | luma | 3840×2160 | 1307.219 ms |
 
-Performance notes:
+观察：
 
-- Global TM is much cheaper than bilateral denoise because it is per-pixel and
-  has no neighborhood traversal.
-- S-curve is slower because it uses `exp` per pixel.
-- Week 6 should move curve evaluation into LUT/fixed-point form.
+- Global TM 是 per-pixel operator，比 bilateral denoise 便宜；
+- S-curve 因 `exp` 明显更慢；
+- Week 6 使用 LUT 替换 curve evaluation。
 
-## 10. Research Notes
+绝对时间来自早期 benchmark。正式引用当前平台 latency 前，应使用 warmup+median
+harness 重跑。
 
-Implemented this week:
+## 10. 资料与边界
 
-- Reinhard, filmic, and S-curve global curves
-- percentile exposure
-- luminance-preserving RGB tone mapping
-- Python-C++ alignment
-- 1080P / 4K benchmark
+本周已实现：
 
-Extension reading:
+- Reinhard、Filmic、S-curve；
+- percentile exposure；
+- luminance-preserving RGB；
+- Python-C++ alignment；
+- 1080P/4K benchmark。
 
-- Reinhard et al. framed photographic tone reproduction around mapping scene
-  luminance to display luminance while preserving photographic appearance.
-- Filmic curves are common in rendering pipelines because the shoulder gives a
-  more gradual highlight roll-off than simple clipping.
-- Gamma correction is not a replacement for tone mapping; it is a nonlinear
-  encoding/decoding operation around display response and perception.
+延伸阅读：
 
-Sources:
+- Reinhard photographic tone reproduction；
+- Hable Filmic；
+- Gamma correction；
+- ACES-style filmic approximation。
 
-- Tone mapping overview: https://en.wikipedia.org/wiki/Tone_mapping
-- Gamma correction overview: https://en.wikipedia.org/wiki/Gamma_correction
-- Reinhard paper page: https://www.cs.utah.edu/~reinhard/cdrom/
-- Hable filmic tone mapping discussion: http://filmicworlds.com/blog/filmic-tonemapping-operators/
-- ACES filmic approximation discussion: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+## 11. 限制
 
-## 11. Limitations
+- 本周尚未加入 LUT/fixed-point；
+- 没有 Local TM；
+- 没有 color appearance model 或 display calibration；
+- synthetic scene 不能替代 calibrated HDR data；
+- S-curve 假设 normalized input，激进 exposure 可能 clipping。
 
-- No LUT or fixed-point approximation yet.
-- No local tone mapping; global curves cannot independently recover local
-  shadow and highlight detail.
-- No color appearance model or display calibration.
-- Synthetic HDR-like data is useful for analysis, but not a replacement for
-  calibrated HDR sensor data.
-- S-curve currently assumes normalized input and can clip if exposure is too
-  aggressive.
+## 12. 面试复述
 
-## 12. Interview Recap
+> Week 5 实现了 Reinhard、Filmic、S-curve、percentile exposure 和
+> luminance-preserving mapping。Python-C++ 最大误差低于 `3e-7`。我同时分析
+> highlight、shadow、clip fraction 与 1080P/4K latency。Tone Mapping 负责动态
+> 范围压缩，Gamma 负责显示编码；S-curve 的 `exp` 成本推动 Week 6 LUT 实现。
 
-You can say:
+## 13. 故障注入
 
-> Week5 implemented global tone mapping in a C++ ISP engineering style. I
-> implemented Reinhard, filmic, and S-curve tone curves, percentile exposure,
-> and luminance-preserving RGB mapping. I used Python as golden reference and
-> compared CPF32 outputs from C++; the max error was below 3e-7 with zero failed
-> pixels under 2e-5. I also produced curve plots, HDR-like visual comparisons,
-> luminance histograms, ROI metrics, and 1080P/4K benchmarks. The main lesson is
-> that tone mapping solves dynamic-range compression, while gamma is a display
-> encoding step. S-curve is much slower because of exp, which motivates Week6
-> LUT/fixed-point implementation.
+1. 把 luma-preserving 改成 per-channel，观察高饱和颜色 hue ratio；
+2. 去掉 S-curve endpoint normalization，检查 black/white；
+3. 交换 Gamma 与 Tone Mapping 顺序；
+4. percentile 从 99 改为 50，预测 exposure；
+5. 对高光只做 clamp，与 Reinhard smooth shoulder 比较。
 
-Common follow-up answers:
+## 14. 章末自测
 
-- Tone mapping should operate on linear scene-referred values before gamma.
-- Per-channel RGB TM can shift hue; luminance-preserving TM better maintains
-  channel ratios.
-- Reinhard is robust but can look flat.
-- Filmic has a softer shoulder and more photographic highlight roll-off.
-- S-curve boosts mid-tone contrast but can saturate highlights and is expensive
-  without LUT.
+1. Tone Mapping 与 Gamma 分别解决什么问题？
+2. Percentile exposure 为什么比最大值稳健？
+3. Per-channel mapping 为什么可能改变 hue？
+4. Filmic white-point normalization 有什么作用？
+5. 为什么 alignment PSNR 很高不能证明审美更好？

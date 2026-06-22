@@ -33,6 +33,55 @@ offset = c * channel_stride + y * row_stride + x
 
 ![Stride layout](figures/week1/stride_layout.png)
 
+### 2.1 用一个小例子手算地址
+
+假设图像参数如下：
+
+```text
+width = 3
+height = 2
+channels = 2
+row_stride = 5
+channel_stride = 10
+```
+
+内部 planar 地址公式为：
+
+```text
+offset(y, x, c) = c * channel_stride + y * row_stride + x
+```
+
+因此：
+
+```text
+offset(0, 0, 0) = 0
+offset(1, 2, 0) = 0 + 1*5 + 2 = 7
+offset(0, 0, 1) = 1*10 + 0 + 0 = 10
+offset(1, 2, 1) = 10 + 5 + 2 = 17
+```
+
+每行只有前 3 个位置是有效像素，后 2 个是 padding。若错误地使用
+`y * width + x`，第二行会从 offset 3 开始，读取到 padding；这种 bug 在
+`row_stride == width` 的测试里完全不会暴露。
+
+### 2.2 CPF32 与内部布局的转换
+
+CPF32 payload 是连续 interleaved HWC：
+
+```text
+[R00, G00, R01, G01, R02, G02, R10, G10, ...]
+```
+
+而上面的 `ImageBuffer` 是 planar：
+
+```text
+channel 0: [R00, R01, R02, pad, pad, R10, ...]
+channel 1: [G00, G01, G02, pad, pad, G10, ...]
+```
+
+所以文件读写层必须做 HWC ↔ planar 转换。CPF32 不携带 stride，不能把文件
+payload 直接解释成带 padding 的内部 buffer。
+
 ## 3. Planar4 的意义
 
 阶段三后续会处理 RAW-like 数据。对于 Bayer RAW，可以把同色像素抽成四个平面：
@@ -49,7 +98,7 @@ R / Gr / Gb / B
 
 ![Planar4 layout](figures/week1/planar4_layout.png)
 
-## 4. Border Policy
+## 4. 边界策略（Border Policy）
 
 邻域算子必须定义越界访问方式。Week1 实现了：
 
@@ -62,6 +111,43 @@ R / Gr / Gb / B
 ![Border policy](figures/week1/border_policy.png)
 
 同一个 3x3 filter，如果 Python reference 用 reflect，而 C++ 用 replicate，主体区域可能一致，但边缘一圈会全部对不齐。这类问题肉眼不一定明显，却会导致 golden test 失败。
+
+### 4.1 手算 reflect-101
+
+本项目的 `reflect` 不重复端点，也就是常说的 reflect-101。对长度为 4 的一维
+序列：
+
+```text
+index:     0  1  2  3
+value:     A  B  C  D
+extended:  C  B | A  B  C  D | C  B
+index:    -2 -1 | 0  1  2  3 | 4  5
+```
+
+因此：
+
+```text
+reflect(-1) = 1
+reflect(-2) = 2
+reflect(4)  = 2
+reflect(5)  = 1
+```
+
+它不同于重复端点的 symmetric 形式。特别地，`1x1` 图像的任意 reflect 访问都
+必须落回唯一像素，否则容易出现死循环或负索引。
+
+### 4.2 3×3 左上角采样比较
+
+对左上角像素 `(0,0)` 使用半径 1：
+
+| 访问位置 | replicate 映射 | reflect-101 映射 |
+|---|---|---|
+| `(-1,-1)` | `(0,0)` | `(1,1)` |
+| `(-1,0)` | `(0,0)` | `(1,0)` |
+| `(0,-1)` | `(0,0)` | `(0,1)` |
+
+这解释了为什么 border 不一致时，误差通常先集中在图像边缘，而内部区域仍可能
+完全一致。
 
 ## 5. 本周实现
 
@@ -80,9 +166,22 @@ R / Gr / Gb / B
 - `row_stride > width`
 - `channel_stride`
 - `planar4 indexing`
-- bounds-checked access
-- constant / replicate / reflect border mapping
-- border sampling
+- 带边界检查的访问；
+- constant / replicate / reflect 映射；
+- 边界采样。
+
+### 5.1 公式到代码的对应关系
+
+| 概念 | C++ 位置 | 阅读时检查什么 |
+|---|---|---|
+| owning storage | `include/cpp_isp/image.hpp` 的 `ImageBuffer` | 分配大小是否包含 stride/channel stride |
+| non-owning access | `ImageView::operator()` / `at()` | 地址公式是否使用两个 stride |
+| shape validation | `src/image.cpp` | width/height/channel 和 buffer 大小如何约束 |
+| border index | `src/border.cpp` | constant、replicate、reflect 的分支和 1×1 情况 |
+| layout visualization | `python_ref/visualize_week1_layout.py` | Python 示例是否与 C++ 地址公式一致 |
+
+阅读代码时不要从类定义第一行顺读到底。先带着一个具体访问
+`(y=1,x=2,c=1)`，追踪它最终访问哪个 offset。
 
 ## 6. 为什么这符合三年社招要求
 
@@ -116,3 +215,38 @@ Week1 的目标就是为这些追问建立代码和语言基础。
 - 当前只实现 planar layout，后续如果需要普通 RGB interleaved，可再增加 layout enum。
 - 当前没有 aligned allocator，后续做 SIMD 时再补。
 - 当前 border reflect 使用不重复边界的反射定义，后续 Python reference 必须保持同一口径。
+
+## 9. 故障注入练习
+
+### 练习 A：制造 stride bug
+
+1. 在一个局部实验分支中，把地址计算临时改成 `y * width + x`。
+2. 先运行连续图像测试，观察它为什么可能通过。
+3. 再运行 `row_stride > width` 测试，记录第一个错误坐标。
+4. 恢复代码，并解释为什么这个 bug 可能表现为斜纹、错行或通道污染。
+
+### 练习 B：制造 border mismatch
+
+1. 保持 Python reference 使用 reflect-101。
+2. 临时让 C++ 邻域滤波使用 replicate。
+3. 生成 error map，确认误差是否首先出现在边缘环带。
+4. 比较 `1x1`、`3x3` 和 `17x19` 输入，解释哪一种最容易定位定义差异。
+
+这些练习的目的不是“把测试弄红”，而是学习从误差空间分布反推 bug 类型。
+
+## 10. 章末自测
+
+1. `width=7, row_stride=12, channel_stride=60` 时，`(y=3,x=5,c=2)` 的 offset
+   是多少？
+2. 为什么 CPF32 文件不能保存 ROI view 的原始 stride？
+3. `reflect(-1)` 与 `replicate(-1)` 分别映射到哪里？
+4. 为什么一个只测试 `128x128` 连续图像的算法仍可能在相机 buffer 上崩溃？
+5. planar4 的四个 plane 为什么不能简单解释成 RGBA？
+
+答案检查：
+
+1. `2*60 + 3*12 + 5 = 161`。
+2. CPF32 只保存连续 HWC payload 和 shape；ROI/padding 是内部内存语义。
+3. 对长度大于 1 的数组，本项目 reflect-101 映射到 1，replicate 映射到 0。
+4. 真实 buffer 可能有 padding、ROI、奇数尺寸和不同 channel stride。
+5. planar4 表达 Bayer-like `R/Gr/Gb/B` 采样面，不是带 alpha 的显示 RGB。
