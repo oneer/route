@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -15,6 +16,6 @@ struct ImageTensor {
 
 ImageTensor load_ppm_rgb_as_nchw(const std::string& path);
 void save_ppm_rgb_from_nchw(const std::string& path, const float* data, int width, int height, int channels);
+void save_float32_tensor(const std::string& path, const float* data, size_t count);
 
 }  // namespace stage4
-

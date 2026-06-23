@@ -1,0 +1,20 @@
+
+Name                      : 12th Gen Intel(R) Core(TM) i3-12100F
+NumberOfCores             : 4
+NumberOfLogicalProcessors : 8
+
+
+Caption        : Microsoft Windows 10 专业版
+Version        : 10.0.19045
+OSArchitecture : 64 位
+
+g++.exe (MinGW.org GCC Build-20200227-1) 9.2.0
+Copyright (C) 2019 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+cmake version 3.30.5
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+1.12.1
+80de98a9e02206b7dd216302f803d9387d25fc7b

@@ -120,6 +120,13 @@ foreach(test_name IN ITEMS test_cpf32 test_image test_border test_denoise_basic 
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()
 
+add_executable(test_pipeline_golden tests/test_pipeline_golden.cpp)
+target_link_libraries(test_pipeline_golden PRIVATE cpp_isp_core)
+target_compile_definitions(test_pipeline_golden PRIVATE CPP_ISP_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+cpp_isp_apply_compiler_options(test_pipeline_golden)
+cpp_isp_enable_sanitizers(test_pipeline_golden)
+add_test(NAME test_pipeline_golden COMMAND test_pipeline_golden)
+
 add_executable(test_bilateral_denoise tests/test_bilateral_denoise.cpp)
 target_link_libraries(test_bilateral_denoise PRIVATE cpp_isp_core)
 cpp_isp_apply_compiler_options(test_bilateral_denoise)

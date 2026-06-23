@@ -1,28 +1,39 @@
-# AI-ISP / ISP 算法工程师项目表达
+# AI-ISP 部署项目表达
 
-## 3 分钟讲述
+## 三分钟版本
 
-我做了一个阶段四 AI-ISP 部署闭环项目。前面阶段二已经训练过 SIDD paired RGB 去噪模型，阶段四我选择 DnCNN 作为第一部署模型，因为它结构简单、指标稳定，并且残差学习可以解释为 AI denoise 模块：网络预测噪声，再从输入中减掉噪声。
+我从阶段二固定了一个 DnCNN RGB 去噪 checkpoint，并冻结 20 张 SIDD tiny 输入和 `RGB/NCHW/float32/[0,1]` 协议。PyTorch 平均 PSNR 是 32.98 dB。
 
-我先固定 20 张 SIDD tiny validation paired 图作为部署测试集，明确输入输出协议是 RGB、NCHW、float32、range `[0,1]`。PyTorch baseline 上，模型把平均 PSNR 从 26.57 dB 提升到 32.98 dB。
+ONNX 导出后，我用 checker 和 ORT Python 做 20 张 raw tensor 对齐，最大误差 `4.17e-7`；随后实现 ORT C++ runner，20 张 C++ float tensor 与 Python ORT reference 完全一致。这里我没有只比较 PNG，因为 uint8 round 会掩盖误差。
 
-然后我把模型导出 ONNX，用 ONNX checker 检查 graph，并用 ONNX Runtime 跑同一批固定测试集。ORT 和 PyTorch 的最大误差约 4.17e-7，说明部署语义是一致的。
+GPU 侧用 TensorRT 10.8 在 RTX 4060 Ti 重建 FP32/FP16 engine。FP16 的 `trtexec` compute mean 约 `0.979 ms`，ORT TensorRT EP session mean 约 `7.458 ms`，说明 copy 和 runtime 开销不能忽略。FP16 平均质量 PSNR 只比 ORT CPU 低约 `0.0019 dB`，并保留了最差样本图。
 
-接着我做了 INT8 QDQ 静态量化。用 10 张图做 calibration，在 20 张图上评估，平均 PSNR drop 约 0.091 dB，最大 drop 约 0.337 dB，没有超过 0.5 dB 警戒线。对图像算法岗来说，我不会只说 INT8 更快，而是会看它是否带来暗区噪声、颜色偏移、纹理过平滑或高光问题。
+量化使用 ORT CPU QDQ，而不是把它说成 TensorRT INT8。我把 20 张数据拆成 10 张 calibration 和 10 张独立 evaluation，平均 PSNR drop `0.0833 dB`、最差 `0.2403 dB`，并生成 error map/crop。
 
-最后我做了端到端 pipeline profiling，把 preprocess、inference、postprocess、save 分开计时。结果说明模型 inference 只是端到端的一部分，后续如果接 TensorRT 或 CUDA preprocess，也要看整体收益。
+最后我拆分了 CUDA normalize：kernel 只有 `0.0091 ms`，但 pageable H2D+D2H 后 GPU stage 是 `3.798 ms`，慢于 CPU normalize `2.498 ms`。所以当前不声称 CUDA 端到端加速；下一步应消除 D2H，把 device tensor 直接交给 GPU inference。
 
-## 面试官可能追问
+## 常见追问
 
-**为什么先选 DnCNN，不选 NAFNet-lite？**
+**为什么选 DnCNN？**
 
-DnCNN 当前 checkpoint 指标更稳定，ONNX graph 只有 Conv / Relu / Sub，更适合作为第一条部署闭环。NAFNet-lite 更现代，但涉及 LayerNorm、PixelShuffle 和 padding，对第一轮部署来说风险更高。
+当前 checkpoint 稳定，graph 只有 Conv/ReLU/Sub，适合建立第一条正确性闭环。选择它是为了控制部署变量，不代表它是最先进模型。
 
-**为什么 ONNX 导出成功还要做对齐？**
+**为什么 ONNX 成功还要对齐？**
 
-导出成功只说明 graph 可以序列化，不说明数值语义一致。图像任务里 layout、range、clamp、normalization 的小错误会直接表现为偏色或画质异常。
+导出只证明图可序列化；layout、range、clamp 和算子语义仍可能错。
 
-**INT8 为什么对图像恢复更敏感？**
+**为什么 C++ 不能只比 PNG？**
 
-分类任务只需要类别不变，图像恢复要求每个像素、颜色和纹理都合理。量化误差可能表现为 banding、暗区噪声残留、颜色偏移或纹理过平滑。
+float 差异经过 clamp 和 uint8 round 后可能消失，造成“完全一致”的假象。
 
+**INT8 结论能否推广到 TensorRT/NPU？**
+
+不能。当前只证明 ORT CPU QDQ 在独立小评价集上的结果；不同后端的 kernel、融合和 scale 处理可能不同。
+
+**为什么 CUDA kernel 快但整体更慢？**
+
+当前前处理需要 pageable H2D 和 D2H；copy 成本远大于 kernel。局部 kernel 时间不能替代 pipeline 时间。
+
+**移动端完成了吗？**
+
+没有。仓库没有 Android/ARM 设备、adb、NCNN/MNN runner、功耗或温度证据，移动端章节明确是设计与后续路径。

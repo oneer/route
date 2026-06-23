@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
-from PIL import Image
+from PIL import Image, ImageDraw
 
 SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -64,6 +64,50 @@ def abs_error(pred: np.ndarray, target: np.ndarray) -> tuple[float, float, float
     mse = float(np.mean((pred - target) ** 2))
     psnr = float(10.0 * np.log10(1.0 / max(mse, 1e-8)))
     return float(err.max()), float(err.mean()), psnr
+
+
+def quality_psnr(pred: np.ndarray, target: np.ndarray) -> float:
+    mse = float(np.mean((pred - target) ** 2))
+    return float(10.0 * np.log10(1.0 / max(mse, 1e-8)))
+
+
+def quality_ssim(pred: np.ndarray, target: np.ndarray) -> float:
+    x, y = pred.astype(np.float64), target.astype(np.float64)
+    c1, c2 = 0.01**2, 0.03**2
+    mux, muy = x.mean(), y.mean()
+    vx, vy = x.var(), y.var()
+    cov = ((x - mux) * (y - muy)).mean()
+    return float(((2 * mux * muy + c1) * (2 * cov + c2)) / ((mux**2 + muy**2 + c1) * (vx + vy + c2)))
+
+
+def to_u8(array: np.ndarray) -> np.ndarray:
+    hwc = np.transpose(np.clip(array[0], 0.0, 1.0), (1, 2, 0))
+    return (hwc * 255.0 + 0.5).astype(np.uint8)
+
+
+def save_failure_diagnostic(
+    sample_id: str,
+    cpu: np.ndarray,
+    fp16: np.ndarray,
+    clean: np.ndarray,
+    out_dir: Path,
+) -> None:
+    error = np.mean(np.abs(fp16 - cpu), axis=1)[0]
+    scaled = np.clip(error * 1000.0, 0.0, 1.0)
+    heat = np.stack([scaled, np.sqrt(scaled), np.zeros_like(scaled)], axis=2)
+    error_dir = out_dir / "fp16_error_maps"
+    failure_dir = out_dir / "fp16_failure_cases"
+    error_dir.mkdir(parents=True, exist_ok=True)
+    failure_dir.mkdir(parents=True, exist_ok=True)
+    Image.fromarray((heat * 255.0 + 0.5).astype(np.uint8)).save(error_dir / f"{sample_id}_fp16_vs_fp32_x1000.png")
+    panels = [to_u8(clean), to_u8(cpu), to_u8(fp16), (heat * 255.0 + 0.5).astype(np.uint8)]
+    sheet = Image.fromarray(np.concatenate(panels, axis=1))
+    draw = ImageDraw.Draw(sheet)
+    width = panels[0].shape[1]
+    for index, label in enumerate(("clean", "ORT CPU FP32", "TRT FP16", "error x1000")):
+        draw.rectangle((index * width, 0, index * width + 110, 18), fill=(0, 0, 0))
+        draw.text((index * width + 3, 3), label, fill=(255, 255, 255))
+    sheet.save(failure_dir / f"{sample_id}_fp16_comparison.png")
 
 
 def make_session(onnx_path: Path, backend: str, cache_dir: Path) -> ort.InferenceSession:
@@ -145,6 +189,9 @@ def run_trtexec(args: argparse.Namespace, root: Path, out_dir: Path, precision: 
 
     gpu_mean_ms = ""
     gpu_median_ms = ""
+    h2d_mean_ms = ""
+    d2h_mean_ms = ""
+    latency_mean_ms = ""
     match = re.search(r"GPU Compute Time:.*?mean\s*=\s*([0-9.]+)\s*ms.*?median\s*=\s*([0-9.]+)\s*ms", result.stdout, re.S)
     if match:
         gpu_mean_ms = match.group(1)
@@ -156,6 +203,9 @@ def run_trtexec(args: argparse.Namespace, root: Path, out_dir: Path, precision: 
             if values:
                 gpu_mean_ms = f"{float(np.mean(values)):.6f}"
                 gpu_median_ms = f"{float(np.percentile(values, 50)):.6f}"
+                h2d_mean_ms = f"{float(np.mean([item['h2dMs'] for item in data])):.6f}"
+                d2h_mean_ms = f"{float(np.mean([item['d2hMs'] for item in data])):.6f}"
+                latency_mean_ms = f"{float(np.mean([item['latencyMs'] for item in data])):.6f}"
         except (json.JSONDecodeError, TypeError, KeyError):
             pass
 
@@ -168,6 +218,9 @@ def run_trtexec(args: argparse.Namespace, root: Path, out_dir: Path, precision: 
         "times_path": str(times_path) if times_path.exists() else "",
         "gpu_compute_mean_ms": gpu_mean_ms,
         "gpu_compute_p50_ms": gpu_median_ms,
+        "h2d_mean_ms": h2d_mean_ms,
+        "d2h_mean_ms": d2h_mean_ms,
+        "latency_mean_ms": latency_mean_ms,
     }
 
 
@@ -200,15 +253,21 @@ def main() -> None:
         "trt_fp16": make_session(onnx_path, "trt_fp16", cache_dir),
     }
     alignment_rows = []
+    fp16_diagnostics: list[tuple[float, str, np.ndarray, np.ndarray, np.ndarray]] = []
     all_times: dict[str, list[float]] = {name: [] for name in sessions}
     for row in rows:
         inp = load_input(row["noisy_path"])
+        clean = load_input(row["clean_path"])
         cpu_out, cpu_times = benchmark_session(sessions["cpu"], inp, args.runs)
         all_times["cpu"].extend(cpu_times)
         for backend in ("cuda", "trt_fp32", "trt_fp16"):
             output, times = benchmark_session(sessions[backend], inp, args.runs)
             all_times[backend].extend(times)
             max_err, mean_err, align_psnr = abs_error(output, cpu_out)
+            cpu_quality_psnr = quality_psnr(np.clip(cpu_out, 0.0, 1.0), clean)
+            backend_quality_psnr = quality_psnr(np.clip(output, 0.0, 1.0), clean)
+            cpu_quality_ssim = quality_ssim(np.clip(cpu_out, 0.0, 1.0), clean)
+            backend_quality_ssim = quality_ssim(np.clip(output, 0.0, 1.0), clean)
             alignment_rows.append(
                 {
                     "id": row["id"],
@@ -217,13 +276,23 @@ def main() -> None:
                     "max_abs_error_vs_ort_cpu": max_err,
                     "mean_abs_error_vs_ort_cpu": mean_err,
                     "psnr_vs_ort_cpu": align_psnr,
+                    "quality_psnr": backend_quality_psnr,
+                    "quality_psnr_drop_vs_ort_cpu": cpu_quality_psnr - backend_quality_psnr,
+                    "quality_ssim": backend_quality_ssim,
+                    "quality_ssim_drop_vs_ort_cpu": cpu_quality_ssim - backend_quality_ssim,
                     "latency_mean_ms": float(np.mean(times)),
                     "latency_p50_ms": float(np.percentile(times, 50)),
                     "latency_p90_ms": float(np.percentile(times, 90)),
                 }
             )
+            if backend == "trt_fp16":
+                fp16_diagnostics.append(
+                    (cpu_quality_psnr - backend_quality_psnr, row["id"], cpu_out.copy(), output.copy(), clean.copy())
+                )
 
     write_csv(out_dir / "week3_gpu_alignment_latency.csv", alignment_rows)
+    for _, sample_id, cpu_out, fp16_out, clean in sorted(fp16_diagnostics, reverse=True)[:3]:
+        save_failure_diagnostic(sample_id, cpu_out, fp16_out, clean, out_dir)
     summary_rows = []
     for backend, values in all_times.items():
         summary_rows.append(

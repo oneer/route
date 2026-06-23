@@ -86,5 +86,14 @@ void save_ppm_rgb_from_nchw(const std::string& path, const float* data, int widt
     out.write(reinterpret_cast<const char*>(hwc.data()), static_cast<std::streamsize>(hwc.size()));
 }
 
-}  // namespace stage4
+void save_float32_tensor(const std::string& path, const float* data, size_t count) {
+    std::ofstream out(path, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("Failed to open tensor output: " + path);
+    }
+    out.write(
+        reinterpret_cast<const char*>(data),
+        static_cast<std::streamsize>(count * sizeof(float)));
+}
 
+}  // namespace stage4

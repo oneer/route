@@ -41,6 +41,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", default="data/test_inputs/week0_fixed_manifest.csv")
     parser.add_argument("--onnx", default="models/onnx/dncnn_sidd_tiny_fp32.onnx")
     parser.add_argument("--output-dir", default="outputs/week6_pipeline")
+    parser.add_argument("--warmup", type=int, default=3)
+    parser.add_argument("--runs", type=int, default=5)
     return parser.parse_args()
 
 
@@ -54,38 +56,53 @@ def main() -> None:
 
     records = []
     for row in rows:
-        t0 = time.perf_counter()
-        inp = preprocess(row["noisy_path"])
-        t1 = time.perf_counter()
-        pred = session.run(["output"], {"input": inp})[0]
-        t2 = time.perf_counter()
-        image = postprocess(pred)
-        t3 = time.perf_counter()
-        image.save(out_dir / "outputs" / f"{row['id']}_pipeline_output.png")
-        t4 = time.perf_counter()
-        records.append(
-            {
-                "id": row["id"],
-                "preprocess_ms": (t1 - t0) * 1000.0,
-                "inference_ms": (t2 - t1) * 1000.0,
-                "postprocess_ms": (t3 - t2) * 1000.0,
-                "save_ms": (t4 - t3) * 1000.0,
-                "end_to_end_ms": (t4 - t0) * 1000.0,
-            }
-        )
+        warm_input = preprocess(row["noisy_path"])
+        for _ in range(args.warmup):
+            session.run(["output"], {"input": warm_input})
+        sample_records = []
+        last_image = None
+        for run_index in range(args.runs):
+            t0 = time.perf_counter()
+            inp = preprocess(row["noisy_path"])
+            t1 = time.perf_counter()
+            pred = session.run(["output"], {"input": inp})[0]
+            t2 = time.perf_counter()
+            last_image = postprocess(pred)
+            t3 = time.perf_counter()
+            sample_records.append(
+                {
+                    "id": row["id"],
+                    "run": run_index,
+                    "preprocess_ms": (t1 - t0) * 1000.0,
+                    "inference_ms": (t2 - t1) * 1000.0,
+                    "postprocess_ms": (t3 - t2) * 1000.0,
+                    "compute_e2e_ms": (t3 - t0) * 1000.0,
+                }
+            )
+        assert last_image is not None
+        save_start = time.perf_counter()
+        last_image.save(out_dir / "outputs" / f"{row['id']}_pipeline_output.png")
+        save_ms = (time.perf_counter() - save_start) * 1000.0
+        for record in sample_records:
+            record["save_ms_once"] = save_ms
+            record["e2e_with_save_once_ms"] = record["compute_e2e_ms"] + save_ms
+            record["warmup"] = args.warmup
+            record["runs"] = args.runs
+        records.extend(sample_records)
 
     with (out_dir / "week6_pipeline_profile.csv").open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(records[0].keys()))
         writer.writeheader()
         writer.writerows(records)
 
-    summary = {
-        "mean_preprocess_ms": float(np.mean([r["preprocess_ms"] for r in records])),
-        "mean_inference_ms": float(np.mean([r["inference_ms"] for r in records])),
-        "mean_postprocess_ms": float(np.mean([r["postprocess_ms"] for r in records])),
-        "mean_save_ms": float(np.mean([r["save_ms"] for r in records])),
-        "mean_end_to_end_ms": float(np.mean([r["end_to_end_ms"] for r in records])),
-    }
+    summary = {"samples": len(rows), "warmup_per_image": args.warmup, "runs_per_image": args.runs}
+    for key in ("preprocess_ms", "inference_ms", "postprocess_ms", "compute_e2e_ms"):
+        values = [r[key] for r in records]
+        summary[f"mean_{key}"] = float(np.mean(values))
+        summary[f"p50_{key}"] = float(np.percentile(values, 50))
+        summary[f"p90_{key}"] = float(np.percentile(values, 90))
+    summary["mean_save_ms_once"] = float(np.mean([r["save_ms_once"] for r in records]))
+    summary["includes_io"] = "compute_e2e=no; e2e_with_save_once=yes"
     with (out_dir / "week6_pipeline_summary.csv").open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(summary.keys()))
         writer.writeheader()
@@ -95,4 +112,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

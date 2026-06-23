@@ -140,21 +140,19 @@ C++ 运行四种模式：
 - MinGW.org GCC 9.2.0；
 - Release build。
 
-本节表格来自 early best-of-few harness，只适合学习 scaling、thread trend 和数量级。
-正式引用绝对 latency 前，应使用当前 warmup + median harness 重新生成。
+2026-06-23 已使用当前 warmup + median harness 重跑。完整 CSV：
 
-完整 CSV：
-
-- `reports/figures/week4/week4_denoise_benchmark_full.csv`
+- `reports/figures/benchmark_20260623/denoise_full.csv`
+- `reports/figures/benchmark_20260623/README.md`
 
 | 尺寸 | 方法 | Threads | 耗时 | Speedup |
 |---|---|---:|---:|---:|
 | 256×256 | direct | 1 | 170.265 ms | 1.00 |
 | 256×256 | LUT | 1 | 120.504 ms | 1.41 vs direct |
-| 1920×1080 | LUT | 1 | 3969.032 ms | 1.00 |
-| 1920×1080 | tile split | 8 | 683.066 ms | 5.81 |
-| 3840×2160 | LUT | 1 | 16084.102 ms | 1.00 |
-| 3840×2160 | tile split | 8 | 2611.992 ms | 6.16 |
+| 1920×1080 | LUT | 1 | 3646.064 ms | 1.00 |
+| 1920×1080 | tile split | 8 | 1351.635 ms | 2.70 |
+| 3840×2160 | LUT | 1 | 15163.298 ms | 1.00 |
+| 3840×2160 | tile split | 8 | 2513.368 ms | 6.03 |
 
 ![Thread speedup](figures/week4/week4_thread_speedup.png)
 
@@ -176,8 +174,8 @@ C++ 运行四种模式：
 
 ### 7.3 多线程
 
-- 1080P 8-thread tile split：约 `5.81×`；
-- 4K 8-thread tile split：约 `6.16×`；
+- 1080P 8-thread tile split：约 `2.70×`；
+- 4K 8-thread tile split：约 `6.03×`；
 - efficiency 低于理想值，候选原因包括 thread launch、memory traffic、scalar math；
 - 256×256 工作量太小，8 threads 不一定有收益。
 
@@ -239,7 +237,7 @@ radius 2 的邻域是 25，radius 4 是 81：
 
 ## 9. 限制
 
-- 旧 4K 数据来自 32-bit MinGW GCC 9.2；
+- 当前正式数据来自 MinGW GCC 9.2，仍不是现代 x64 production compiler baseline；
 - scalar implementation，无 AVX/NEON/SIMD；
 - tile 不复制 halo 到 scratch；
 - 每次调用都创建 thread，没有 persistent thread pool；
@@ -250,8 +248,8 @@ radius 2 的邻域是 25，radius 4 是 81：
 
 > Week 4 保持 bilateral LUT 算法不变，只改变 traversal 和 scheduling：整图、
 > serial tile、row-split 和 tile-split。优化后先跑 unit test，再与 Python golden
-> 对齐。旧 MinGW 实验中，4K single-thread LUT 约 16.1 s，8-thread tile split
-> 约 2.61 s，约 6.16×。我不会把它包装成产品实时实现，因为仍有 scalar math、
+> 对齐。2026-06-23 正式实验中，4K single-thread LUT 约 15.16 s，8-thread tile
+> split 约 2.51 s，约 6.03×。我不会把它包装成产品实时实现，因为仍有 scalar math、
 > thread creation、memory traffic、无 scratch tile 和无 SIMD 等限制。
 
 ## 11. 性能练习

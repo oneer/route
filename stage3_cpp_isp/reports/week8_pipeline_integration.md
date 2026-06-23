@@ -127,7 +127,7 @@ source
 
 ### 6.2 端到端 Golden Fixture
 
-当前 pipeline 主要依靠 module test 与手动 intermediate comparison。后续应增加：
+当前已实现自动 fixture：
 
 ```text
 固定 synthetic input 与参数
@@ -137,7 +137,14 @@ C++ dump 同名 intermediate tensor
 报告 first failed stage
 ```
 
-不能只比较最终 output，否则上游正负误差可能被 curve 偶然抵消。
+对应文件：
+
+- `python_ref/make_pipeline_golden.py`
+- `data/pipeline_golden/`
+- `tests/test_pipeline_golden.cpp`
+
+CTest 阈值：source bit-exact、denoised `1e-6`、tone/output `1e-5`。不能只比较最终
+output，否则上游正负误差可能被 curve 偶然抵消。
 
 ## 7. 阶段 4 接口
 

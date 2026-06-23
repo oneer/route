@@ -1,0 +1,12 @@
+backend,device,shape,precision,warmup_runs,timed_runs,pre_ms,h2d_ms,infer_mean_ms,infer_p50_ms,infer_p90_ms,d2h_ms,post_ms,e2e_ms,includes_io
+PyTorch,cpu,1x3x512x512,FP32,3,10/image,,,261.65354401338845,182.86310008261353,496.39274992514396,,,,no
+ORT cpu,CPU,1x3x512x512,FP32,5,configured/image,,,70.3848519991152,67.15105002513155,84.33206003392117,,,,no file I/O; Python session call
+ORT cuda,RTX 4060 Ti,1x3x512x512,FP32,5,configured/image,,included in session.run,10.698307993588969,9.95264999801293,13.615109969396146,included in session.run,,,no file I/O; Python session call
+ORT trt_fp32,RTX 4060 Ti,1x3x512x512,FP32,5,configured/image,,included in session.run,7.885709999827668,7.605199993122369,9.163570031523706,included in session.run,,,no file I/O; Python session call
+ORT trt_fp16,RTX 4060 Ti,1x3x512x512,FP16,5,configured/image,,included in session.run,7.457674999022856,7.038649986498058,8.966979966498913,included in session.run,,,no file I/O; Python session call
+trtexec fp32,RTX 4060 Ti,1x3x512x512,FP32,200 ms,3 s duration,,1.986498,1.968276,1.350620,,2.162849,,6.117623,no file I/O; trtexec H2D/compute/D2H
+trtexec fp16,RTX 4060 Ti,1x3x512x512,FP16,200 ms,3 s duration,,2.004306,0.978545,0.574463,,2.323427,,5.306278,no file I/O; trtexec H2D/compute/D2H
+ORT CPU quantization evaluation,CPU,1x3x512x512,FP32,3,10/image on isolated evaluation set,,,160.07457299507223,149.93374998448417,254.4649000396021,,,,no
+ORT CPU quantization evaluation,CPU,1x3x512x512,INT8 QDQ,3,10/image on isolated evaluation set,,,128.65053900051862,121.24979996588081,218.1901299976745,,,,no
+ORT CPU RGB pipeline,CPU,1x3x512x512,FP32,3,5/image,14.025614992715418,,151.24136200523935,139.94530000491068,223.78650003811353,,7.524212995776907,172.79118999373168,compute_e2e=no; e2e_with_save_once=yes
+NVRTC CUDA normalize,RTX 4060 Ti,1x3x512x512,uint8→FP32,1,200,,1.0821999749168754,0.009081499883905053,,,2.7070000069215894,,3.79828148172237,no file I/O; pageable memory

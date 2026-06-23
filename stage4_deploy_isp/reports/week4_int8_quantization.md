@@ -1,60 +1,71 @@
-# 第 4 周：INT8 量化与画质损失分析
+# Week 4：INT8 PTQ/QDQ 与校准
 
-## 目标
+## 1. 为什么需要
 
-Week 4 关注 INT8 是否值得，而不是只关注速度。对 AI-ISP / ISP 算法岗来说，INT8 后如果暗区噪声、颜色或纹理明显变差，即使速度提升也未必可接受。
+图像恢复要求逐像素颜色与纹理正确；INT8 不能只看 max error 或模型能否运行。
 
-## 方法
+## 2. 输入输出协议
 
-当前使用 ONNX Runtime static quantization：
+FP32 与 INT8 使用相同 RGB/NCHW/[0,1] 协议。前 10 张仅用于 calibration，后 10 张仅用于 evaluation；两份 manifest 无交集。
 
-- 格式：QDQ。
-- activation：QUInt8。
-- weight：QInt8。
-- per-channel weight quantization：开启。
-- calibration：固定测试集前 10 张图。
-- evaluation：固定测试集完整 20 张图。
+## 3. 链路角色
 
-运行命令：
+ORT `quantize_static` 生成 CPU QDQ 模型；本实验不是 TensorRT INT8，也不是动态量化。
+
+## 4. 核心概念/API
+
+PTQ、QDQ、scale/zero-point、activation QUInt8、weight QInt8、per-channel weight、MinMax calibration。当前 activation asymmetric、weight signed；不同后端融合和 kernel 可能得到不同结果。
+
+## 5. 对应文件
+
+- `scripts/06_week4_quantization_eval.py`
+- `data/calibration/week4_calibration_manifest.csv`
+- `data/test_inputs/week4_evaluation_manifest.csv`
+- `models/onnx/dncnn_sidd_tiny_int8_qdq.onnx`
+- `outputs/week4_quantization/error_maps/`
+- `outputs/week4_quantization/failure_cases/`
+
+## 6. 运行命令与环境
 
 ```powershell
 python stage4_deploy_isp/scripts/06_week4_quantization_eval.py
 ```
 
-## 输出文件
+ORT CPU；每图 warmup 3、runs 10。
 
-- `models/onnx/dncnn_sidd_tiny_int8_qdq.onnx`
-- `outputs/week4_quantization/week4_int8_metrics.csv`
-- `outputs/week4_quantization/week4_int8_summary.csv`
-- `outputs/week4_quantization/int8_outputs/`
+## 7. 正确输出
 
-## 实验结果
+独立 split manifest、QDQ model、10 张 INT8 output、逐样张 CSV、最差 3 张 error map/comparison。
 
-| 项目 | 结果 |
+## 8. 对齐指标与阈值
+
+| 指标 | 结果 |
 |---|---:|
-| 评估图像数 | 20 |
-| 校准图像数 | 10 |
-| FP32 平均 PSNR | 32.98 dB |
-| INT8 平均 PSNR | 32.89 dB |
-| 平均 PSNR 损失 | 0.091 dB |
-| 最大 PSNR 损失 | 0.337 dB |
-| 最差样本 | pair_00005 |
-| FP32 平均延迟 | 96.72 ms |
-| INT8 平均延迟 | 91.83 ms |
-| FP32 延迟 p50 | 93.91 ms |
-| INT8 延迟 p50 | 87.06 ms |
+| split overlap | `0` |
+| FP32 / INT8 平均 PSNR | `32.98396 / 32.90063 dB` |
+| 平均 / 最差 PSNR drop | `0.08333 / 0.24030 dB` |
+| 最差样本 | `pair_00016` |
+| 平均 SSIM drop | `4.93e-5` |
+| max abs error | `0.04343` |
 
-结论：当前 DnCNN 在 ORT CPU QDQ INT8 下平均 PSNR drop 低于 `0.1dB`，最大 drop 未超过 `0.5dB` 警戒线。这个结果可以作为“初步可接受”，但还不能直接代表端侧 NPU / GPU / TensorRT INT8 的最终画质，因为不同后端的量化 kernel、scale 处理和融合策略可能不同。
+项目标准：平均 drop `<0.1 dB` 为初步可接受；最差 drop `>0.5 dB` 必须拒绝或专项分析。当前通过项目门槛，但仍仅代表该小评价集。
 
-最差样本是 `pair_00005`。后续需要把它纳入 failure case 分析，重点观察：
+## 9. 常见失败与排查
 
-- 红色高饱和区域是否出现 banding 或偏色。
-- 暗区噪声是否比 FP32 更明显。
-- 背景纹理是否进一步过平滑。
-- 高光边缘是否有 clipping 或 halo。
+先查 split overlap，再查 calibration 场景覆盖、range、QDQ/QOperator、per-channel、敏感层和 backend kernel；最后结合暗区、高光、饱和色和纹理 crop。
 
-## 判断标准
+## 10. 性能测量
 
-- 平均 PSNR drop 小于 `0.1dB`：通常可以接受，但仍需看失败案例。
-- 最大 PSNR drop 超过 `0.5dB`：必须分析最差样本，尤其看暗区、红/蓝高饱和区域、高频纹理和高光。
-- 如果 INT8 在 CPU 上没有速度收益，不代表 INT8 无价值；还需要看目标后端是否有 INT8 加速单元。
+FP32 p50/p90 `149.93/254.46 ms`；INT8 `121.25/218.19 ms`。同一 ORT CPU、同一独立评价集和口径。模型文件由 `132,767` bytes（ONNX+external data）降至 `46,462` bytes。
+
+## 11. Tradeoff
+
+本次 INT8 有文件大小和 CPU latency 收益，平均画质损失较小；但 10 张 calibration 无法充分覆盖真实暗部、高光、纹理和噪声分布。
+
+## 12. 证据边界
+
+不是 TensorRT/NPU INT8；没有 100–500 张代表性 calibration、功耗、峰值内存或真实设备结果。当前结论为“小样本 ORT CPU QDQ 初步可接受”。
+
+## 13. 练习与掌握标准
+
+只用亮图校准并在暗图评价；比较 5/10 张 calibration；能区分 QDQ、TensorRT INT8 和动态量化即达标。

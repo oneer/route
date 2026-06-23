@@ -1,2 +1,2 @@
-mean_preprocess_ms,mean_inference_ms,mean_postprocess_ms,mean_save_ms,mean_end_to_end_ms
-19.449490041006356,87.50503499759361,8.032024989370257,38.31877000629902,153.30532003426924
+samples,warmup_per_image,runs_per_image,mean_preprocess_ms,p50_preprocess_ms,p90_preprocess_ms,mean_inference_ms,p50_inference_ms,p90_inference_ms,mean_postprocess_ms,p50_postprocess_ms,p90_postprocess_ms,mean_compute_e2e_ms,p50_compute_e2e_ms,p90_compute_e2e_ms,mean_save_ms_once,includes_io
+20,3,5,14.025614992715418,10.841100011020899,20.752599975094203,151.24136200523935,139.94530000491068,223.78650003811353,7.524212995776907,6.019100022967905,10.806520027108505,172.79118999373168,160.50439997343346,249.8330100090243,49.54265000997111,compute_e2e=no; e2e_with_save_once=yes

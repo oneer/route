@@ -1,0 +1,9 @@
+curve,mode,width,height,exposure,ms
+reinhard,rgb,1920,1080,0.216585,65.356
+reinhard,luma,1920,1080,0.216585,53.530
+filmic,luma,1920,1080,0.216585,61.890
+scurve,luma,1920,1080,0.216585,331.794
+reinhard,rgb,3840,2160,0.216581,267.759
+reinhard,luma,3840,2160,0.216581,199.747
+filmic,luma,3840,2160,0.216581,251.591
+scurve,luma,3840,2160,0.216581,1334.930

@@ -4,4 +4,6 @@ Pillow
 PyYAML
 matplotlib
 opencv-python
-
+onnx
+onnxruntime
+onnxscript

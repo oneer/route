@@ -54,7 +54,8 @@ stage3_cpp_isp/
 │   ├── test_fixed_point.cpp
 │   ├── test_tone_lut.cpp
 │   ├── test_local_tone_mapping.cpp
-│   └── test_hdr_merge.cpp
+│   ├── test_hdr_merge.cpp
+│   └── test_pipeline_golden.cpp
 ├── benchmarks/                    # Self-contained benchmark harnesses
 │   ├── bench_smoke.cpp
 │   ├── bench_bilateral.cpp
@@ -87,7 +88,9 @@ stage3_cpp_isp/
 │   ├── run_week5_tone_mapping.py  #   Week 5: tone mapping pipeline
 │   ├── run_week6_tone_lut_fixed.py#   Week 6: LUT/fixed analysis
 │   ├── run_week7_ltm_hdr_toy.py  #   Week 7: LTM + HDR toy analysis
-│   └── run_week8_pipeline_summary.py # Week 8: integrated pipeline summary
+│   ├── run_week8_pipeline_summary.py # Week 8: integrated pipeline summary
+│   ├── make_pipeline_golden.py   #   Stage-by-stage pipeline golden fixtures
+│   └── summarize_alignment_spatial.py # Error concentration summary
 ├── reports/                       # Weekly reports and figures
 │   ├── week0_project_setup.md
 │   ├── week1_image_layout.md
@@ -113,6 +116,7 @@ stage3_cpp_isp/
 │   ├── week6_alignment/           #   Week 6: LUT Python/C++ alignment CPF32 files
 │   ├── week7_alignment/           #   Week 7: LTM/HDR Python-C++ alignment
 │   ├── week8_pipeline/            #   Week 8: integrated pipeline CPF32 files
+│   ├── pipeline_golden/            #   source/denoised/tone/output golden fixtures
 │   └── real_cases/sidd_tiny/      #   SIDD tiny subset for real-data testing
 └── CMakeLists.txt
 ```
@@ -252,6 +256,7 @@ python .\stage3_cpp_isp\python_ref\run_week7_ltm_hdr_toy.py
 ### Week 8 — Integrated Pipeline
 
 ```powershell
+python .\stage3_cpp_isp\python_ref\make_pipeline_golden.py
 python .\stage3_cpp_isp\python_ref\run_week8_pipeline_summary.py
 .\stage3_cpp_isp\build\run_pipeline.exe single .\stage3_cpp_isp\data\week8_pipeline\week8_scene_noisy.cpf32 .\stage3_cpp_isp\data\week8_pipeline\week8_global.cpf32 gaussian global reinhard 0.216 2.2
 ```

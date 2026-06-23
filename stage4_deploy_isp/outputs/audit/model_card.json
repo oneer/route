@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-06-23",
+  "contract": {
+    "model": {
+      "name": "DnCNN",
+      "task": "paired RGB image denoising",
+      "source_config": "../stage2_ai_isp/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml",
+      "checkpoint": "../stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_300/checkpoints/best_psnr.pth",
+      "behavior": "residual noise prediction; restored = input - predicted_noise"
+    },
+    "input": {
+      "name": "input",
+      "shape": [
+        1,
+        3,
+        512,
+        512
+      ],
+      "layout": "NCHW",
+      "color": "RGB",
+      "dtype": "float32",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "normalization": "uint8 / 255.0"
+    },
+    "output": {
+      "name": "output",
+      "shape": [
+        1,
+        3,
+        512,
+        512
+      ],
+      "layout": "NCHW",
+      "color": "RGB",
+      "dtype": "float32",
+      "range_before_postprocess": "unconstrained float",
+      "postprocess": "clamp to [0,1], transpose to HWC, round to uint8 only for visualization"
+    },
+    "data": {
+      "fixed_manifest": "data/test_inputs/week0_fixed_manifest.csv",
+      "calibration_manifest": "data/calibration/week4_calibration_manifest.csv",
+      "quantization_evaluation_manifest": "data/test_inputs/week4_evaluation_manifest.csv"
+    },
+    "thresholds": {
+      "pytorch_vs_ort_max_abs": 0.0001,
+      "ort_python_vs_cpp_max_abs": 1e-05,
+      "fp16_quality_psnr_drop_warn_db": 0.1,
+      "int8_worst_psnr_drop_warn_db": 0.5
+    }
+  },
+  "hashes": {
+    "checkpoint_sha256": "35ecbf6d75ef1ee1920ea6317f102b06aa418d20be91169a14c51cc1df5c25f7",
+    "onnx_sha256": "4951ce21f16384dd26603a1c48bc5731c8cae1e9e690f0055e7c27cec318e67d",
+    "onnx_external_data_sha256": "87895034955c081bd6a92d40597a0d27b2184b420b4fbeffc977739732c155e4",
+    "int8_qdq_sha256": "93bb3146983ea0b46de4c92ab8dd33f6fb548f5e36368337647ffd46bf999888"
+  },
+  "onnx": {
+    "ir_version": 10,
+    "opsets": [
+      {
+        "domain": "",
+        "version": 18
+      }
+    ],
+    "external_data_files": [
+      "dncnn_sidd_tiny_fp32.onnx.data"
+    ],
+    "checker": "pass"
+  },
+  "software_observed_now": {
+    "python": "3.14.4",
+    "torch": "2.12.0+cpu",
+    "onnx": "1.22.0",
+    "onnxruntime": "1.27.0",
+    "providers": [
+      "AzureExecutionProvider",
+      "CPUExecutionProvider"
+    ]
+  }
+}

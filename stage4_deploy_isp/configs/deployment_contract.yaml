@@ -1,0 +1,31 @@
+model:
+  name: DnCNN
+  task: paired RGB image denoising
+  source_config: ../stage2_ai_isp/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml
+  checkpoint: ../stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_300/checkpoints/best_psnr.pth
+  behavior: residual noise prediction; restored = input - predicted_noise
+input:
+  name: input
+  shape: [1, 3, 512, 512]
+  layout: NCHW
+  color: RGB
+  dtype: float32
+  range: [0.0, 1.0]
+  normalization: uint8 / 255.0
+output:
+  name: output
+  shape: [1, 3, 512, 512]
+  layout: NCHW
+  color: RGB
+  dtype: float32
+  range_before_postprocess: unconstrained float
+  postprocess: clamp to [0,1], transpose to HWC, round to uint8 only for visualization
+data:
+  fixed_manifest: data/test_inputs/week0_fixed_manifest.csv
+  calibration_manifest: data/calibration/week4_calibration_manifest.csv
+  quantization_evaluation_manifest: data/test_inputs/week4_evaluation_manifest.csv
+thresholds:
+  pytorch_vs_ort_max_abs: 0.0001
+  ort_python_vs_cpp_max_abs: 0.00001
+  fp16_quality_psnr_drop_warn_db: 0.1
+  int8_worst_psnr_drop_warn_db: 0.5

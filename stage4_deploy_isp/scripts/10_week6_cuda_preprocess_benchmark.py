@@ -98,7 +98,7 @@ def compile_ptx(nvrtc: ctypes.CDLL, arch: str) -> bytes:
     return ptx.raw
 
 
-def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, float]:
+def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, dict[str, float]]:
     cuda_bin = r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin"
     if os.path.isdir(cuda_bin):
         os.add_dll_directory(cuda_bin)
@@ -128,10 +128,13 @@ def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, 
     device_output = ctypes.c_void_p()
     check_cuda(cuda.cuMemAlloc_v2(ctypes.byref(device_input), input_bytes), "cuMemAlloc input failed")
     check_cuda(cuda.cuMemAlloc_v2(ctypes.byref(device_output), output_bytes), "cuMemAlloc output failed")
+    h2d_start = time.perf_counter()
     check_cuda(
         cuda.cuMemcpyHtoD_v2(device_input, hwc.ctypes.data_as(ctypes.c_void_p), input_bytes),
         "cuMemcpyHtoD failed",
     )
+    check_cuda(cuda.cuCtxSynchronize(), "H2D synchronize failed")
+    h2d_ms = (time.perf_counter() - h2d_start) * 1000.0
 
     height, width, channels = hwc.shape
     total = width * height * channels
@@ -163,15 +166,23 @@ def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, 
         )
     check_cuda(cuda.cuCtxSynchronize(), "timed cuCtxSynchronize failed")
     kernel_ms = (time.perf_counter() - start) * 1000.0 / runs
+    d2h_start = time.perf_counter()
     check_cuda(
         cuda.cuMemcpyDtoH_v2(output.ctypes.data_as(ctypes.c_void_p), device_output, output_bytes),
         "cuMemcpyDtoH failed",
     )
+    check_cuda(cuda.cuCtxSynchronize(), "D2H synchronize failed")
+    d2h_ms = (time.perf_counter() - d2h_start) * 1000.0
     cuda.cuMemFree_v2(device_input)
     cuda.cuMemFree_v2(device_output)
     cuda.cuModuleUnload(module)
     cuda.cuCtxDestroy_v2(context)
-    return output, kernel_ms
+    return output, {
+        "h2d_pageable_ms": h2d_ms,
+        "kernel_mean_ms": kernel_ms,
+        "d2h_pageable_ms": d2h_ms,
+        "gpu_stage_e2e_ms": h2d_ms + kernel_ms + d2h_ms,
+    }
 
 
 def main() -> None:
@@ -183,7 +194,7 @@ def main() -> None:
 
     hwc = load_image_hwc(input_path)
     cpu_output, cpu_ms = cpu_preprocess(hwc, args.runs)
-    cuda_output, cuda_ms = cuda_preprocess(hwc, args.runs, args.arch)
+    cuda_output, cuda_timings = cuda_preprocess(hwc, args.runs, args.arch)
     abs_err = np.abs(cpu_output - cuda_output)
     row = {
         "input": str(input_path),
@@ -194,7 +205,12 @@ def main() -> None:
         "cuda_compile": "NVRTC",
         "cuda_arch": args.arch,
         "cpu_preprocess_mean_ms": float(cpu_ms),
-        "cuda_kernel_mean_ms": float(cuda_ms),
+        "memory_type": "pageable",
+        "synchronization": "cuCtxSynchronize after H2D, warmup, timed launches, and D2H",
+        "h2d_pageable_ms": cuda_timings["h2d_pageable_ms"],
+        "cuda_kernel_mean_ms": cuda_timings["kernel_mean_ms"],
+        "d2h_pageable_ms": cuda_timings["d2h_pageable_ms"],
+        "gpu_stage_e2e_ms": cuda_timings["gpu_stage_e2e_ms"],
         "max_abs_error": float(abs_err.max()),
         "mean_abs_error": float(abs_err.mean()),
     }

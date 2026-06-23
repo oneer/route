@@ -38,7 +38,21 @@ mobile SoC 或其他桌面 CPU。
 | Week 4–7 committed CSV | early best-of-few | 学习数量级与相对趋势 |
 | 2026-06-18 smoke | warmup + 5-run median | 验证新 harness |
 | 2026-06-22 clean pipeline smoke | clean Release build + median | 验证当前源码端到端执行 |
-| 完整 1080P/4K regeneration | 尚未完成 | 完成后才可作为正式性能基线 |
+| 2026-06-23 完整数据 | warmup + median | 当前正式性能基线 |
+
+正式证据目录：`reports/figures/benchmark_20260623/`。
+
+环境：
+
+- Intel Core i3-12100F，4 physical cores / 8 logical processors；
+- Windows 10 Pro 64-bit，10.0.19045；
+- MinGW.org GCC 9.2.0；
+- CMake 3.30.5，Ninja 1.12.1；
+- Release build；
+- Release flags：`-O3 -DNDEBUG`；
+- commit `80de98a` 加本轮 golden-test 文档补丁；
+- 不包含 file I/O；module benchmark 在计时前分配主要 buffer；
+- pipeline 包含 `run_pipeline_single` 内部 intermediate allocation。
 
 ## 3. 当前 Harness 冒烟验证
 
@@ -69,8 +83,8 @@ mobile SoC 或其他桌面 CPU。
 该 smoke run 证明新测量路径可用，但不能替代完整 1080P/4K 数据。它也说明不能写
 “LUT 永远更快”：640×360 integrated pipeline 中，Reinhard LUT 反而慢于 float。
 
-2026-06-22 使用独立临时目录重新配置当前源码，clean Release build 成功，
-11/11 CTest 通过，`bench_pipeline` 结果为：
+2026-06-22 使用独立临时目录重新配置当时源码，clean Release build 成功，
+11/11 CTest 通过，`bench_pipeline` 结果为历史 smoke：
 
 | Case | 尺寸 | Median |
 |---|---:|---:|
@@ -86,16 +100,16 @@ mobile SoC 或其他桌面 CPU。
 
 ## 4. Tone Mapping 性能
 
-以下表格来自 legacy CSV：
+2026-06-23 正式 median 数据：
 
 | 方法 | Curve | Mode | 尺寸 | 耗时 |
 |---|---|---|---:|---:|
-| float | Reinhard | luma | 1920×1080 | 50.117 ms |
-| LUT 12→12 | Reinhard | luma | 1920×1080 | 47.524 ms |
-| float | S-curve | luma | 1920×1080 | 350.182 ms |
-| LUT 12→12 | S-curve | luma | 1920×1080 | 58.136 ms |
-| float | S-curve | luma | 3840×2160 | 1404.841 ms |
-| LUT 12→12 | S-curve | luma | 3840×2160 | 205.724 ms |
+| float | Reinhard | luma | 1920×1080 | 53.530 ms |
+| LUT 12→12 | Reinhard | luma | 1920×1080 | 47.595 ms |
+| float | S-curve | luma | 1920×1080 | 331.794 ms |
+| LUT 12→12 | S-curve | luma | 1920×1080 | 45.999 ms |
+| float | S-curve | luma | 3840×2160 | 1334.930 ms |
+| LUT 12→12 | S-curve | luma | 3840×2160 | 203.076 ms |
 
 解释：
 
@@ -106,16 +120,16 @@ mobile SoC 或其他桌面 CPU。
 
 ## 5. Local Tone Mapping 性能
 
-以下表格来自 legacy CSV：
+2026-06-23 正式 median 数据：
 
 | Base filter | Radius | 尺寸 | 耗时 |
 |---|---:|---:|---:|
-| box | 5 | 640×360 | 362.176 ms |
-| box | 9 | 640×360 | 1004.940 ms |
-| bilateral | 3 | 640×360 | 1910.705 ms |
-| bilateral | 5 | 640×360 | 4456.885 ms |
-| box | 5 | 1920×1080 | 3330.083 ms |
-| bilateral | 1 | 1920×1080 | 3016.261 ms |
+| box | 5 | 640×360 | 179.882 ms |
+| box | 9 | 640×360 | 451.166 ms |
+| bilateral | 3 | 640×360 | 1090.061 ms |
+| bilateral | 5 | 640×360 | 2457.221 ms |
+| box | 5 | 1920×1080 | 1474.546 ms |
+| bilateral | 1 | 1920×1080 | 1791.271 ms |
 
 解释：
 
@@ -127,17 +141,22 @@ mobile SoC 或其他桌面 CPU。
 
 ## 6. 集成 Pipeline
 
-早期 160×96 synthetic scene：
+2026-06-23 正式 full pipeline median：
 
 | Case | Pipeline 耗时 |
 |---|---:|
-| gaussian + global TM | 43.24 ms |
-| gaussian + LUT TM | 25.36 ms |
-| gaussian + local TM | 103.72 ms |
-| HDR merge + local TM | 126.64 ms |
+| gaussian + global TM，1080P | 593.998 ms |
+| gaussian + LUT TM，1080P | 642.063 ms |
+| local TM，1080P | 9920.300 ms |
+| gaussian + global TM，4K | 2362.866 ms |
+| gaussian + LUT TM，4K | 2360.626 ms |
+| local TM，4K | 39098.739 ms |
 
-该结果体现了预期趋势：Local TM base estimation 占主导；在这组旧实验中 LUT TM
-比 float global TM 便宜。
+该结果表明：
+
+- Local TM base estimation 明显占主导；
+- 4K 像素数约为 1080P 的 4 倍，三条 pipeline 延迟也接近 4 倍；
+- Reinhard 公式本身便宜，integrated LUT 并不稳定优于 float。
 
 当前 pipeline benchmark：
 
@@ -148,10 +167,10 @@ mobile SoC 或其他桌面 CPU。
 
 ## 7. 下一步优化目标
 
-1. 使用当前 warmup/median harness 重新生成全部 CSV，并补齐 device metadata；
-2. 将 direct LTM base 替换为 guided filter 或 bilateral grid，重新验证 alignment
+1. 将 direct LTM base 替换为 guided filter 或 bilateral grid，重新验证 alignment
    和 halo；
-3. 在尝试 hardware-specific SIMD 之前，先加入 persistent thread pool。
+2. 在尝试 hardware-specific SIMD 之前，先加入 persistent thread pool；
+3. 在 ARM/移动端复验同一 correctness 与 benchmark 契约。
 
 SIMD、CUDA、OpenCL、Halide、AVX、NEON 当前只是对比与后续方向，没有在阶段 3
 实现和测量。

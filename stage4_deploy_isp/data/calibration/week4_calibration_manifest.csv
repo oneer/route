@@ -1,0 +1,11 @@
+id,name,noisy_path,clean_path
+pair_00001,pair_00001.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00001.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00001.png
+pair_00002,pair_00002.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00002.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00002.png
+pair_00003,pair_00003.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00003.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00003.png
+pair_00004,pair_00004.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00004.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00004.png
+pair_00005,pair_00005.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00005.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00005.png
+pair_00006,pair_00006.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00006.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00006.png
+pair_00007,pair_00007.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00007.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00007.png
+pair_00008,pair_00008.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00008.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00008.png
+pair_00009,pair_00009.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00009.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00009.png
+pair_00010,pair_00010.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\noisy\pair_00010.png,C:\Users\10439\Desktop\route\stage2_ai_isp\datasets\sidd_tiny\val\clean\pair_00010.png

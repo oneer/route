@@ -117,15 +117,16 @@ short exposure + long exposure
 
 - CTest unit test；
 - CPF32 Python-C++ alignment；
+- `test_pipeline_golden` 分阶段端到端 golden fixture；
 - synthetic edge、gradient、highlight、HDR-like scene；
 - visual comparison 与 metrics CSV。
 
 最近一次 clean verification：
 
 ```text
-2026-06-22 Release verification
+2026-06-23 Release verification
 100% tests passed
-0 tests failed out of 11
+0 tests failed out of 12
 ```
 
 该结果来自独立临时 build directory，不依赖仓库中旧 CMake cache。现有
@@ -169,24 +170,23 @@ Week 8 生成四类输出：
 
 ## 7. 性能总结
 
-Tone Mapping legacy result：
+2026-06-23 正式 Tone Mapping 结果：
 
-- 4K S-curve float luma：约 `1404.841 ms`；
-- 4K S-curve LUT luma：约 `205.724 ms`；
+- 4K S-curve float luma：约 `1334.930 ms`；
+- 4K S-curve LUT luma：约 `203.076 ms`；
 - 主要原因：LUT 移除每像素 `exp`。
 
-Local TM legacy result：
+2026-06-23 正式 Local TM 结果：
 
-- box r5 1080P：约 `3330 ms`；
-- direct bilateral r1 1080P：约 `3016 ms`；
-- direct bilateral r5 640×360：约 `4457 ms`。
+- box r5 1080P：约 `1474.546 ms`；
+- direct bilateral r1 1080P：约 `1791.271 ms`；
+- direct bilateral r5 640×360：约 `2457.221 ms`。
 
 结论：Global TM 和 LUT TM 是可用 CPU baseline；naive Local TM 适合学习正确性，
 但未达到 deployable speed。
 
-旧数字来自 best-of-few harness。当前代码已改为 warmup + median，正式引用新绝对
-数字前必须重新生成 CSV。没有 hardware counter，因此 bottleneck 结论只能基于
-complexity 与 size scaling 推断。
+完整正式数据位于 `reports/figures/benchmark_20260623/`。没有 hardware counter，
+因此 bottleneck 结论仍只能基于 complexity 与 size scaling 推断。
 
 ## 8. 已知限制
 

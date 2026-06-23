@@ -1,0 +1,9 @@
+curve,mode,input_bits,output_bits,width,height,exposure,ms
+reinhard,luma,10,10,1920,1080,0.216585,47.066
+reinhard,luma,12,12,1920,1080,0.216585,47.595
+filmic,luma,12,12,1920,1080,0.216585,44.109
+scurve,luma,12,12,1920,1080,0.216585,45.999
+reinhard,luma,10,10,3840,2160,0.216581,182.953
+reinhard,luma,12,12,3840,2160,0.216581,199.506
+filmic,luma,12,12,3840,2160,0.216581,182.779
+scurve,luma,12,12,3840,2160,0.216581,203.076

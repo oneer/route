@@ -101,7 +101,7 @@ policy 和映射样例，不能只写“mirror”。
 | Tone LUT/fixed | Week6 runner | `tone_lut.cpp`, `fixed_point.cpp` | clamp、round、shift、saturate、奇数尺寸 | 阈值应结合输出量化步长 | float vs LUT | fixed helper 不等于硬件定点 kernel |
 | Local TM | Week7 runner | `local_tone_mapping.cpp` | 常量、highlight、box-vs-bilateral step | Python-C++ `1e-5` | 640×360/1080P | direct base filter，非产品实时实现 |
 | HDR toy | `hdr_merge_ref.py` | `hdr_merge.cpp` | 权重、未饱和恢复、长曝光饱和 | Python-C++ `1e-5` | 只在 pipeline 中观察 | 已对齐双曝光；无配准/去鬼影 |
-| Pipeline | Week8 runner | `pipeline.*`, tools | 由模块测试与端到端运行共同覆盖 | 用 `dump_intermediate` 找首个错误阶段 | preview/1080P/4K harness | YAML 仅记录参数，C++ 未解析 YAML |
+| Pipeline | `make_pipeline_golden.py`、Week8 runner | `pipeline.*`, tools | `test_pipeline_golden.cpp` 逐阶段比较 | source `0`；denoised `1e-6`；tone/output `1e-5` | preview/1080P/4K harness | YAML 仅记录参数，C++ 未解析 YAML |
 
 ## 4. 性能证据应怎样读
 
@@ -114,9 +114,17 @@ pipeline benchmark 仍包含各阶段中间 buffer 的分配。更新后的自�
 - `steady_clock`；
 - 不包含文件 I/O。
 
-仓库中已经提交的旧 CSV 是早期 harness 结果，使用过“1～3 次取最好值”的方法。
-它们可以解释数量级和相对趋势，但不能与更新后的 median 结果混为同一批实验。重新
-发布性能数字时必须重新生成 CSV，并记录：
+仓库中旧 CSV 是早期 harness 结果，只用于历史对照。2026-06-23 已使用新 harness
+重新生成正式数据：
+
+- `reports/figures/benchmark_20260623/denoise_full.csv`
+- `reports/figures/benchmark_20260623/tone_mapping.csv`
+- `reports/figures/benchmark_20260623/tone_lut.csv`
+- `reports/figures/benchmark_20260623/local_tone_mapping.csv`
+- `reports/figures/benchmark_20260623/pipeline_full.csv`
+- `reports/figures/benchmark_20260623/system_info.txt`
+
+正式性能数字记录：
 
 ```text
 CPU 型号 / 物理核心与逻辑线程
@@ -151,16 +159,54 @@ latency 或 throughput
 - 没有 perf/VTune cache miss、带宽或指令级证据。
 - 没有真实 Bayer RAW pipeline；SIDD bridge 输入是 sRGB 图像。
 - 没有产品级 NLM、HDR 配准、motion rejection 或 deghost。
-- 没有用新 benchmark 方法重新生成全部 1080P/4K CSV。
+- 没有在 ARM/移动端使用同一套 Stage 3 C++ harness 复验。
 
-## 7. 三个最高优先级后续项
+## 7. 先进工程方法统一对比
 
-1. 用新 harness 在固定机器重新生成全部性能 CSV，并补设备元数据。
-2. 为 pipeline 增加端到端 golden fixture，逐阶段比较 source/denoised/tone/output。
-3. 只选择一个热点做真实优化：优先 persistent thread pool 或 guided-filter LTM；
+| 方法 | 主要收益 | 复杂度/代价 | 数值风险 | 可移植性 | 阶段 3 决策 |
+|---|---|---|---|---|---|
+| Scalar baseline | 最易验证 | 速度低 | 最低 | 最高 | 已实现并保留 |
+| LUT | 移除 `exp` 等计算 | table/index/cache footprint | quantization、banding | 高 | 已实现 |
+| Threading | 利用多核 | 调度、同步、启动成本 | race、漏 tile | 中高 | bilateral 已实现 |
+| Tile + halo | 改善工作集与任务拆分 | tail、halo、scratch | 边界不一致 | 高 | traversal 已实现，scratch 未实现 |
+| AVX/NEON/Universal Intrinsics | 提高每周期像素数 | tail、alignment、ISA 分支 | 累加顺序、近似函数 | 中 | 不实现，避免无证据代码 |
+| OpenCV `parallel_for_` | 复用成熟调度 | 增加依赖 | border/API 差异 | 中高 | 仅对比 |
+| Guided filter | 更快 edge-aware base | 额外统计量与参数 | halo、epsilon | 高 | LTM 优先升级候选 |
+| Bilateral grid | 大幅加速 bilateral/LTM | grid/slice 复杂 | grid quantization | 中 | 产品升级候选 |
+| NLM/BM3D | 更强 patch prior | 计算/内存高 | 过平滑、参数敏感 | 中 | NLM 仅小图；BM3D 不实现 |
+| Halide | 自动 schedule 与 target portability | 集成/学习成本 | 仍需数值复验 | 中高 | 进阶方向 |
+| OpenCL/CUDA | 大规模并行 | copy、kernel、设备依赖 | FP16/fast-math | 中 | 交给阶段 4 |
+| CPU library | 灵活、易调试 | frame buffer/cache 压力 | 与硬件定点不同 | 高 | 阶段 3 主线 |
+| Hardware ISP streaming | 低延迟、低带宽 | line buffer、定点、资源约束 | overflow、round、saturate | 低 | 只讲映射，不声称实现 |
+
+## 8. 已完成的关键闭环
+
+1. 新 harness 已生成完整 1080P/4K CSV 和设备元数据。
+2. `test_pipeline_golden` 已逐阶段比较 source/denoised/tone/output。
+3. Week 0–8 已加入手算、移植、故障注入、预测和自测。
+
+### 8.1 每周 Python-first 练习
+
+| 周次 | 先做的 Python 工作 | 再移植/验证的 C++ 工作 |
+|---|---|---|
+| Week 0 | 生成 CPF32 synthetic vector | reader/writer 与 compare tool |
+| Week 1 | 可视化 layout/border | `ImageView`、stride、border sampler |
+| Week 2 | Gaussian/box golden | separable C++ filter 与 CPF32 对齐 |
+| Week 3 | direct/LUT bilateral、small NLM | C++ bilateral 与 LUT |
+| Week 4 | 生成固定 alignment fixture | tile/thread schedule，复验输出 |
+| Week 5 | Tone curve 与 ROI | C++ Reinhard/Filmic/S-curve |
+| Week 6 | float-vs-LUT ablation | C++ LUT/fixed helper |
+| Week 7 | LTM/HDR golden | C++ base/detail 与 aligned merge |
+| Week 8 | 分阶段 pipeline golden | `test_pipeline_golden` first-divergence |
+
+## 9. 三个产品化后续项
+
+1. 选择一个热点做真实优化：优先 persistent thread pool 或 guided-filter LTM；
    每次优化后重跑单测、Python-C++ 对齐和 benchmark。
+2. 在 ARM/移动 SoC 复验 correctness 与性能。
+3. 增加真实 Bayer RAW 数据契约与前处理桥接。
 
-## 8. 综合实践任务
+## 10. 综合实践任务
 
 在干净目录独立实现一个 3×3 finite-input 模块，例如 unsharp mask：
 

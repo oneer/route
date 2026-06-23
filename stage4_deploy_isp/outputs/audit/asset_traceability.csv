@@ -1,0 +1,2 @@
+checkpoint,onnx,backend_engine_or_model,input_manifest,outputs,error_csv,latency_log,report_conclusion
+C:\Users\10439\Desktop\route\stage2_ai_isp\runs\paired_rgb_sidd_tiny_dncnn_l2_300\checkpoints\best_psnr.pth,C:\Users\10439\Desktop\route\stage4_deploy_isp\models\onnx\dncnn_sidd_tiny_fp32.onnx,ORT FP32 / TensorRT plans / ORT QDQ INT8,week0_fixed_manifest; isolated week4 calibration/evaluation manifests,outputs/week0..week6,outputs/audit/correctness_matrix.csv,week3 trtexec logs; week3/week6 CSV,reports/stage4_report.md

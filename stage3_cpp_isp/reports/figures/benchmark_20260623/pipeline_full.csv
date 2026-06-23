@@ -1,0 +1,7 @@
+case,width,height,denoise,tone,curve,exposure,gamma,ms
+1080p,1920,1080,gaussian,global,reinhard,0.22,2.2,593.998
+1080p,1920,1080,gaussian,lut,reinhard,0.220,2.200,642.063
+1080p,1920,1080,none,local,reinhard,0.220,2.200,9920.300
+4k,3840,2160,gaussian,global,reinhard,0.220,2.200,2362.866
+4k,3840,2160,gaussian,lut,reinhard,0.220,2.200,2360.626
+4k,3840,2160,none,local,reinhard,0.220,2.200,39098.739

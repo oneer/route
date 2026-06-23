@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", default="data/test_inputs/week0_fixed_manifest.csv")
     parser.add_argument("--onnx", default="models/onnx/dncnn_sidd_tiny_fp32.onnx")
     parser.add_argument("--output-dir", default="outputs/week2_cpp_io")
-    parser.add_argument("--count", type=int, default=3)
+    parser.add_argument("--count", type=int, default=0, help="0 means all manifest rows.")
     return parser.parse_args()
 
 
@@ -45,10 +45,21 @@ def save_ort_reference(session: ort.InferenceSession, src: Path, dst: Path) -> N
     Image.fromarray((out * 255.0 + 0.5).astype(np.uint8)).save(dst)
 
 
+def save_ort_tensor_reference(session: ort.InferenceSession, src: Path, dst: Path) -> None:
+    image = Image.open(src).convert("RGB")
+    arr = np.asarray(image, dtype=np.float32) / 255.0
+    nchw = np.transpose(arr, (2, 0, 1))[None, ...].astype(np.float32)
+    out = session.run(["output"], {"input": nchw})[0].astype(np.float32)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    out.tofile(dst)
+
+
 def main() -> None:
     args = parse_args()
     root = project_root()
-    rows = read_manifest(root / args.manifest)[: args.count]
+    rows = read_manifest(root / args.manifest)
+    if args.count > 0:
+        rows = rows[: args.count]
     session = ort.InferenceSession(str(root / args.onnx), providers=["CPUExecutionProvider"])
     out_dir = root / args.output_dir
     for row in rows:
@@ -56,9 +67,9 @@ def main() -> None:
         noisy = Path(row["noisy_path"])
         save_ppm_from_png(noisy, out_dir / "ppm_inputs" / f"{sample_id}.ppm")
         save_ort_reference(session, noisy, out_dir / "ort_reference_png" / f"{sample_id}_ort_reference.png")
+        save_ort_tensor_reference(session, noisy, out_dir / "ort_reference_f32" / f"{sample_id}_ort_reference.f32")
     print(f"Wrote C++ I/O fixtures to {out_dir}")
 
 
 if __name__ == "__main__":
     main()
-

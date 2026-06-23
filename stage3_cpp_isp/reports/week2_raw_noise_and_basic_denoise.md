@@ -114,4 +114,33 @@ C++ 实现包括：
 
 - 本周只做空间域基础滤波，还没有 bilateral 的 range weight。
 - 指标只覆盖简单数值评价，后续要补 ROI crop 和参数消融。
-- 当前机器未暴露 C++ 工具链，C++ 测试代码尚未本地编译运行。
+- 本周算法仍是 RAW-like 单帧基础滤波，不是完整 Bayer RAW denoise。
+
+## 9. Python → C++ 移植练习
+
+先不要看 `denoise_basic.cpp`，按以下顺序独立完成 radius=1 Gaussian：
+
+1. 在 Python 中生成归一化 1D kernel；
+2. 使用 separable horizontal + vertical 两遍滤波；
+3. 明确使用 reflect-101；
+4. 导出一个 `7x5x1` odd-size CPF32 golden；
+5. 再写 C++ `ImageView` 版本；
+6. 使用 `compare_with_reference` 输出完整误差指标。
+
+移植时逐项核对 kernel dtype/normalization、两遍滤波顺序、border 和中间 buffer
+stride。
+
+## 10. 故障注入
+
+- Kernel 忘记归一化：constant 图会整体变亮。
+- Python 使用 replicate、C++ 使用 reflect-101：误差集中在边缘环带。
+- RGB/BGR 交换：source stage 已经发散，不能误判为 denoise 参数问题。
+- 先滤波后加噪：函数都可能正确，但实验问题已经被改变。
+
+## 11. 章末自测
+
+1. Shot noise 和 read noise 与 signal 分别是什么关系？
+2. 为什么 AWB gain 会放大色噪？
+3. Separable Gaussian 为什么比直接二维卷积便宜？
+4. Constant、impulse、step edge 各暴露什么问题？
+5. PSNR 提升但 edge gradient 明显下降，应怎样解释？

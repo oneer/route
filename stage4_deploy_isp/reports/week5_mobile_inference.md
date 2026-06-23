@@ -1,73 +1,59 @@
-# 第 5 周：NCNN / MNN 移动端推理路径
+# Week 5：移动端路径（设计章节，未完成真机部署）
 
-## 目标
+## 1. 为什么需要
 
-Week 5 用来补齐端侧部署视角。由于你的优先岗位是 AI-ISP / ISP 算法工程师，而不是纯手机端侧部署岗，本周定位为加分项：理解移动端约束，并为后续真实设备验证留下清晰路径。
+桌面 NVIDIA GPU 结果不能代替 Android/ARM 的算子、内存、温度、功耗和启动时间约束。
 
-## 当前工具链探测
+## 2. 输入输出协议
 
-当前 PATH 中未找到：
+移动端仍需保持 RGB、range、layout 和 clamp 一致；若框架偏 NHWC，转换必须显式记录，不能静默改变协议。
 
-- `onnx2ncnn`
-- `ncnnoptimize`
-- `MNNConvert`
-- `benchmark`
-- `adb`
+## 3. 链路角色
 
-因此本机当前不能完成 NCNN / MNN 转换和 Android 设备实测。
+NCNN/MNN 面向移动 CPU/Vulkan；TFLite 面向 Android/iOS delegate 生态；OpenVINO 面向 Intel；TensorRT 面向 NVIDIA GPU。当前项目已选择 TensorRT 作为已实践后端，NCNN 作为后续手机岗位实践路径。
 
-## 当前模型适配性
+## 4. 核心概念/API
 
-阶段四主模型 `dncnn_sidd_tiny_fp32.onnx` 的 graph 很简单：
+模型转换、算子支持、Vulkan、FP16 storage/arithmetic、线程、arm64 交叉编译、benchmark 和 adb。当前均未形成执行证据。
 
-```text
-Conv x5
-Relu x4
-Sub x1
-```
+## 5. 对应文件
 
-这类模型通常适合 NCNN / MNN 转换，因为没有 LayerNorm、GridSample、复杂 attention 或动态 control flow。它比 NAFNet-lite 更适合作为第一条移动端部署闭环。
+本章仅有设计文档；仓库没有 NCNN/MNN model、runner、Android 工程或设备日志。
 
-## 后续转换命令模板
+## 6. 运行命令与环境
 
-NCNN 路径：
+当前 PATH 无 `onnx2ncnn`、`ncnnoptimize`、`MNNConvert`、`adb`，因此不提供伪装成已验证的命令结果。转换命令应在工具安装后按对应官方版本文档生成。
 
-```powershell
-onnx2ncnn stage4_deploy_isp/models/onnx/dncnn_sidd_tiny_fp32.onnx ^
-  stage4_deploy_isp/models/ncnn/dncnn_sidd_tiny.param ^
-  stage4_deploy_isp/models/ncnn/dncnn_sidd_tiny.bin
+## 7. 正确输出
 
-ncnnoptimize stage4_deploy_isp/models/ncnn/dncnn_sidd_tiny.param ^
-  stage4_deploy_isp/models/ncnn/dncnn_sidd_tiny.bin ^
-  stage4_deploy_isp/models/ncnn/dncnn_sidd_tiny_opt.param ^
-  stage4_deploy_isp/models/ncnn/dncnn_sidd_tiny_opt.bin 65536
-```
+未来必须包含 param/bin 或 mnn 模型、raw tensor 对齐、设备 benchmark、设备与温度记录。当前状态：不存在。
 
-MNN 路径：
+## 8. 对齐指标与阈值
 
-```powershell
-MNNConvert -f ONNX ^
-  --modelFile stage4_deploy_isp/models/onnx/dncnn_sidd_tiny_fp32.onnx ^
-  --MNNModel stage4_deploy_isp/models/mnn/dncnn_sidd_tiny.mnn ^
-  --bizCode stage4
-```
+未来仍报告 max/mean/RMSE、PSNR/SSIM 和最差 crop；阈值沿用项目 contract，新增设备内存与温度条件。
 
-## AI-ISP / ISP 算法岗应关注什么
+## 9. 常见失败与排查
 
-端侧后端不是单纯换格式。真正要关注：
+unsupported op → converter version → layout/packing → FP16 storage → Vulkan device → thread affinity → 输出 tensor → PNG。
 
-- 移动端是否改变输出颜色或动态范围。
-- Vulkan / FP16 是否让暗区噪声或纹理更差。
-- 内存占用是否允许在 ISP pipeline 中实时处理。
-- 输入输出是否仍保持 `RGB / NCHW or NHWC / [0, 1]` 的明确协议。
-- 模型是否需要改小，而不是只追求 PC 端指标。
+## 10. 性能测量
 
-## 当前缺口
+必须记录设备型号、SoC、OS、backend、线程、CPU/GPU/Vulkan、warmup/runs、温度和是否含 I/O；当前无数据。
 
-如果后续要把阶段四强化成手机厂商端侧岗位项目，需要补：
+## 11. Tradeoff
 
-1. 安装 NCNN 或 MNN 工具链。
-2. 准备 Android / arm64 设备和 `adb`。
-3. 跑 CPU / Vulkan / FP16 对比。
-4. 报告设备型号、SoC、内存、系统版本和温度状态。
-5. 与 ORT / PyTorch golden output 做误差对齐。
+| 后端 | 目标硬件 | 精度/量化 | 工程特点 |
+|---|---|---|---|
+| NCNN | ARM CPU/Vulkan | FP32/FP16/INT8 | 轻量、移动友好，需转换与算子核对 |
+| MNN | 移动/多后端 | FP32/FP16/INT8 | 后端丰富，工具链与部署包更完整 |
+| TFLite | Android/iOS | FP32/FP16/INT8 | delegate 生态强，ONNX 转换链可能更曲折 |
+| OpenVINO | Intel CPU/GPU/NPU | FP32/FP16/INT8 | Intel 平台工具成熟 |
+| TensorRT | NVIDIA GPU | FP32/FP16/INT8 | 性能强但平台绑定明显 |
+
+## 12. 证据边界
+
+没有真实 Android/ARM、功耗、内存、温度或移动 GPU 证据，不能声称“完成移动端部署”。
+
+## 13. 练习与掌握标准
+
+后续选择 NCNN：在一台真实 arm64 Android 设备完成 CPU/Vulkan on/off、raw tensor 对齐、温度前后和 p50/p90，才将本周状态改为完成。

@@ -1,89 +1,82 @@
-# 第 6 周：CUDA 前后处理、Pipeline 串联与性能剖析
+# Week 6：CUDA 前处理与 Pipeline Profile
 
-## 目标
+## 1. 为什么需要
 
-Week 6 关注端到端链路，而不是只报模型 inference time。当前阶段三还在收尾，因此本周先做轻量 RGB denoise pipeline：
+kernel、inference 和端到端 latency 是三个不同问题；只优化最快的局部不一定改善用户等待时间。
 
-```text
-PNG noisy input
-  -> preprocess: RGB uint8 / HWC -> float32 / NCHW / [0, 1]
-  -> ONNX Runtime inference
-  -> postprocess: clamp -> NCHW -> HWC -> uint8
-  -> save output
-```
+## 2. 输入输出协议
 
-## 已新增
+CPU/CUDA normalize 都执行 RGB uint8 HWC → float32 NCHW `[0,1]`。`pack_raw.cu` 面向未来 RGGB RAW，不匹配当前 RGB 模型，未接入本链路。
 
-- `scripts/07_week6_pipeline_profile.py`
-- `scripts/10_week6_cuda_preprocess_benchmark.py`
+## 3. 链路角色
+
+当前 CPU pipeline：load/preprocess → ORT CPU → clamp/transpose/round → save。CUDA 实验只替换 normalize，并未把 device tensor零拷贝送入 ORT/TensorRT。
+
+## 4. 核心概念/API
+
+一维 grid/block、线程索引、边界判断、HWC coalesced read、NCHW scattered write、pageable memory、`cuCtxSynchronize`。生产优化还需 pinned memory、stream、CUDA event 和 Nsight。
+
+## 5. 对应文件
+
 - `cuda_kernels/normalize.cu`
 - `cuda_kernels/pack_raw.cu`
-- `cpp/include/cuda_preprocess.hpp`
+- `scripts/07_week6_pipeline_profile.py`
+- `scripts/10_week6_cuda_preprocess_benchmark.py`
 - `cpp/src/cuda_preprocess_benchmark.cpp`
-- CMake option：`STAGE4_BUILD_CUDA_PREPROCESS`
 
-`normalize.cu` 是 RGB preprocess 的 CUDA 替换点；`pack_raw.cu` 是后续 RAW / RGGB AI-ISP 模型的替换点。
-
-## CPU Pipeline 分阶段性能剖析
-
-运行命令：
+## 6. 运行命令与环境
 
 ```powershell
 python stage4_deploy_isp/scripts/07_week6_pipeline_profile.py
+C:\Users\10439\.conda\envs\stage4-cuda\python.exe `
+  stage4_deploy_isp/scripts/10_week6_cuda_preprocess_benchmark.py --runs 200
 ```
 
-结果：
+CUDA 12.6、RTX 4060 Ti；kernel 通过 NVRTC + CUDA Driver API 执行。
 
-| 阶段 | 平均耗时 |
+## 7. 正确输出
+
+100 条 CPU pipeline run（20 图×5）、p50/p90 summary；CUDA H2D/kernel/D2H summary；CPU/CUDA max error `5.96e-8`。
+
+## 8. 对齐指标与阈值
+
+CUDA normalize 相对 CPU max/mean error `5.96e-8/8.22e-9`，低于 float32 preprocess 项目阈值 `1e-6`。
+
+## 9. 常见失败与排查
+
+shape/channels → grid 边界 → HWC/NCHW index → `/255` → kernel launch status → 同步 → copy direction → output tensor。RAW pack 不得误接 RGB 模型。
+
+## 10. 性能测量
+
+CPU pipeline（每图 inference warmup 3、runs 5；save 每图一次）：
+
+| 阶段 | mean | p50 | p90 |
+|---|---:|---:|---:|
+| preprocess | `14.03` | `10.84` | `20.75` ms |
+| inference | `151.24` | `139.95` | `223.79` ms |
+| postprocess | `7.52` | `6.02` | `10.81` ms |
+| compute E2E，不含 save | `172.79` | `160.50` | `249.83` ms |
+
+单次 save 平均 `49.54 ms`。
+
+CUDA preprocess（pageable memory，明确同步）：
+
+| 阶段 | 时间 |
 |---|---:|
-| preprocess | 19.45 ms |
-| inference | 87.51 ms |
-| postprocess | 8.03 ms |
-| save output | 38.32 ms |
-| end-to-end | 153.31 ms |
+| CPU normalize | `2.498 ms` |
+| H2D | `1.082 ms` |
+| kernel | `0.0091 ms` |
+| D2H | `2.707 ms` |
+| GPU stage E2E | `3.798 ms` |
 
-这个结果说明，模型 inference 只占端到端流程的一部分。即使后续 TensorRT 把 inference 降到很低，如果 preprocess、copy、postprocess 或 I/O 不优化，端到端收益也会被稀释。
+## 11. Tradeoff
 
-## CUDA 前处理性能测试
+kernel 比 CPU 快，但 pageable copy 使 GPU stage 总体更慢。下一步应避免 D2H，把 preprocess 输出直接交给 GPU inference；之后再测 pinned memory/stream overlap，而不是继续微调 0.009 ms kernel。
 
-由于当前 CUDA 12.6 + VS Build Tools 2026 的 `nvcc` host compiler 路径仍会早退，本次先采用 NVRTC runtime compilation 编译同一个 normalize kernel，并通过 CUDA Driver API launch。
+## 12. 证据边界
 
-运行命令：
+CUDA preprocess 未接入完整推理；无 pinned memory、CUDA event、Nsight、阶段三 ISP、功耗或峰值显存。CMake/nvcc executable 仍受当前 VS host compiler 兼容问题影响。
 
-```powershell
-C:\Users\10439\.conda\envs\stage4-cuda\python.exe stage4_deploy_isp/scripts/10_week6_cuda_preprocess_benchmark.py --runs 200
-```
+## 13. 练习与掌握标准
 
-输出文件：
-
-- `outputs/week6_pipeline/week6_cuda_preprocess_summary.csv`
-
-结果：
-
-| 项目 | 结果 |
-|---|---:|
-| 输入 | `pair_00001.ppm` |
-| 尺寸 | 512 x 512 x 3 |
-| 测量次数 | 200 |
-| CUDA 编译路径 | NVRTC |
-| CPU 前处理平均耗时 | 5.031 ms |
-| CUDA kernel 平均耗时 | 0.0092 ms |
-| 最大绝对误差 | 5.96e-8 |
-| 平均绝对误差 | 8.22e-9 |
-
-说明：这里的 CUDA 数字是 normalize kernel 本身，不包含 H2D / D2H 和完整 pipeline 调度。它证明 kernel 逻辑、layout 和数值对齐已经跑通；后续要继续补 copy、pinned memory、stream overlap 和 Nsight timeline。
-
-## 当前限制
-
-- `STAGE4_BUILD_CUDA_PREPROCESS=ON` 的 CMake/nvcc 路线已补代码入口，但当前机器的 CUDA 12.6 对 VS Build Tools 2026 host compiler 兼容性不稳定，配置阶段尚未通过。
-- NVRTC 路线已完成 kernel 编译、launch 和 CPU vs CUDA 输出对齐。
-- 阶段三 C++ ISP 模块尚未正式接入 Week 6 pipeline。
-
-## AI-ISP / ISP 算法岗表达
-
-这一周要讲清：
-
-- 传统 ISP 模块和 AI 模块之间必须约定数据协议。
-- RAW-domain 模型需要 pack RGGB、black level、white level、normalization。
-- RGB-domain denoise 模型更容易部署，但离真正 sensor RAW ISP 更远。
-- CUDA kernel 快不等于端到端快；还要把 H2D / D2H、postprocess、I/O 和 pipeline overlap 纳入 profiling。
+移除同步观察虚假 latency；实现 pinned memory 对比；解释为何 `0.009 ms` kernel 没有带来 E2E 收益；能画出 host/device 边界即达标。

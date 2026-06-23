@@ -70,6 +70,23 @@ Python reference 输出
 “float curve 与 LUT approximation”。后者属于算法近似误差，应读取
 `figures/week6/week6_lut_size_ablation.csv`。
 
+### 2.1 差异空间分布
+
+`python_ref/summarize_alignment_spatial.py` 会对 Week 4–7 的 14 个已提交对齐 case
+生成 `figures/alignment_spatial_summary.csv`。14 个 case 均未表现为 border
+concentration。代表性结果：
+
+| Case | 最大误差坐标 `(y,x,c)` | Border mean | Interior mean | 判断 |
+|---|---|---:|---:|---|
+| Bilateral LUT | `(35,55,0)` | 3.73e-8 | 4.25e-8 | 不集中于边缘 |
+| Filmic luma | `(37,246,0)` | 1.24e-8 | 1.31e-8 | 不集中于边缘 |
+| Filmic LUT | `(39,247,0)` | 2.54e-9 | 3.16e-9 | 不集中于边缘 |
+| Local TM | `(23,145,0)` | 7.48e-9 | 8.91e-9 | 不集中于边缘 |
+| HDR merge | `(10,139,0)` | 5.40e-8 | 7.09e-8 | 不集中于边缘 |
+
+这些代表性误差呈全图浮点尾差，而不是 border ring。若 border mean 显著高于
+interior mean，才应优先怀疑 border policy。
+
 ## 3. 常见误差来源
 
 - float32 运算顺序不同；
