@@ -1,0 +1,590 @@
+{
+  "T01_a0006-IMG_2787": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.6029864549636841,
+      "neutral_bg_error": 0.6057414412498474,
+      "neutral_pixel_fraction": 0.20001888275146484
+    },
+    "gray_world": {
+      "gains": [
+        2.050743818283081,
+        1.0,
+        1.7048159837722778
+      ],
+      "neutral_rg_error": 0.01349717378616333,
+      "neutral_bg_error": 0.01025325059890747,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        2.0650107860565186,
+        1.0,
+        1.5251243114471436
+      ],
+      "neutral_rg_error": 0.051993489265441895,
+      "neutral_bg_error": 0.05584084987640381,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.9426395893096924,
+        1.0,
+        1.5614014863967896
+      ],
+      "neutral_rg_error": 0.05546307563781738,
+      "neutral_bg_error": 0.06155914068222046,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T02_a0008-WP_CRW_3959": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.14637815952301025,
+      "neutral_bg_error": 0.4422779083251953,
+      "neutral_pixel_fraction": 0.20006275177001953
+    },
+    "gray_world": {
+      "gains": [
+        1.115248441696167,
+        1.0,
+        1.8085845708847046
+      ],
+      "neutral_rg_error": 0.006747543811798096,
+      "neutral_bg_error": 0.0053997039794921875,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        1.1416044235229492,
+        1.0,
+        1.6927305459976196
+      ],
+      "neutral_rg_error": 0.013991236686706543,
+      "neutral_bg_error": 0.021828293800354004,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.1806011199951172,
+        1.0,
+        1.6557533740997314
+      ],
+      "neutral_rg_error": 0.0088653564453125,
+      "neutral_bg_error": 0.027298331260681152,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T03_a0010-jmac_MG_4807": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.6887940168380737,
+      "neutral_bg_error": 0.362973690032959,
+      "neutral_pixel_fraction": 0.2001504898071289
+    },
+    "gray_world": {
+      "gains": [
+        2.135446786880493,
+        1.0,
+        1.365574598312378
+      ],
+      "neutral_rg_error": 0.0014682412147521973,
+      "neutral_bg_error": 0.0007569789886474609,
+      "neutral_pixel_fraction": 0.20000076293945312
+    },
+    "white_patch": {
+      "gains": [
+        2.4192140102386475,
+        1.0,
+        1.1758760213851929
+      ],
+      "neutral_rg_error": 0.09571051597595215,
+      "neutral_bg_error": 0.11643177270889282,
+      "neutral_pixel_fraction": 0.20000171661376953
+    },
+    "shades_of_gray": {
+      "gains": [
+        2.0989999771118164,
+        1.0,
+        1.3608520030975342
+      ],
+      "neutral_rg_error": 0.00810861587524414,
+      "neutral_bg_error": 0.0018298625946044922,
+      "neutral_pixel_fraction": 0.20000076293945312
+    }
+  },
+  "T04_a0012-kme_143": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.5814225673675537,
+      "neutral_bg_error": 0.44113558530807495,
+      "neutral_pixel_fraction": 0.20013141632080078
+    },
+    "gray_world": {
+      "gains": [
+        2.0275394916534424,
+        1.0,
+        1.4605711698532104
+      ],
+      "neutral_rg_error": 0.011181235313415527,
+      "neutral_bg_error": 0.004953265190124512,
+      "neutral_pixel_fraction": 0.20000076293945312
+    },
+    "white_patch": {
+      "gains": [
+        2.316178560256958,
+        1.0,
+        1.2640380859375
+      ],
+      "neutral_rg_error": 0.01884007453918457,
+      "neutral_bg_error": 0.027790307998657227,
+      "neutral_pixel_fraction": 0.20000648498535156
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.9315762519836426,
+        1.0,
+        1.4956080913543701
+      ],
+      "neutral_rg_error": 0.018793225288391113,
+      "neutral_bg_error": 0.012918591499328613,
+      "neutral_pixel_fraction": 0.20000076293945312
+    }
+  },
+  "T05_a0014-WP_CRW_6320": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.6848143935203552,
+      "neutral_bg_error": 0.06948530673980713,
+      "neutral_pixel_fraction": 0.20009613037109375
+    },
+    "gray_world": {
+      "gains": [
+        2.490870237350464,
+        1.0,
+        1.0915974378585815
+      ],
+      "neutral_rg_error": 0.0005612373352050781,
+      "neutral_bg_error": 0.006590843200683594,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        2.5806782245635986,
+        1.0,
+        1.0489422082901
+      ],
+      "neutral_rg_error": 0.0007557272911071777,
+      "neutral_bg_error": 0.0005817413330078125,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        2.441831588745117,
+        1.0,
+        1.1276545524597168
+      ],
+      "neutral_rg_error": 5.620718002319336e-05,
+      "neutral_bg_error": 0.014493942260742188,
+      "neutral_pixel_fraction": 0.20000076293945312
+    }
+  },
+  "T06_a0018-kme_234": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.46126967668533325,
+      "neutral_bg_error": 0.47985678911209106,
+      "neutral_pixel_fraction": 0.20005130767822266
+    },
+    "gray_world": {
+      "gains": [
+        1.6720565557479858,
+        1.0,
+        1.6179591417312622
+      ],
+      "neutral_rg_error": 0.005135297775268555,
+      "neutral_bg_error": 0.0052637457847595215,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        1.5843361616134644,
+        1.0,
+        1.8023488521575928
+      ],
+      "neutral_rg_error": 0.00019872188568115234,
+      "neutral_bg_error": 0.02397865056991577,
+      "neutral_pixel_fraction": 0.20000076293945312
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.6359572410583496,
+        1.0,
+        1.6084681749343872
+      ],
+      "neutral_rg_error": 0.011185050010681152,
+      "neutral_bg_error": 0.010170042514801025,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T07_a0020-jmac_MG_6225": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.7066545486450195,
+      "neutral_bg_error": 0.572249174118042,
+      "neutral_pixel_fraction": 0.2000112533569336
+    },
+    "gray_world": {
+      "gains": [
+        2.121589422225952,
+        1.0,
+        1.9484500885009766
+      ],
+      "neutral_rg_error": 0.0074825286865234375,
+      "neutral_bg_error": 0.0359310507774353,
+      "neutral_pixel_fraction": 0.20000076293945312
+    },
+    "white_patch": {
+      "gains": [
+        1.09209144115448,
+        1.0,
+        1.0216208696365356
+      ],
+      "neutral_rg_error": 0.6297113299369812,
+      "neutral_bg_error": 0.5313189029693604,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        2.1018741130828857,
+        1.0,
+        1.833527684211731
+      ],
+      "neutral_rg_error": 0.0025949478149414062,
+      "neutral_bg_error": 0.018766701221466064,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T08_a0022-IMG_2380": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.9023705720901489,
+      "neutral_bg_error": 0.43904149532318115,
+      "neutral_pixel_fraction": 0.20000553131103516
+    },
+    "gray_world": {
+      "gains": [
+        3.0529861450195312,
+        1.0,
+        1.4817060232162476
+      ],
+      "neutral_rg_error": 0.008137941360473633,
+      "neutral_bg_error": 0.0020570755004882812,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        1.4031469821929932,
+        1.0,
+        1.2727433443069458
+      ],
+      "neutral_rg_error": 0.5926826000213623,
+      "neutral_bg_error": 0.16416239738464355,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        2.837552785873413,
+        1.0,
+        1.4794572591781616
+      ],
+      "neutral_rg_error": 0.03729349374771118,
+      "neutral_bg_error": 0.008218646049499512,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T09_a0023-07-06-02-at-15h06m48-s_MG_1489": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.42678916454315186,
+      "neutral_bg_error": 0.6309453845024109,
+      "neutral_pixel_fraction": 0.20003032684326172
+    },
+    "gray_world": {
+      "gains": [
+        1.4877132177352905,
+        1.0,
+        2.1534998416900635
+      ],
+      "neutral_rg_error": 0.0013764500617980957,
+      "neutral_bg_error": 0.0008214116096496582,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        1.37896728515625,
+        1.0,
+        2.237755298614502
+      ],
+      "neutral_rg_error": 0.01584070920944214,
+      "neutral_bg_error": 0.005608320236206055,
+      "neutral_pixel_fraction": 0.20000171661376953
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.4487000703811646,
+        1.0,
+        1.9929180145263672
+      ],
+      "neutral_rg_error": 0.016253411769866943,
+      "neutral_bg_error": 0.020806074142456055,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T10_a0026-kme_391": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.35197198390960693,
+      "neutral_bg_error": 1.0063809156417847,
+      "neutral_pixel_fraction": 0.20013809204101562
+    },
+    "gray_world": {
+      "gains": [
+        0.7389867901802063,
+        1.0,
+        6.437857151031494
+      ],
+      "neutral_rg_error": 0.0008653402328491211,
+      "neutral_bg_error": 0.0019191503524780273,
+      "neutral_pixel_fraction": 0.20001697540283203
+    },
+    "white_patch": {
+      "gains": [
+        0.9998838901519775,
+        1.0,
+        1.0012966394424438
+      ],
+      "neutral_rg_error": 0.35182619094848633,
+      "neutral_bg_error": 1.0060169696807861,
+      "neutral_pixel_fraction": 0.20000457763671875
+    },
+    "shades_of_gray": {
+      "gains": [
+        0.7351283431053162,
+        1.0,
+        3.2521755695343018
+      ],
+      "neutral_rg_error": 0.018355369567871094,
+      "neutral_bg_error": 0.48139816522598267,
+      "neutral_pixel_fraction": 0.20000171661376953
+    }
+  },
+  "T11_a0033-KE_-2590": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.5324851870536804,
+      "neutral_bg_error": 0.6767954230308533,
+      "neutral_pixel_fraction": 0.20000743865966797
+    },
+    "gray_world": {
+      "gains": [
+        1.2002370357513428,
+        1.0,
+        2.4463424682617188
+      ],
+      "neutral_rg_error": 0.023706495761871338,
+      "neutral_bg_error": 0.011745810508728027,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        1.6355881690979004,
+        1.0,
+        1.798647403717041
+      ],
+      "neutral_rg_error": 0.06645727157592773,
+      "neutral_bg_error": 0.10263711214065552,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.1931740045547485,
+        1.0,
+        2.084207057952881
+      ],
+      "neutral_rg_error": 0.09738385677337646,
+      "neutral_bg_error": 0.10432577133178711,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T12_a0034-LSYD4O2202": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.6074760556221008,
+      "neutral_bg_error": 0.9376489520072937,
+      "neutral_pixel_fraction": 0.2001800537109375
+    },
+    "gray_world": {
+      "gains": [
+        1.6948286294937134,
+        1.0,
+        3.9843146800994873
+      ],
+      "neutral_rg_error": 0.03353339433670044,
+      "neutral_bg_error": 0.032865285873413086,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        1.5613971948623657,
+        1.0,
+        3.9068830013275146
+      ],
+      "neutral_rg_error": 0.0689510703086853,
+      "neutral_bg_error": 0.05239081382751465,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.689814567565918,
+        1.0,
+        3.3412740230560303
+      ],
+      "neutral_rg_error": 0.04500669240951538,
+      "neutral_bg_error": 0.04476010799407959,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T13_a0035-dgw_048": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.0783005952835083,
+      "neutral_bg_error": 0.16950982809066772,
+      "neutral_pixel_fraction": 0.2000131607055664
+    },
+    "gray_world": {
+      "gains": [
+        1.5117418766021729,
+        1.0,
+        1.3061727285385132
+      ],
+      "neutral_rg_error": 0.05422168970108032,
+      "neutral_bg_error": 0.06482702493667603,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        2.133448839187622,
+        1.0,
+        1.0595579147338867
+      ],
+      "neutral_rg_error": 0.05724543333053589,
+      "neutral_bg_error": 0.05333918333053589,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.1242320537567139,
+        1.0,
+        1.2655903100967407
+      ],
+      "neutral_rg_error": 0.04166555404663086,
+      "neutral_bg_error": 0.03253173828125,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  },
+  "T14_a0040-_DSC5693": {
+    "none": {
+      "gains": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "neutral_rg_error": 0.4492642879486084,
+      "neutral_bg_error": 0.39037567377090454,
+      "neutral_pixel_fraction": 0.2000112533569336
+    },
+    "gray_world": {
+      "gains": [
+        1.4574775695800781,
+        1.0,
+        1.6636309623718262
+      ],
+      "neutral_rg_error": 0.0537412166595459,
+      "neutral_bg_error": 0.001646280288696289,
+      "neutral_pixel_fraction": 0.19999980926513672
+    },
+    "white_patch": {
+      "gains": [
+        0.9999993443489075,
+        1.0,
+        0.999999463558197
+      ],
+      "neutral_rg_error": 0.44926637411117554,
+      "neutral_bg_error": 0.39037734270095825,
+      "neutral_pixel_fraction": 0.2000102996826172
+    },
+    "shades_of_gray": {
+      "gains": [
+        1.2519892454147339,
+        1.0,
+        1.9853085279464722
+      ],
+      "neutral_rg_error": 0.14321398735046387,
+      "neutral_bg_error": 0.09398937225341797,
+      "neutral_pixel_fraction": 0.19999980926513672
+    }
+  }
+}

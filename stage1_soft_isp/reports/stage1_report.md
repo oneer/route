@@ -76,6 +76,8 @@ RAW -> BLC -> DPC -> LSC -> Demosaic -> AWB -> CCM -> Tone Mapping -> Gamma -> s
 
 对现有报告的更细缺陷分析和后续补强路线，已整理到 [Stage 1 ISP 学习报告深度复盘与改进计划](stage1_deep_review_improvement_plan.md)。这份计划把 Week1-Week6 的不足拆成“可立即补的报告说明”“可用现有数据补的实验”和“需要 ColorChecker / flat-field 等真实标定数据才能完成的产品级验证”三类，后续可以按优先级逐项推进。
 
+在没有新增手机 DNG、ColorChecker 或 flat-field 数据的前提下，已补充一份 [可落地 RAW 体检与画质诊断补强](feasible_raw_quality_audit.md)。它用现有 DNG 生成 RAW 直方图与 ROI 标注图、clipping、ROI SNR proxy、DR 估算、MTF50 proxy、DPC 注入召回、DPC 参数扫描和 AWB baseline 对比。该报告只作为可复现诊断证据，不把自然图 ROI 指标包装成工业实验室 SNR/MTF 或量产 tuning 经验。
+
 根据这轮深度复盘，Week1-Week6 报告已经补充了以下内容：
 
 | 周次 | 已补强内容 |
