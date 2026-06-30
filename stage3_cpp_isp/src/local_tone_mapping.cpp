@@ -16,6 +16,7 @@ float clamp01(float value) {
 
 float luminance(const ImageView<const float>& input, std::uint32_t y, std::uint32_t x) {
     if (input.channels() >= 3) {
+        // Rec.709/sRGB 亮度系数；绿色对感知亮度贡献最大。
         return 0.2126F * input(y, x, 0) + 0.7152F * input(y, x, 1) + 0.0722F * input(y, x, 2);
     }
     return input(y, x, 0);
@@ -71,6 +72,7 @@ void estimate_luminance_base(const ImageView<const float>& input,
     validate_params(params);
     const int r = static_cast<int>(params.base_radius);
 
+    // base 是单通道亮度低频层。Box 模式是普通均值；Bilateral 模式会降低跨边缘像素的权重。
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
             const float center = luminance(input, y, x);
@@ -84,6 +86,7 @@ void estimate_luminance_base(const ImageView<const float>& input,
                                                                      params.border_policy);
                     float weight = 1.0F;
                     if (params.base_filter == LocalBaseFilter::Bilateral) {
+                        // 双边 base 能减少亮暗边界附近的 halo，这是局部 tone mapping 的关键。
                         weight = spatial_weight(dx, dy, params.base_sigma_spatial) *
                                  range_weight(value - center, params.base_sigma_range);
                     }
@@ -106,6 +109,7 @@ void local_tone_map(const ImageView<const float>& input,
     estimate_luminance_base(input, base.view(), params);
     const auto base_view = static_cast<const ImageBuffer<float>&>(base).view();
 
+    // 分解思想：luminance = base * detail。压缩 base，再把 detail 按强度乘回去。
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
             const float y_linear = luminance(input, y, x);
@@ -117,6 +121,7 @@ void local_tone_map(const ImageView<const float>& input,
             const float scale = y_mapped / std::max(y_linear, kEpsilon);
 
             for (std::uint32_t c = 0; c < input.channels(); ++c) {
+                // 所有通道使用同一亮度比例缩放，尽量保持色相不漂移。
                 output(y, x, c) = clamp01(input(y, x, c) * scale);
             }
         }

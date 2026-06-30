@@ -42,6 +42,7 @@
         log_every: 25           # 日志输出间隔（步）
         val_every: 50           # 验证间隔（步）
 """
+# 中文说明：从 YAML 配置构建完整训练流程，包括数据、模型、优化器、验证和可视化。
 
 from __future__ import annotations
 
@@ -74,18 +75,25 @@ def resolve_device(name: str) -> torch.device:
     返回：
         torch.device 对象
     """
+    # 中文说明：根据配置和本机 CUDA 可用性选择训练设备。
     if name == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(name)
 
 
 def resolve_project_path(project_root: Path, path: str | Path) -> Path:
+    """中文说明：把配置中的相对路径解析到项目根目录下，避免从不同工作目录运行时路径漂移。
+    
+    输入：project_root、path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     resolved = Path(path)
     return resolved if resolved.is_absolute() else project_root / resolved
 
 
 def build_criterion(name: str) -> nn.Module:
     """构建训练损失；未知名称必须报错，避免实验静默用错 loss。"""
+    # 中文说明：根据配置名称创建训练损失函数。
     normalized = str(name).lower()
     if normalized == "l1":
         return nn.L1Loss()
@@ -100,17 +108,33 @@ def build_criterion(name: str) -> nn.Module:
 
 class CharbonnierLoss(nn.Module):
     """平滑 L1：sqrt((prediction-target)^2 + eps^2)。"""
+    # 中文说明：平滑版 L1 损失，对异常像素比 L2 更稳，也比普通 L1 更可导。
 
     def __init__(self, eps: float = 1e-3) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：eps。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
         self.eps = float(eps)
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
+        
+        输入：prediction、target。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         difference = prediction - target
         return torch.sqrt(difference * difference + self.eps * self.eps).mean()
 
 
 def build_dataset(config: dict, project_root: Path, split: str):
+    """中文说明：根据配置中的 dataset.type 构造训练集或验证集对象。
+    
+    输入：config、project_root、split。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     data_cfg = config["data"]
     seed = config["experiment"].get("seed", 42)
     if split == "val":
@@ -162,6 +186,7 @@ def train_from_config(config: dict) -> None:
     参数：
         config: 完整的配置字典（通常从 YAML 文件解析而来）
     """
+    # 中文说明：读取配置并执行完整训练循环，同时处理日志、验证、可视化和 checkpoint。
     # ============================================================
     # 0. 基础设置：种子、设备、输出目录
     # ============================================================

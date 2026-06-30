@@ -1,3 +1,5 @@
+"""HDR 合成参考脚本：生成 toy HDR 结果和指标，用来对照 C++ hdr_merge_aligned。"""
+
 from __future__ import annotations
 
 import argparse

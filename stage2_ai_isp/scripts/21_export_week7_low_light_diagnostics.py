@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export low-light specific diagnostics for Week 7."""
+# 中文说明：导出 Week7 低光诊断报告。
 
 from __future__ import annotations
 
@@ -22,6 +23,10 @@ from ai_isp.models import build_model
 
 @dataclass
 class DiagnosticSummary:
+    """中文说明：低光诊断摘要，记录亮度、误差和指标变化。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     name: str
     luma_mean: float
     luma_mae: float
@@ -34,6 +39,11 @@ class DiagnosticSummary:
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Week 7 low-light diagnostics.")
     parser.add_argument("--config", default="stage2_ai_isp/configs/low_light_sidd_tiny_unet_l1_300.yaml")
     parser.add_argument(
@@ -48,19 +58,39 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_rgb(path: Path) -> np.ndarray:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     image = Image.open(path).convert("RGB")
     return np.asarray(image, dtype=np.float32) / 255.0
 
 
 def to_tensor(image: np.ndarray) -> torch.Tensor:
+    """中文说明：执行格式转换，让数据适配图像保存、模型输入或指标计算。
+    
+    输入：image。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0)
 
 
 def luma(image: np.ndarray) -> np.ndarray:
+    """中文说明：实现 `luma` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：image。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return 0.299 * image[..., 0] + 0.587 * image[..., 1] + 0.114 * image[..., 2]
 
 
 def summarize(name: str, image: np.ndarray, clean: np.ndarray, dark_mask: np.ndarray, delta_threshold: float) -> DiagnosticSummary:
+    """中文说明：从原始记录中提炼关键统计量，降低报告和诊断脚本的重复逻辑。
+    
+    输入：name、image、clean、dark_mask、delta_threshold。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     image_luma = luma(image)
     clean_luma = luma(clean)
     delta = image_luma - clean_luma
@@ -78,6 +108,11 @@ def summarize(name: str, image: np.ndarray, clean: np.ndarray, dark_mask: np.nda
 
 
 def list_pairs(noisy_dir: Path, clean_dir: Path, max_images: int) -> list[tuple[Path, Path]]:
+    """中文说明：实现 `list_pairs` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：noisy_dir、clean_dir、max_images。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     noisy = {path.name: path for path in sorted(noisy_dir.glob("*.png"))}
     clean = {path.name: path for path in sorted(clean_dir.glob("*.png"))}
     names = sorted(set(noisy) & set(clean))[:max_images]
@@ -87,6 +122,11 @@ def list_pairs(noisy_dir: Path, clean_dir: Path, max_images: int) -> list[tuple[
 
 
 def load_model(config_path: Path, checkpoint_path: Path) -> torch.nn.Module:
+    """中文说明：按配置和 checkpoint 构建模型并载入权重，用于离线推理或诊断。
+    
+    输入：config_path、checkpoint_path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     with config_path.open("r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
@@ -98,12 +138,22 @@ def load_model(config_path: Path, checkpoint_path: Path) -> torch.nn.Module:
 
 @torch.no_grad()
 def infer(model: torch.nn.Module, low: np.ndarray) -> np.ndarray:
+    """中文说明：执行单张或小批量推理，并把输出限制在合法图像范围内。
+    
+    输入：model、low。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     tensor = to_tensor(low)
     output = torch.clamp(model(tensor), 0.0, 1.0)
     return output.squeeze(0).permute(1, 2, 0).cpu().numpy()
 
 
 def mean_summary(name: str, rows: list[DiagnosticSummary]) -> DiagnosticSummary:
+    """中文说明：实现 `mean_summary` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：name、rows。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return DiagnosticSummary(
         name=name,
         luma_mean=float(np.mean([row.luma_mean for row in rows])),
@@ -118,6 +168,11 @@ def mean_summary(name: str, rows: list[DiagnosticSummary]) -> DiagnosticSummary:
 
 
 def write_csv(rows: list[DiagnosticSummary], path: Path) -> None:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：rows、path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -151,6 +206,11 @@ def write_csv(rows: list[DiagnosticSummary], path: Path) -> None:
 
 
 def write_markdown(rows: list[DiagnosticSummary], path: Path, csv_path: Path, sample_count: int) -> None:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：rows、path、csv_path、sample_count。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     input_row = next(row for row in rows if row.name == "low_light_input")
     output_row = next(row for row in rows if row.name == "model_output")
     clean_row = next(row for row in rows if row.name == "clean_target")
@@ -207,6 +267,11 @@ def write_markdown(rows: list[DiagnosticSummary], path: Path, csv_path: Path, sa
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     config_path = Path(args.config)
     with config_path.open("r", encoding="utf-8") as f:

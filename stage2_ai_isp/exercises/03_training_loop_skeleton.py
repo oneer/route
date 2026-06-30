@@ -1,4 +1,5 @@
 """练习：补全一个最小但正确的训练 step。"""
+# 中文说明：练习骨架代码，保留关键 TODO，帮助逐步实现数据集、训练循环和指标。
 
 from __future__ import annotations
 
@@ -15,6 +16,11 @@ def train_step(
     # TODO: 按正确顺序完成：
     # zero_grad -> forward -> loss -> backward -> optimizer step
     # 返回 Python float。
+    """中文说明：实现 `train_step` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：model、optimizer、criterion、noisy、clean。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     raise NotImplementedError
 
 
@@ -27,6 +33,11 @@ def validate_step(
     # - 临时切到 eval；
     # - 推理并 clamp；
     # - 恢复调用前的 train/eval 状态。
+    """中文说明：实现 `validate_step` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：model、noisy。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     raise NotImplementedError
 
 

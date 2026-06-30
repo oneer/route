@@ -1,3 +1,8 @@
+"""中文说明：单元测试代码，用小规模输入检查数据、模型、指标和训练引擎的基本行为。
+
+本文件属于 Stage2 AI ISP 实验代码；注释重点解释数据流、训练逻辑或导出用途，不改变任何运行行为。
+"""
+
 from __future__ import annotations
 
 import tempfile
@@ -14,7 +19,16 @@ from ai_isp.data.toy_rgb_dataset import ToyRGBDenoiseDataset
 
 
 class DatasetTests(unittest.TestCase):
+    """中文说明：数据相关单元测试集合。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     def test_toy_dataset_is_deterministic(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         dataset = ToyRGBDenoiseDataset(2, 32, 0.03, 0.12, seed=7)
         first = dataset[0]
         second = dataset[0]
@@ -22,6 +36,11 @@ class DatasetTests(unittest.TestCase):
         self.assertTrue(torch.equal(first["noisy"], second["noisy"]))
 
     def test_paired_dataset_uses_identical_crop(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             noisy_dir = root / "noisy"
@@ -37,6 +56,11 @@ class DatasetTests(unittest.TestCase):
             self.assertTrue(torch.equal(sample["noisy"], sample["clean"]))
 
     def test_full_image_dataset(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for folder in ("noisy", "clean"):
@@ -49,6 +73,11 @@ class DatasetTests(unittest.TestCase):
             self.assertEqual(tuple(sample["clean"].shape), (3, 29, 37))
 
     def test_rggb_channel_positions(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         rgb = torch.zeros(3, 4, 4)
         rgb[0] = 1.0
         rgb[1] = 0.5

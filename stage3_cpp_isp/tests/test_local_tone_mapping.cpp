@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// 局部 tone mapping 测试关注 base 估计、亮部压缩，以及 bilateral base 相对 box base 的边缘保护。
 namespace {
 
 void require(bool condition, const char* message) {

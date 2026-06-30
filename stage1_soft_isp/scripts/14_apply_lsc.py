@@ -46,22 +46,26 @@ from soft_isp.orientation import apply_rawpy_orientation
 from soft_isp.stats import bayer_pattern_from_rawpy, describe_array
 
 
+# 中文注释：从输入路径提取稳定样本名，用作图像、JSON 和报告文件的前缀。
 def sample_id(raw_path: Path) -> str:
     return raw_path.name.split("_", 1)[0]
 
 
+# 中文注释：把 RAW 数据按分位点拉伸成预览图，用于可视化校正前后差异。
 def raw_preview(raw_array: np.ndarray, display_white: float) -> np.ndarray:
     gray = np.clip(raw_array.astype(np.float32) / max(display_white, 1.0), 0.0, 1.0)
     gray8 = (gray * 255.0 + 0.5).astype(np.uint8)
     return np.repeat(gray8[:, :, None], 3, axis=2)
 
 
+# 中文注释：把 LSC gain map 映射成可视化图像，显示边缘增益强弱。
 def gain_preview(gain_map: np.ndarray) -> np.ndarray:
     norm = (gain_map - np.min(gain_map)) / max(float(np.max(gain_map) - np.min(gain_map)), 1e-6)
     img = (norm * 255.0 + 0.5).astype(np.uint8)
     return np.repeat(img[:, :, None], 3, axis=2)
 
 
+# 中文注释：保存并排对比图，使校正前后或不同算法结果可以直接目视比较。
 def save_compare(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -> None:
     fig, axes = plt.subplots(1, len(panels), figsize=(5.0 * len(panels), 4.2), constrained_layout=True)
     for ax, (panel_title, image) in zip(axes, panels):
@@ -73,6 +77,7 @@ def save_compare(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -
     plt.close(fig)
 
 
+# 中文注释：处理单个 RAW 样本并返回结构化统计，供批处理和报告复用。
 def analyze_one(raw_path: Path, out_dir: Path, min_delta: int, mad_k: float) -> dict:
     with rawpy.imread(str(raw_path)) as raw:
         raw_visible = raw.raw_image_visible.copy()
@@ -112,14 +117,17 @@ def analyze_one(raw_path: Path, out_dir: Path, min_delta: int, mad_k: float) -> 
     return result
 
 
+# 中文注释：把路径格式化成相对报告路径，避免报告中出现冗长的绝对路径。
 def rel(path: str, report_path: Path) -> str:
     return Path(os.path.relpath(path, report_path.parent)).as_posix()
 
 
+# 中文注释：把数值格式化为报告友好的字符串，同时处理缺失或异常值。
 def fmt(value: float) -> str:
     return f"{value:.3f}"
 
 
+# 中文注释：根据已收集的实验结果写 Markdown 报告。
 def write_report(results: list[dict], report_path: Path) -> None:
     lines = [
         "# Week 2-3 LSC 学习报告",
@@ -176,6 +184,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：展开命令行通配符路径，并去重排序，兼容不同 shell。
 def expand_paths(paths: list[Path]) -> list[Path]:
     expanded: list[Path] = []
     for path in paths:
@@ -187,6 +196,7 @@ def expand_paths(paths: list[Path]) -> list[Path]:
     return sorted(expanded)
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Apply learning radial LSC and write a report.")
     parser.add_argument("raw_paths", type=Path, nargs="+")

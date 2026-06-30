@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Make zoomed crop sheets from saved noisy/output/clean triplets."""
+# 中文说明：从可视化结果中裁剪高误差区域，生成失败案例素材。
 
 from __future__ import annotations
 
@@ -12,6 +13,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create crop-level failure case sheets.")
     parser.add_argument("--runs", nargs="+", required=True)
     parser.add_argument("--output-dir", default="stage2_ai_isp/reports/figures/week8_failure_case_crops")
@@ -27,6 +33,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
+    """中文说明：选择绘图可用字体；找不到指定字体时回退到默认字体。
+    
+    输入：size、bold。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     candidates = [
         "C:/Windows/Fonts/msyhbd.ttc" if bold else "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
@@ -40,6 +51,11 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def pick_last_vis(run: Path) -> Path:
+    """中文说明：实现 `pick_last_vis` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：run。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     images = sorted((run / "vis").glob("step_*.png"))
     if not images:
         raise FileNotFoundError(f"No vis images in {run / 'vis'}")
@@ -47,6 +63,11 @@ def pick_last_vis(run: Path) -> Path:
 
 
 def split_triplet(path: Path) -> tuple[Image.Image, Image.Image, Image.Image]:
+    """中文说明：实现 `split_triplet` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     image = Image.open(path).convert("RGB")
     panel_w = image.width // 3
     return (
@@ -57,6 +78,11 @@ def split_triplet(path: Path) -> tuple[Image.Image, Image.Image, Image.Image]:
 
 
 def center_crop(image: Image.Image, size: int) -> Image.Image:
+    """中文说明：从图像中心裁剪固定大小区域，保证 noisy/clean 对齐且便于快速实验。
+    
+    输入：image、size。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     left = (image.width - size) // 2
     top = (image.height - size) // 2
     return image.crop((left, top, left + size, top + size))
@@ -66,6 +92,7 @@ def top_error_box(
     output: Image.Image, clean: Image.Image, size: int
 ) -> tuple[int, int, int, int]:
     """Find the size×size window with the largest mean absolute RGB error."""
+    # 中文说明：补充说明：`top_error_box` 是当前模块流程中的一个复用步骤。
     out = np.asarray(output, dtype=np.float32) / 255.0
     target = np.asarray(clean, dtype=np.float32) / 255.0
     error = np.mean(np.abs(out - target), axis=2)
@@ -84,6 +111,11 @@ def top_error_box(
 
 
 def error_image(output: Image.Image, clean: Image.Image) -> tuple[Image.Image, float]:
+    """中文说明：实现 `error_image` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：output、clean。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     out = np.asarray(output, dtype=np.float32) / 255.0
     tgt = np.asarray(clean, dtype=np.float32) / 255.0
     err = np.mean(np.abs(out - tgt), axis=2)
@@ -93,6 +125,11 @@ def error_image(output: Image.Image, clean: Image.Image) -> tuple[Image.Image, f
 
 
 def labeled(title: str, image: Image.Image, zoom: int) -> Image.Image:
+    """中文说明：实现 `labeled` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：title、image、zoom。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     resized = image.resize((image.width * zoom, image.height * zoom), Image.Resampling.NEAREST)
     label_h = 34
     panel = Image.new("RGB", (resized.width, resized.height + label_h), (248, 250, 252))
@@ -103,6 +140,11 @@ def labeled(title: str, image: Image.Image, zoom: int) -> Image.Image:
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

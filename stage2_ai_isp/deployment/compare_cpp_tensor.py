@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compare C++ ORT float output against PyTorch and save a PNG preview."""
+# 中文说明：部署验证脚本代码，用于导出 ONNX、准备 C++ 对齐张量、比较不同后端输出。
 
 from __future__ import annotations
 
@@ -23,6 +24,11 @@ from ai_isp.models import build_model
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--checkpoint", required=True)
@@ -33,6 +39,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_tensor(path: str) -> np.ndarray:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     with Path(path).open("rb") as file:
         shape = struct.unpack("<4i", file.read(16))
         array = np.frombuffer(file.read(), dtype="<f4").copy()
@@ -43,6 +54,11 @@ def read_tensor(path: str) -> np.ndarray:
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     with Path(args.config).open("r", encoding="utf-8") as file:
         config = yaml.safe_load(file)

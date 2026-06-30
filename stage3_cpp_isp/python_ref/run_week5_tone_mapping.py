@@ -1,3 +1,5 @@
+"""Week 5 tone mapping 脚本：生成浮点 tone curve 对比、ROI 指标和 C++/Python 对齐结果。"""
+
 from __future__ import annotations
 
 import csv

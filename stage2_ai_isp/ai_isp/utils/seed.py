@@ -8,6 +8,7 @@
     - CUDA 的确定性操作（如 cudnn.deterministic）会降低性能，此处未强制开启
     - DataLoader 的多进程数据加载仍需额外设置 worker_init_fn 才能完全确定
 """
+# 中文说明：统一设置随机种子，减少实验间的随机波动。
 
 from __future__ import annotations
 
@@ -29,6 +30,7 @@ def seed_everything(seed: int) -> None:
         - PyTorch CPU 随机数生成器
         - PyTorch CUDA 随机数生成器（如果可用）
     """
+    # 中文说明：同时固定 Python、NumPy、PyTorch 的随机源，提升实验可复现性。
     # Python 内置随机
     random.seed(seed)
 

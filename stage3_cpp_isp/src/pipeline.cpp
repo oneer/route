@@ -12,6 +12,7 @@ namespace {
 
 ImageBuffer<float> copy_image(const ImageView<const float>& input) {
     ImageBuffer<float> output(input.width(), input.height(), input.channels(), input.row_stride());
+    // 显式拷贝成拥有内存的 ImageBuffer，避免后续中间结果依赖外部输入生命周期。
     for (std::uint32_t c = 0; c < input.channels(); ++c) {
         for (std::uint32_t y = 0; y < input.height(); ++y) {
             for (std::uint32_t x = 0; x < input.width(); ++x) {
@@ -26,6 +27,7 @@ void apply_pipeline_denoise(const ImageView<const float>& input,
                             ImageView<float> output,
                             PipelineDenoiseMode mode) {
     if (mode == PipelineDenoiseMode::None) {
+        // None 模式仍写入 denoised 缓冲，保证下游管线总能读取同名中间结果。
         for (std::uint32_t c = 0; c < input.channels(); ++c) {
             for (std::uint32_t y = 0; y < input.height(); ++y) {
                 for (std::uint32_t x = 0; x < input.width(); ++x) {
@@ -36,6 +38,7 @@ void apply_pipeline_denoise(const ImageView<const float>& input,
         return;
     }
     if (mode == PipelineDenoiseMode::Box) {
+        // 教学默认半径 1：窗口 3x3，便于和 Python reference 对齐。
         box_filter(input, output, 1, BorderPolicy::Reflect);
         return;
     }
@@ -50,6 +53,7 @@ void apply_pipeline_tone(const ImageView<const float>& input,
                          ImageView<float> output,
                          const PipelineParams& params) {
     if (params.tone == PipelineToneMode::Global) {
+        // 全局 tone mapping 使用 preserve_luminance，避免 RGB 三通道独立压缩带来的色相变化。
         ToneMappingParams tone_params;
         tone_params.curve = params.curve;
         tone_params.exposure = params.exposure;
@@ -58,6 +62,7 @@ void apply_pipeline_tone(const ImageView<const float>& input,
         return;
     }
     if (params.tone == PipelineToneMode::Lut) {
+        // LUT 路径固定 12-bit 输入/输出，模拟常见 ISP 硬件查表模块。
         ToneLutParams lut_params;
         lut_params.curve = params.curve;
         lut_params.exposure = params.exposure;
@@ -70,6 +75,7 @@ void apply_pipeline_tone(const ImageView<const float>& input,
         return;
     }
     if (params.tone == PipelineToneMode::Local) {
+        // 局部路径默认用 bilateral base，牺牲一点速度换更少 halo。
         LocalToneMappingParams local_params;
         local_params.curve = params.curve;
         local_params.exposure = params.exposure;
@@ -86,6 +92,7 @@ void apply_pipeline_tone(const ImageView<const float>& input,
 
 void apply_pipeline_gamma(const ImageView<const float>& input, ImageView<float> output, float gamma) {
     if (gamma == 1.0F) {
+        // gamma=1 是恒等变换，但仍写入 output，保持中间结果完整。
         for (std::uint32_t c = 0; c < input.channels(); ++c) {
             for (std::uint32_t y = 0; y < input.height(); ++y) {
                 for (std::uint32_t x = 0; x < input.width(); ++x) {
@@ -178,6 +185,7 @@ const char* to_string(ToneCurve curve) {
 PipelineIntermediates run_pipeline_single(const ImageView<const float>& input,
                                           const PipelineParams& params) {
     PipelineIntermediates result;
+    // 按阶段分配独立缓冲，便于 dump_intermediate 和 golden test 检查每一步。
     result.source = copy_image(input);
     result.denoised = ImageBuffer<float>(input.width(), input.height(), input.channels());
     result.tone_mapped = ImageBuffer<float>(input.width(), input.height(), input.channels());
@@ -199,6 +207,7 @@ PipelineIntermediates run_pipeline_hdr(const ImageView<const float>& short_image
                                        const HdrMergeParams& hdr_params,
                                        const PipelineParams& params) {
     ImageBuffer<float> merged(short_image.width(), short_image.height(), short_image.channels());
+    // HDR 合成后的 merged 是线性域图像，可以直接走普通单帧 ISP 教学管线。
     hdr_merge_aligned(short_image, long_image, merged.view(), hdr_params);
     const auto merged_view = static_cast<const ImageBuffer<float>&>(merged).view();
     return run_pipeline_single(merged_view, params);

@@ -16,6 +16,7 @@ SSIM（结构相似度）：
     该实现用于仓库内部统一评估；与外部 benchmark 对比时仍需确认颜色空间、
     border crop、量化方式和官方评测脚本完全一致。
 """
+# 中文说明：实现批量 PSNR 与 SSIM，供验证和离线评估复用。
 
 from __future__ import annotations
 
@@ -34,6 +35,7 @@ def batch_psnr(pred: torch.Tensor, target: torch.Tensor, eps: float = 1e-8) -> t
     返回：
         PSNR 值，形状 (B,)，单位 dB
     """
+    # 中文说明：按 batch 计算 PSNR，数值越高表示预测图像越接近目标图像。
     # 逐样本、逐通道、逐像素的均方误差（dim=(1,2,3) 在 C/H/W 上平均）
     mse = torch.mean((pred - target) ** 2, dim=(1, 2, 3))
 
@@ -48,6 +50,11 @@ def _gaussian_window(
     device: torch.device,
     dtype: torch.dtype,
 ) -> torch.Tensor:
+    """中文说明：实现 `_gaussian_window` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：channels、window_size、sigma、device、dtype。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     coordinates = torch.arange(window_size, device=device, dtype=dtype)
     coordinates = coordinates - (window_size - 1) / 2
     gaussian = torch.exp(-(coordinates * coordinates) / (2 * sigma * sigma))
@@ -77,6 +84,7 @@ def batch_ssim(
         避免人工零边界影响统计。
         C₁=(0.01)², C₂=(0.03)² 参考 Wang et al. 2004 的默认参数。
     """
+    # 中文说明：按 batch 计算 SSIM，关注结构相似度而不只是像素误差。
     # SSIM 稳定常数（参考原始论文的默认值）
     c1 = 0.01 ** 2
     c2 = 0.03 ** 2

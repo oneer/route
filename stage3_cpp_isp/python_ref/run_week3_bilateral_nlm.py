@@ -1,3 +1,5 @@
+"""Week 3 实验脚本：比较 bilateral、range LUT bilateral 和 NLM 参考算法。"""
+
 from __future__ import annotations
 
 import csv

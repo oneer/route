@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Visualize the bridge from sRGB images to pseudo Bayer/RAW concepts."""
+# 中文说明：演示 RGB 到伪 RAW 再回到 RGB 的桥接过程和误差。
 
 from __future__ import annotations
 
@@ -12,6 +13,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create pseudo RAW/ISP bridge figures.")
     parser.add_argument(
         "--input",
@@ -28,6 +34,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
+    """中文说明：选择绘图可用字体；找不到指定字体时回退到默认字体。
+    
+    输入：size、bold。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     candidates = [
         "C:/Windows/Fonts/msyhbd.ttc" if bold else "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
@@ -41,6 +52,11 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def center_crop(image: Image.Image, size: int) -> Image.Image:
+    """中文说明：从图像中心裁剪固定大小区域，保证 noisy/clean 对齐且便于快速实验。
+    
+    输入：image、size。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     w, h = image.size
     left = (w - size) // 2
     top = (h - size) // 2
@@ -49,6 +65,7 @@ def center_crop(image: Image.Image, size: int) -> Image.Image:
 
 def rgb_to_bayer(rgb: np.ndarray) -> np.ndarray:
     """Create an RGGB Bayer mosaic from RGB, using values in [0, 1]."""
+    # 中文说明：补充说明：`rgb_to_bayer` 是当前模块流程中的一个复用步骤。
     h, w, _ = rgb.shape
     bayer = np.zeros((h, w), dtype=np.float32)
     bayer[0::2, 0::2] = rgb[0::2, 0::2, 0]  # R
@@ -59,6 +76,11 @@ def rgb_to_bayer(rgb: np.ndarray) -> np.ndarray:
 
 
 def pack_rggb(bayer: np.ndarray) -> np.ndarray:
+    """中文说明：实现 `pack_rggb` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：bayer。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return np.stack(
         [
             bayer[0::2, 0::2],
@@ -72,6 +94,7 @@ def pack_rggb(bayer: np.ndarray) -> np.ndarray:
 
 def nearest_demosaic_from_pack(pack: np.ndarray) -> np.ndarray:
     """Nearest-neighbor demosaic from RGGB pack for concept visualization."""
+    # 中文说明：补充说明：`nearest_demosaic_from_pack` 是当前模块流程中的一个复用步骤。
     r = pack[:, :, 0]
     g = 0.5 * (pack[:, :, 1] + pack[:, :, 2])
     b = pack[:, :, 3]
@@ -80,14 +103,29 @@ def nearest_demosaic_from_pack(pack: np.ndarray) -> np.ndarray:
 
 
 def to_uint8(array: np.ndarray) -> np.ndarray:
+    """中文说明：把浮点图像裁剪到 [0,1] 后转换为 uint8，便于 PIL 保存。
+    
+    输入：array。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return (np.clip(array, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
 
 
 def heat_gray(array: np.ndarray) -> Image.Image:
+    """中文说明：实现 `heat_gray` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：array。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return Image.fromarray(to_uint8(array)).convert("RGB")
 
 
 def make_labeled_panel(title: str, image: Image.Image, width: int = 256) -> Image.Image:
+    """中文说明：构造后续流程需要的对象或可视化产物，把零散配置集中成可复用结果。
+    
+    输入：title、image、width。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     ratio = width / image.width
     resized = image.resize((width, int(image.height * ratio)), Image.Resampling.BICUBIC)
     label_h = 42
@@ -99,6 +137,11 @@ def make_labeled_panel(title: str, image: Image.Image, width: int = 256) -> Imag
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

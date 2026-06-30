@@ -1,3 +1,5 @@
+"""Week 4 性能脚本：调用 C++ bilateral 工具/benchmark，整理速度和对齐数据。"""
+
 from __future__ import annotations
 
 import csv

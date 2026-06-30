@@ -1,3 +1,10 @@
+"""Week 2：为最小 C++ ONNX Runtime runner 准备输入和参考输出。
+
+C++ runner 故意只依赖 PPM P6 和裸 float32 文件，避免引入图像库差异。该脚本
+把 PNG 输入转成 PPM，同时用 Python ORT 生成 PNG 可视化参考和 .f32 张量参考，
+用于验证 C++ 输出是否逐元素对齐。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -26,16 +33,19 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_manifest(path: Path) -> list[dict[str, str]]:
+    # manifest 来自 Week 0.5，保证 C++ I/O 测试不偷偷更换样本。
     with path.open("r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def save_ppm_from_png(src: Path, dst: Path) -> None:
+    # PPM P6 格式简单，C++ 端可以用少量代码读写，适合部署教学样例。
     dst.parent.mkdir(parents=True, exist_ok=True)
     Image.open(src).convert("RGB").save(dst)
 
 
 def save_ort_reference(session: ort.InferenceSession, src: Path, dst: Path) -> None:
+    # 保存 PNG 参考图用于肉眼检查 C++ runner 输出是否合理。
     image = Image.open(src).convert("RGB")
     arr = np.asarray(image, dtype=np.float32) / 255.0
     nchw = np.transpose(arr, (2, 0, 1))[None, ...]
@@ -46,6 +56,7 @@ def save_ort_reference(session: ort.InferenceSession, src: Path, dst: Path) -> N
 
 
 def save_ort_tensor_reference(session: ort.InferenceSession, src: Path, dst: Path) -> None:
+    # 保存原始 float32 输出用于严格数值比较，避免 PNG 量化掩盖误差。
     image = Image.open(src).convert("RGB")
     arr = np.asarray(image, dtype=np.float32) / 255.0
     nchw = np.transpose(arr, (2, 0, 1))[None, ...].astype(np.float32)
@@ -59,6 +70,7 @@ def main() -> None:
     root = project_root()
     rows = read_manifest(root / args.manifest)
     if args.count > 0:
+        # count 用于快速冒烟测试；默认 0 表示处理 manifest 中全部样本。
         rows = rows[: args.count]
     session = ort.InferenceSession(str(root / args.onnx), providers=["CPUExecutionProvider"])
     out_dir = root / args.output_dir

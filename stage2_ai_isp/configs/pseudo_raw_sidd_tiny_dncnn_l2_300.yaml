@@ -1,3 +1,6 @@
+# 中文说明：Stage2 AI ISP 实验配置 `pseudo raw sidd tiny dncnn l2 300`。
+# 作用：集中声明数据集、模型、损失、优化器、训练步数、验证和输出目录。
+# 阅读方式：先看 dataset/model/loss 确认实验目标，再看 train/val/output 确认可复现细节。
 experiment:
   name: pseudo_raw_sidd_tiny_dncnn_l2_300
   seed: 42
@@ -9,9 +12,11 @@ data:
   train_size: 1000
   val_size: 200
   train:
+  # 中文说明：batch、学习率、步数、随机种子等训练控制项。
     noisy_dir: datasets/sidd_tiny/train/noisy
     clean_dir: datasets/sidd_tiny/train/clean
   val:
+  # 中文说明：验证频率、验证样本数和评估时使用的数据设置。
     noisy_dir: datasets/sidd_tiny/val/noisy
     clean_dir: datasets/sidd_tiny/val/clean
   noise:
@@ -20,6 +25,7 @@ data:
     sigma_max: 0.0
 
 model:
+  # 中文说明：网络结构名称及宽度、深度等模型超参数。
   name: dncnn
   in_channels: 4
   out_channels: 4

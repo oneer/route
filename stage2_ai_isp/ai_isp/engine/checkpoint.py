@@ -12,6 +12,7 @@ Checkpoint 管理 —— 保存并恢复训练状态。
     - last.pth:     每个 val_every 步都更新（最新状态）
     - best_psnr.pth: 仅当验证 PSNR 超过历史最佳时更新
 """
+# 中文说明：封装训练 checkpoint 的保存与恢复逻辑。
 
 from __future__ import annotations
 
@@ -38,6 +39,7 @@ def save_checkpoint(
         best_psnr:  历史最佳验证 PSNR
         config:     完整配置字典
     """
+    # 中文说明：保存模型、优化器、步数和最佳指标，便于恢复训练或部署最优模型。
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -60,6 +62,7 @@ def load_checkpoint(
     map_location: str | torch.device = "cpu",
 ) -> dict:
     """恢复模型以及可选的优化器状态，并返回完整 checkpoint。"""
+    # 中文说明：从磁盘读取 checkpoint，并把模型/优化器状态恢复到当前对象。
     checkpoint = torch.load(Path(path), map_location=map_location)
     state_dict = checkpoint["model"] if "model" in checkpoint else checkpoint
     model.load_state_dict(state_dict)

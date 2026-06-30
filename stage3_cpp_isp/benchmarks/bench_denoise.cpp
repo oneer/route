@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+// 更完整的 bilateral 性能基准：比较 direct/LUT/tile/rows/tiles，并输出 CSV 方便报告画图。
 namespace {
 
 struct BenchCase {
@@ -64,6 +65,7 @@ void print_row(const std::string& method,
 
 int main(int argc, char** argv) {
     const bool full = argc > 1 && std::string(argv[1]) == "--full";
+    // 默认模式跑预览尺寸，--full 才跑 1080p/4K，避免日常验证太慢。
     constexpr int warmup_runs = 1;
     const int measured_runs = full ? 3 : 5;
     const std::vector<BenchCase> cases = full

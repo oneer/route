@@ -36,10 +36,12 @@ from soft_isp.stats import bayer_pattern_from_rawpy, describe_array
 from soft_isp.tone import apply_gamma, normalize_by_percentile, reinhard_tone_map, to_uint8
 
 
+# 中文注释：从输入路径提取稳定样本名，用作图像、JSON 和报告文件的前缀。
 def sample_id(raw_path: Path) -> str:
     return raw_path.name.split("_", 1)[0]
 
 
+# 中文注释：统计 RGB 图像的形状、范围和通道均值，帮助诊断色彩偏移。
 def describe_rgb(rgb: np.ndarray) -> dict:
     return {
         "shape": list(rgb.shape),
@@ -49,18 +51,22 @@ def describe_rgb(rgb: np.ndarray) -> dict:
     }
 
 
+# 中文注释：计算 RGB 三通道均值，用于白平衡和色彩偏差观察。
 def rgb_mean(rgb: np.ndarray) -> list[float]:
     return [float(v) for v in np.mean(rgb.reshape(-1, 3), axis=0)]
 
 
+# 中文注释：把数值格式化为报告友好的字符串，同时处理缺失或异常值。
 def fmt(value: float) -> str:
     return f"{value:.3f}"
 
 
+# 中文注释：把路径格式化成相对报告路径，避免报告中出现冗长的绝对路径。
 def rel(path: str, report_path: Path) -> str:
     return Path(os.path.relpath(path, report_path.parent)).as_posix()
 
 
+# 中文注释：保存并排对比图，使校正前后或不同算法结果可以直接目视比较。
 def save_compare(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -> None:
     fig, axes = plt.subplots(1, len(panels), figsize=(5.0 * len(panels), 4.2), constrained_layout=True)
     if len(panels) == 1:
@@ -74,6 +80,7 @@ def save_compare(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -
     plt.close(fig)
 
 
+# 中文注释：准备参考图面板，作为可视化对比中的基准。
 def reference_panel(raw_path: Path, reference_dir: Path, fallback: np.ndarray) -> np.ndarray:
     reference_path = reference_dir / f"{raw_path.stem}_rawpy_srgb.png"
     if reference_path.exists():
@@ -81,6 +88,7 @@ def reference_panel(raw_path: Path, reference_dir: Path, fallback: np.ndarray) -
     return np.zeros_like(fallback)
 
 
+# 中文注释：构建 Week 4 实验共享的线性 RGB 基础结果。
 def build_week4_base(raw_path: Path, min_delta: int, mad_k: float) -> dict:
     with rawpy.imread(str(raw_path)) as raw:
         raw_visible = raw.raw_image_visible.copy()
@@ -114,16 +122,19 @@ def build_week4_base(raw_path: Path, min_delta: int, mad_k: float) -> dict:
     }
 
 
+# 中文注释：gamma_preview 先按分位点归一化再做 gamma 编码，用于展示不同 gamma 下的亮度变化。
 def gamma_preview(rgb: np.ndarray, percentile: float, gamma: float, display_flip: int) -> np.ndarray:
     preview = to_uint8(apply_gamma(normalize_by_percentile(rgb, percentile), gamma))
     return apply_rawpy_orientation(preview, display_flip)
 
 
+# 中文注释：linear_preview 只做线性归一化不做 tone curve，作为 gamma/tone 实验的基线预览。
 def linear_preview(rgb: np.ndarray, percentile: float, display_flip: int) -> np.ndarray:
     preview = to_uint8(normalize_by_percentile(rgb, percentile))
     return apply_rawpy_orientation(preview, display_flip)
 
 
+# 中文注释：reinhard_preview 应用 Reinhard 压缩后再转 8-bit，用来观察高光保留和整体对比度变化。
 def reinhard_preview(rgb: np.ndarray, percentile: float, gamma: float, display_flip: int) -> np.ndarray:
     preview = to_uint8(apply_gamma(reinhard_tone_map(rgb, percentile), gamma))
     return apply_rawpy_orientation(preview, display_flip)

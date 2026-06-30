@@ -1,4 +1,5 @@
 """Inspect paired noisy/clean image folders and create a visual manifest."""
+# 中文说明：检查配对数据集文件数量、尺寸和可视化网格。
 
 from __future__ import annotations
 
@@ -13,6 +14,11 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--noisy-dir", required=True)
     parser.add_argument("--clean-dir", required=True)
@@ -22,6 +28,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def list_images(root: Path) -> dict[str, Path]:
+    """中文说明：枚举目录中的图片文件，并按文件名排序保证结果稳定。
+    
+    输入：root。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return {
         path.name: path
         for path in sorted(root.iterdir())
@@ -30,6 +41,11 @@ def list_images(root: Path) -> dict[str, Path]:
 
 
 def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
+    """中文说明：选择绘图可用字体；找不到指定字体时回退到默认字体。
+    
+    输入：size、bold。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     candidates = [
         "C:/Windows/Fonts/msyhbd.ttc" if bold else "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
@@ -43,6 +59,11 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def write_manifest(pairs: list[tuple[str, Path, Path]], output_dir: Path) -> Path:
+    """中文说明：将当前脚本整理出的结果写入磁盘，作为阶段产物或报告素材。
+    
+    输入：pairs、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "paired_manifest.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -55,6 +76,11 @@ def write_manifest(pairs: list[tuple[str, Path, Path]], output_dir: Path) -> Pat
 
 
 def make_grid(pairs: list[tuple[str, Path, Path]], output_dir: Path, max_samples: int) -> Path:
+    """中文说明：构造后续流程需要的对象或可视化产物，把零散配置集中成可复用结果。
+    
+    输入：pairs、output_dir、max_samples。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     samples = pairs[:max_samples]
     thumb_w, thumb_h = 220, 160
     label_h = 54
@@ -80,6 +106,11 @@ def make_grid(pairs: list[tuple[str, Path, Path]], output_dir: Path, max_samples
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     noisy_dir = Path(args.noisy_dir)
     clean_dir = Path(args.clean_dir)

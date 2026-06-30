@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export a small dataset card for the Stage 2 paired RGB subset."""
+# 中文说明：导出 Week2 数据集卡片，记录数据划分和基线质量。
 
 from __future__ import annotations
 
@@ -17,6 +18,11 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Export Week 2 paired RGB dataset card.")
     parser.add_argument("--dataset-root", default="stage2_ai_isp/datasets/sidd_tiny")
     parser.add_argument("--output-dir", default="stage2_ai_isp/reports/figures/week2_dataset_card")
@@ -25,10 +31,20 @@ def parse_args() -> argparse.Namespace:
 
 
 def list_images(root: Path) -> list[Path]:
+    """中文说明：枚举目录中的图片文件，并按文件名排序保证结果稳定。
+    
+    输入：root。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return sorted(path for path in root.iterdir() if path.is_file() and path.suffix.lower() in IMAGE_EXTS)
 
 
 def read_manifest(path: Path) -> list[dict[str, str]]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     if not path.exists():
         return []
     with path.open("r", encoding="utf-8", newline="") as f:
@@ -36,11 +52,21 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 
 def image_to_float(path: Path) -> np.ndarray:
+    """中文说明：实现 `image_to_float` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     image = Image.open(path).convert("RGB")
     return np.asarray(image, dtype=np.float32) / 255.0
 
 
 def psnr(noisy: np.ndarray, clean: np.ndarray) -> float:
+    """中文说明：实现 `psnr` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：noisy、clean。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     mse = float(np.mean((noisy - clean) ** 2))
     if mse <= 0:
         return float("inf")
@@ -48,6 +74,11 @@ def psnr(noisy: np.ndarray, clean: np.ndarray) -> float:
 
 
 def split_summary(dataset_root: Path, split: str) -> dict[str, object]:
+    """中文说明：实现 `split_summary` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：dataset_root、split。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     noisy_dir = dataset_root / split / "noisy"
     clean_dir = dataset_root / split / "clean"
     noisy_files = list_images(noisy_dir)
@@ -86,6 +117,11 @@ def split_summary(dataset_root: Path, split: str) -> dict[str, object]:
 
 
 def write_csv(summaries: list[dict[str, object]], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：summaries、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "week2_dataset_card.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -126,6 +162,11 @@ def write_markdown(
     summaries: list[dict[str, object]],
     output_dir: Path,
 ) -> Path:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：name、dataset_root、manifest_rows、summaries、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "week2_dataset_card.md"
     scene_count = len({row.get("source_scene", "") for row in manifest_rows if row.get("source_scene")})
     with path.open("w", encoding="utf-8", newline="\n") as f:
@@ -161,6 +202,11 @@ def write_markdown(
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     dataset_root = Path(args.dataset_root)
     output_dir = Path(args.output_dir)

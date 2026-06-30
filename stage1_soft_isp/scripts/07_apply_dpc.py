@@ -44,10 +44,12 @@ from soft_isp.orientation import apply_rawpy_orientation
 from soft_isp.stats import bayer_pattern_from_rawpy, describe_array
 
 
+# 中文注释：从输入路径提取稳定样本名，用作图像、JSON 和报告文件的前缀。
 def sample_id(raw_path: Path) -> str:
     return raw_path.name.split("_", 1)[0]
 
 
+# 中文注释：把 RAW 或中间结果压缩成便于人工查看的 8-bit 预览图。
 def make_preview(raw_array: np.ndarray, display_max: float | None = None) -> np.ndarray:
     if display_max is None:
         display_max = max(float(np.percentile(raw_array, 99.5)), 1.0)
@@ -56,6 +58,7 @@ def make_preview(raw_array: np.ndarray, display_max: float | None = None) -> np.
     return np.repeat(gray8[:, :, None], 3, axis=2)
 
 
+# 中文注释：把坏点 mask 覆盖到预览图上，检查检测位置是否合理。
 def plot_mask_overlay(raw_path: Path, raw_blc: np.ndarray, mask: np.ndarray, out_dir: Path, display_flip: int) -> Path:
     out_path = out_dir / f"{raw_path.stem}_dpc_mask_overlay.png"
     preview = make_preview(raw_blc)
@@ -71,6 +74,7 @@ def plot_mask_overlay(raw_path: Path, raw_blc: np.ndarray, mask: np.ndarray, out
     return out_path
 
 
+# 中文注释：在坏点候选中选择最明显的位置，用于展示修复细节。
 def strongest_candidate(mask: np.ndarray, before: np.ndarray, after: np.ndarray) -> tuple[int, int] | None:
     ys, xs = np.nonzero(mask)
     if len(xs) == 0:
@@ -80,6 +84,7 @@ def strongest_candidate(mask: np.ndarray, before: np.ndarray, after: np.ndarray)
     return int(y := ys[index]), int(xs[index])
 
 
+# 中文注释：根据中心点和窗口大小计算裁剪边界，确保不越界。
 def crop_bounds(center_y: int, center_x: int, shape: tuple[int, int], size: int) -> tuple[int, int, int, int]:
     half = size // 2
     y0 = max(center_y - half, 0)
@@ -91,6 +96,7 @@ def crop_bounds(center_y: int, center_x: int, shape: tuple[int, int], size: int)
     return y0, y1, x0, x1
 
 
+# 中文注释：保存坏点修复前后的局部 crop，对比异常像素是否被替换。
 def plot_repair_crop(
     raw_path: Path,
     before: np.ndarray,
@@ -139,6 +145,7 @@ def plot_repair_crop(
     return out_path, crop_info
 
 
+# 中文注释：处理单个 RAW 样本并返回结构化统计，供批处理和报告复用。
 def analyze_one(raw_path: Path, out_dir: Path, min_delta: int, mad_k: float, crop_size: int) -> dict:
     with rawpy.imread(str(raw_path)) as raw:
         raw_visible = raw.raw_image_visible.copy()
@@ -191,10 +198,12 @@ def analyze_one(raw_path: Path, out_dir: Path, min_delta: int, mad_k: float, cro
     return result
 
 
+# 中文注释：把数值格式化为报告友好的字符串，同时处理缺失或异常值。
 def fmt(value: float) -> str:
     return f"{value:.4f}" if value < 1 else f"{value:.2f}"
 
 
+# 中文注释：根据已收集的实验结果写 Markdown 报告。
 def write_report(results: list[dict], report_path: Path) -> None:
     lines = [
         "# Week 2-2 DPC 学习报告",
@@ -308,6 +317,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Apply BLC + DPC and write a learning report.")
     parser.add_argument("raw_paths", type=Path, nargs="+", help="One or more RAW/DNG files.")

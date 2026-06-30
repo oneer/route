@@ -40,6 +40,7 @@ from week4_common import (
 )
 
 
+# 中文注释：运行 CCM 实验并记录颜色矩阵前后的视觉和数值变化。
 def analyze_ccm(raw_path: Path, out_dir: Path, reference_dir: Path, min_delta: int, mad_k: float, gamma: float, tone_percentile: float) -> dict:
     base = build_week4_base(raw_path, min_delta=min_delta, mad_k=mad_k)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -73,6 +74,7 @@ def analyze_ccm(raw_path: Path, out_dir: Path, reference_dir: Path, min_delta: i
     return result
 
 
+# 中文注释：write_ccm_report 将 CCM 实验的矩阵、指标和图像路径写成 Markdown，方便复盘颜色校正效果。
 def write_ccm_report(results: list[dict], report_path: Path) -> None:
     lines = [
         "# Week 4-1 CCM 学习报告",
@@ -147,6 +149,7 @@ def write_ccm_report(results: list[dict], report_path: Path) -> None:
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Apply Week4 CCM and write the CCM report.")
     parser.add_argument("raw_paths", type=Path, nargs="+")

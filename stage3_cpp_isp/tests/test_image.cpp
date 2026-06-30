@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// ImageBuffer/ImageView 测试覆盖 stride padding、planar 多通道索引和 at() 越界检查。
 namespace {
 
 void require(bool condition, const char* message) {

@@ -8,6 +8,7 @@ from __future__ import annotations
 import numpy as np
 
 
+# 中文注释：在指定坐标写入异常值，构造可控的坏点检测测试样本。
 def inject_defects(raw: np.ndarray, coordinates: list[tuple[int, int]], value: int) -> np.ndarray:
     result = raw.copy()
     for y, x in coordinates:

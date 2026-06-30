@@ -11,6 +11,7 @@
 namespace {
 
 void print_usage() {
+    // 使用 PPM 而不是 PNG/JPEG，目的是让最小 runner 不依赖额外图像库。
     std::cerr
         << "Usage: stage4_ort_runner <model.onnx> <input.ppm> <output.ppm>"
         << " [output.f32] [warmup=3] [runs=10]\n"
@@ -36,16 +37,19 @@ int main(int argc, char** argv) {
             throw std::runtime_error("warmup must be >= 0 and runs must be > 0.");
         }
 
+        // load_ppm_rgb_as_nchw 已完成 /255.0 和 HWC -> NCHW，runner 可直接推理。
         const auto image = stage4::load_ppm_rgb_as_nchw(input_path);
         stage4::OnnxRuntimeRunner runner(model_path, "input", "output");
 
         std::vector<float> output;
+        // warmup 不计时，用于消除首次图优化、内存分配等一次性开销。
         for (int i = 0; i < warmup; ++i) {
             output = runner.run(image.nchw, 1, image.channels, image.height, image.width);
         }
         std::vector<double> timings;
         timings.reserve(static_cast<size_t>(runs));
         for (int i = 0; i < runs; ++i) {
+            // 这里只统计 ORT run 的时间，不包含读图和写图。
             const auto t0 = std::chrono::high_resolution_clock::now();
             output = runner.run(image.nchw, 1, image.channels, image.height, image.width);
             const auto t1 = std::chrono::high_resolution_clock::now();
@@ -56,6 +60,7 @@ int main(int argc, char** argv) {
             total_ms += value;
         }
 
+        // 同时保存可视化 PPM 和可选裸张量，分别服务肉眼检查与严格对齐检查。
         stage4::save_ppm_rgb_from_nchw(output_path, output.data(), image.width, image.height, image.channels);
         if (!tensor_path.empty() && tensor_path != "-") {
             stage4::save_float32_tensor(tensor_path, output.data(), output.size());

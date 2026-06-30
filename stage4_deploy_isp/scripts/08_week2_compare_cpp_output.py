@@ -1,3 +1,9 @@
+"""Week 2：比较 C++ runner 与 Python ORT 的裸 float32 输出。
+
+PPM 图片只能证明可视化结果接近，不能证明张量完全对齐。本脚本读取 C++ 输出的
+.f32 文件和 Python ORT 参考 .f32 文件，逐元素统计误差并给出 pass/fail。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -8,6 +14,7 @@ import numpy as np
 
 
 def psnr(pred: np.ndarray, target: np.ndarray, eps: float = 1e-12) -> float:
+    # 这里比较的是两个推理后端输出，不是图像质量；eps 取更小以放大极小差异。
     mse = float(np.mean((pred - target) ** 2))
     return float(10.0 * np.log10(1.0 / max(mse, eps)))
 
@@ -26,6 +33,7 @@ def main() -> None:
     ref_dir = Path(args.ref_dir)
     rows = []
     for ref_path in sorted(ref_dir.glob("*_ort_reference.f32")):
+        # 文件名约定来自 04_week2_prepare_cpp_io.py 和 C++ runner 的输出路径。
         sample_id = ref_path.name.removesuffix("_ort_reference.f32")
         cpp_path = cpp_dir / f"{sample_id}_cpp_output.f32"
         if not cpp_path.exists():
@@ -33,6 +41,7 @@ def main() -> None:
         ref = np.fromfile(ref_path, dtype=np.float32)
         cpp = np.fromfile(cpp_path, dtype=np.float32)
         if cpp.shape != ref.shape:
+            # 张量长度不一致说明输出形状或写文件逻辑错误，不能继续比较数值。
             raise ValueError(f"{sample_id}: tensor size mismatch {cpp.size} != {ref.size}")
         err = np.abs(cpp - ref)
         rows.append(
@@ -43,6 +52,7 @@ def main() -> None:
                 "mean_abs_error": float(err.mean()),
                 "rmse": float(np.sqrt(np.mean((cpp - ref) ** 2))),
                 "psnr": psnr(cpp, ref),
+                # 1e-5 是 FP32 CPU 后端之间通常应达到的严格对齐阈值。
                 "status": "pass" if float(err.max()) <= 1e-5 else "fail",
             }
         )

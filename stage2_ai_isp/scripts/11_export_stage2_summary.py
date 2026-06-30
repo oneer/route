@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export a compact Stage 2 leaderboard from generated metric summaries."""
+# 中文说明：导出 Stage2 总结报告，把关键实验结果组织成 Markdown。
 
 from __future__ import annotations
 
@@ -11,6 +12,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Stage 2 final summary table and figure.")
     parser.add_argument(
         "--metric-csvs",
@@ -26,6 +32,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
+    """中文说明：选择绘图可用字体；找不到指定字体时回退到默认字体。
+    
+    输入：size、bold。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     candidates = [
         "C:/Windows/Fonts/msyhbd.ttc" if bold else "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
@@ -39,6 +50,11 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def read_rows(paths: list[str]) -> list[dict[str, str]]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：paths。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rows = []
     for path_text in paths:
         path = Path(path_text)
@@ -68,14 +84,29 @@ RUN_LABELS = {
 
 
 def task_label(task: str) -> str:
+    """中文说明：实现 `task_label` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：task。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return TASK_LABELS.get(task, task)
 
 
 def run_label(run: str) -> str:
+    """中文说明：实现 `run_label` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：run。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return RUN_LABELS.get(run, run)
 
 
 def best_row_for_task(rows: list[dict[str, str]], task: str) -> dict[str, str] | None:
+    """中文说明：实现 `best_row_for_task` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：rows、task。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     task_rows = [row for row in rows if row["task"] == task]
     if not task_rows:
         return None
@@ -83,6 +114,11 @@ def best_row_for_task(rows: list[dict[str, str]], task: str) -> dict[str, str] |
 
 
 def write_markdown_report(rows: list[dict[str, str]], report_path: Path, leaderboard_csv: Path) -> None:
+    """中文说明：将当前脚本整理出的结果写入磁盘，作为阶段产物或报告素材。
+    
+    输入：rows、report_path、leaderboard_csv。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     denoise_best = best_row_for_task(rows, "week4_sidd_tiny_standard_eval")
     low_light_best = best_row_for_task(rows, "week7_low_light_eval")
 
@@ -233,6 +269,11 @@ def write_markdown_report(rows: list[dict[str, str]], report_path: Path, leaderb
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

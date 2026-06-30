@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <string>
 
+// Golden pipeline 测试逐阶段比较 source/denoised/tone_mapped/output。
+// 一旦失败，报出“第一个发散阶段”，比只比较最终输出更容易定位问题。
 namespace {
 
 cpp_isp::ImageBuffer<float> tensor_to_image(const cpp_isp::TensorF32& tensor) {
@@ -45,6 +47,7 @@ void compare_stage(const std::string& stage,
                    const cpp_isp::ImageBuffer<float>& output,
                    const std::string& golden_path,
                    double tolerance) {
+    // 每个阶段单独读对应 golden，避免最终输出掩盖中间阶段的误差来源。
     const auto golden = cpp_isp::read_cpf32(golden_path);
     const auto metrics = cpp_isp::compare_tensors(golden, image_to_tensor(output), tolerance);
     if (metrics.failed_pixels != 0) {

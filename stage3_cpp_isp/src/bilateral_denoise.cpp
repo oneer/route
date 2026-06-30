@@ -34,11 +34,13 @@ void validate_bilateral_args(const ImageView<const float>& input,
 }
 
 float spatial_weight(int dx, int dy, float sigma_spatial) {
+    // 空间权重只和邻域坐标差有关，离中心越远，参与平均的权重越低。
     const float d2 = static_cast<float>(dx * dx + dy * dy);
     return std::exp(-0.5F * d2 / (sigma_spatial * sigma_spatial));
 }
 
 float range_weight(float diff, float sigma_range) {
+    // 值域权重只和像素值差有关；差异越大，越可能是边缘而不是噪声。
     return std::exp(-0.5F * diff * diff / (sigma_range * sigma_range));
 }
 
@@ -49,6 +51,7 @@ std::vector<float> make_range_lut(std::uint32_t bins, float sigma_range) {
 
     std::vector<float> lut(bins);
     for (std::uint32_t i = 0; i < bins; ++i) {
+        // LUT 假设输入已归一化到 [0, 1]，这里只预计算不同亮度差对应的 range 权重。
         const float diff = static_cast<float>(i) / static_cast<float>(bins - 1);
         lut[i] = range_weight(diff, sigma_range);
     }
@@ -61,6 +64,7 @@ float lookup_range_weight(const std::vector<float>& lut, float diff) {
     const auto idx0 = static_cast<std::size_t>(pos);
     const auto idx1 = std::min(idx0 + 1, lut.size() - 1);
     const float t = pos - static_cast<float>(idx0);
+    // 线性插值能减少 LUT 桶边界带来的量化跳变。
     return lut[idx0] * (1.0F - t) + lut[idx1] * t;
 }
 
@@ -88,6 +92,7 @@ void bilateral_lut_rect(const ImageView<const float>& input,
                         std::uint32_t x_begin,
                         std::uint32_t x_end) {
     const int r = static_cast<int>(radius);
+    // 只处理 [y_begin, y_end) x [x_begin, x_end) 区域，供整图、分块、多线程路径复用。
     for (std::uint32_t c = 0; c < input.channels(); ++c) {
         for (std::uint32_t y = y_begin; y < y_end; ++y) {
             for (std::uint32_t x = x_begin; x < x_end; ++x) {
@@ -104,6 +109,7 @@ void bilateral_lut_rect(const ImageView<const float>& input,
                                                                center);
                         const float weight =
                             spatial_weight(dx, dy, sigma_spatial) * lookup_range_weight(lut, value - center);
+                        // 双边滤波的核心：空间相近且亮度相近的像素权重大，跨边缘像素权重小。
                         weighted_sum += weight * value;
                         weight_sum += weight;
                     }
@@ -127,6 +133,7 @@ std::vector<TileRect> make_tiles(std::uint32_t width,
                                  std::uint32_t tile_height) {
     validate_tile_args(tile_width, tile_height);
     std::vector<TileRect> tiles;
+    // 最后一行/列 tile 允许小于标准 tile 尺寸，保证完整覆盖图像。
     for (std::uint32_t y = 0; y < height; y += tile_height) {
         for (std::uint32_t x = 0; x < width; x += tile_width) {
             tiles.push_back(TileRect{y,
@@ -155,6 +162,7 @@ void run_parallel_tasks(std::vector<std::function<void()>> task_functions) {
     handles.reserve(task_functions.size());
 
     for (auto& fn : task_functions) {
+        // Windows 下用 _beginthreadex 创建 C runtime 友好的线程句柄。
         auto task = std::make_unique<ThreadTask>();
         task->fn = std::move(fn);
         const auto handle = reinterpret_cast<HANDLE>(
@@ -192,6 +200,7 @@ void bilateral_filter(const ImageView<const float>& input,
     validate_bilateral_args(input, output, sigma_spatial, sigma_range);
     const int r = static_cast<int>(radius);
 
+    // 参考实现直接在内层计算两个 exp()，便于验证公式正确性，但速度较慢。
     for (std::uint32_t c = 0; c < input.channels(); ++c) {
         for (std::uint32_t y = 0; y < input.height(); ++y) {
             for (std::uint32_t x = 0; x < input.width(); ++x) {
@@ -227,6 +236,7 @@ void bilateral_filter_range_lut(const ImageView<const float>& input,
                                 BorderPolicy border_policy) {
     validate_bilateral_args(input, output, sigma_spatial, sigma_range);
     const auto lut = make_range_lut(range_lut_bins, sigma_range);
+    // LUT 版本保持算法形态不变，只替换 range_weight 的计算方式。
     bilateral_lut_rect(input, output, radius, sigma_spatial, lut, border_policy, 0, input.height(), 0, input.width());
 }
 
@@ -270,6 +280,7 @@ void bilateral_filter_range_lut_threaded_rows(const ImageView<const float>& inpu
     tasks.reserve(thread_count);
 
     for (std::uint32_t i = 0; i < thread_count; ++i) {
+        // 静态按行切分：每个线程负责连续 y 范围，写入区域互不重叠，不需要锁保护输出。
         const std::uint32_t y_begin = (input.height() * i) / thread_count;
         const std::uint32_t y_end = (input.height() * (i + 1)) / thread_count;
         tasks.emplace_back([&, y_begin, y_end] {
@@ -310,6 +321,7 @@ void bilateral_filter_range_lut_threaded_tiles(const ImageView<const float>& inp
     for (std::uint32_t i = 0; i < thread_count; ++i) {
         tasks.emplace_back([&] {
             while (true) {
+                // 动态领取下一个 tile，避免某些 tile 较慢时其它线程空等。
                 const std::uint32_t tile_index = next_tile.fetch_add(1);
                 if (tile_index >= tiles.size()) {
                     break;

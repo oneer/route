@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export a Week 9 project pack for resume and interview review."""
+# 中文说明：导出 Week9 项目包与最终报告所需证据。
 
 from __future__ import annotations
 
@@ -9,6 +10,11 @@ from pathlib import Path
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Week 9 project-facing summary artifacts.")
     parser.add_argument(
         "--leaderboard",
@@ -29,6 +35,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     if not path.exists():
         return []
     with path.open("r", encoding="utf-8", newline="") as f:
@@ -36,10 +47,20 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 
 def fmt_float(value: str, digits: int = 4) -> str:
+    """中文说明：实现 `fmt_float` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：value、digits。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return f"{float(value):.{digits}f}"
 
 
 def best_denoise_row(rows: list[dict[str, str]]) -> dict[str, str] | None:
+    """中文说明：实现 `best_denoise_row` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：rows。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     candidates = [row for row in rows if row["task"] == "week4_sidd_tiny_standard_eval"]
     if not candidates:
         return None
@@ -52,6 +73,11 @@ def write_evidence_csv(
     failure_rows: list[dict[str, str]],
     output_dir: Path,
 ) -> Path:
+    """中文说明：将当前脚本整理出的结果写入磁盘，作为阶段产物或报告素材。
+    
+    输入：leaderboard_rows、engineering_rows、failure_rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "week9_project_evidence_pack.csv"
     best = best_denoise_row(leaderboard_rows)
@@ -117,6 +143,11 @@ def write_evidence_csv(
 
 
 def markdown_table(rows: list[list[str]], headers: list[str]) -> list[str]:
+    """中文说明：实现 `markdown_table` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：rows、headers。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     lines = [
         "| " + " | ".join(headers) + " |",
         "| " + " | ".join(["---"] * len(headers)) + " |",
@@ -132,6 +163,11 @@ def build_week9_report(
     failure_rows: list[dict[str, str]],
     evidence_csv: Path,
 ) -> str:
+    """中文说明：构造后续流程需要的对象或可视化产物，把零散配置集中成可复用结果。
+    
+    输入：leaderboard_rows、engineering_rows、failure_rows、evidence_csv。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     best = best_denoise_row(leaderboard_rows)
     leaderboard_table = markdown_table(
         [
@@ -285,6 +321,11 @@ def build_week9_report(
 
 
 def build_final_report(report: str) -> str:
+    """中文说明：构造后续流程需要的对象或可视化产物，把零散配置集中成可复用结果。
+    
+    输入：report。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     sections = report.split("## 6. 简历表述")
     body = sections[0].rstrip()
     resume_part = "## 6. 简历表述" + sections[1] if len(sections) > 1 else ""
@@ -302,6 +343,11 @@ def build_final_report(report: str) -> str:
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     leaderboard_rows = read_csv(Path(args.leaderboard))
     engineering_rows = read_csv(Path(args.engineering))

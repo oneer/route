@@ -9,6 +9,7 @@
 
 #include <vector>
 
+// 最小 benchmark：有 Google Benchmark 时注册正式 benchmark；没有时用 chrono 走 fallback。
 static cpp_isp::TensorF32 make_tensor(std::uint32_t width, std::uint32_t height) {
     cpp_isp::TensorF32 tensor;
     tensor.width = width;

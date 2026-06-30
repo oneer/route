@@ -1,3 +1,5 @@
+"""生成 Stage 3 的基础 CPF32 测试向量、manifest 和预览图，供 C++ 测试/工具复用。"""
+
 from __future__ import annotations
 
 import argparse

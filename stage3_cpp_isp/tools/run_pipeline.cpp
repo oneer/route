@@ -9,6 +9,7 @@
 
 namespace {
 
+// 工具入口使用 CPF32 读写文件，核心 pipeline 使用 ImageBuffer；这里做两种布局的桥接。
 cpp_isp::ImageBuffer<float> tensor_to_image(const cpp_isp::TensorF32& tensor) {
     cpp_isp::ImageBuffer<float> image(tensor.width, tensor.height, tensor.channels);
     for (std::uint32_t y = 0; y < tensor.height; ++y) {
@@ -59,6 +60,7 @@ cpp_isp::PipelineParams parse_pipeline_params(const char* denoise,
                                               const char* exposure,
                                               const char* gamma) {
     cpp_isp::PipelineParams params;
+    // 所有字符串解析集中在这里，main() 只需要区分 single/hdr 两条路径。
     params.denoise = cpp_isp::parse_pipeline_denoise_mode(denoise);
     params.tone = cpp_isp::parse_pipeline_tone_mode(tone);
     params.curve = cpp_isp::parse_pipeline_tone_curve(curve);
@@ -81,12 +83,14 @@ int main(int argc, char** argv) {
         std::string output_path;
 
         if (pipeline_mode == "single" && argc == 9) {
+            // 单帧路径：一个输入图直接经过 denoise/tone/gamma。
             auto input = tensor_to_image(cpp_isp::read_cpf32(argv[2]));
             const auto params = parse_pipeline_params(argv[4], argv[5], argv[6], argv[7], argv[8]);
             const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
             result = cpp_isp::run_pipeline_single(input_view, params);
             output_path = argv[3];
         } else if (pipeline_mode == "hdr" && argc == 12) {
+            // HDR 路径：短/长曝光先合成，再复用同一套 pipeline 参数。
             auto short_image = tensor_to_image(cpp_isp::read_cpf32(argv[2]));
             auto long_image = tensor_to_image(cpp_isp::read_cpf32(argv[3]));
             const auto params = parse_pipeline_params(argv[5], argv[6], argv[7], argv[8], argv[9]);

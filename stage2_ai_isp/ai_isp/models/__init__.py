@@ -8,6 +8,7 @@ models 子包 — 神经网络模型定义与构建工厂。
 
 模型工厂 build_model(config) 根据配置字典的 "name" 字段自动选择并构建模型。
 """
+# 中文说明：轻量图像复原模型代码，提供 TinyCNN、DnCNN、UNet、NAFNet-Lite 等网络结构。
 
 from ai_isp.models.dncnn import DnCNN
 from ai_isp.models.nafnet_lite import NAFNetLite
@@ -35,6 +36,7 @@ def build_model(config: dict):
     异常：
         ValueError: config["name"] 不是已知模型名
     """
+    # 中文说明：根据配置中的模型名称实例化对应网络。
     name = config["name"].lower()
 
     if name == "tiny_cnn":

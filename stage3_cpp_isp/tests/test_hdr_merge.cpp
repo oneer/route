@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// HDR 合成测试验证权重函数，以及在未饱和/长曝光饱和两种典型场景下的 radiance 恢复。
 namespace {
 
 void require(bool condition, const char* message) {

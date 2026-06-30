@@ -1,3 +1,5 @@
+"""浮点 tone mapping 参考实现：C++ Reinhard/Filmic/S-curve 和保亮度路径的对照源。"""
+
 from __future__ import annotations
 
 import numpy as np

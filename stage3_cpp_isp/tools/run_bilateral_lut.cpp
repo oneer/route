@@ -9,6 +9,7 @@
 
 namespace {
 
+// 工具层负责 CPF32(interleaved) 与 ImageBuffer(planar) 的布局转换；滤波实现只处理 ImageView。
 cpp_isp::ImageBuffer<float> tensor_to_image(const cpp_isp::TensorF32& tensor) {
     cpp_isp::ImageBuffer<float> image(tensor.width, tensor.height, tensor.channels);
     for (std::uint32_t y = 0; y < tensor.height; ++y) {
@@ -63,6 +64,7 @@ int main(int argc, char** argv) {
         const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
 
         if (mode == "lut") {
+            // 单线程 LUT 版本：作为优化路径的基准结果。
             cpp_isp::bilateral_filter_range_lut(input_view,
                                                 output.view(),
                                                 2,
@@ -71,6 +73,7 @@ int main(int argc, char** argv) {
                                                 512,
                                                 cpp_isp::BorderPolicy::Replicate);
         } else if (mode == "tile") {
+            // 单线程分块版本：观察 tile 对 cache locality 的影响。
             cpp_isp::bilateral_filter_range_lut_tiled(input_view,
                                                      output.view(),
                                                      2,
@@ -81,6 +84,7 @@ int main(int argc, char** argv) {
                                                      128,
                                                      64);
         } else if (mode == "rows") {
+            // 多线程按行切分：实现简单，适合看线程数对速度的粗略影响。
             cpp_isp::bilateral_filter_range_lut_threaded_rows(input_view,
                                                               output.view(),
                                                               2,
@@ -90,6 +94,7 @@ int main(int argc, char** argv) {
                                                               cpp_isp::BorderPolicy::Replicate,
                                                               threads);
         } else if (mode == "tiles") {
+            // 多线程动态 tile：任务粒度更细，通常比静态行切分更容易均衡负载。
             cpp_isp::bilateral_filter_range_lut_threaded_tiles(input_view,
                                                                output.view(),
                                                                2,

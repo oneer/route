@@ -1,8 +1,10 @@
+# Week 1 ONNX 导出与 ORT 对齐配置。
 project:
   stage2_root: ../stage2_ai_isp
   output_dir: outputs/week1_onnx
 
 model:
+  # input_name/output_name 必须与 C++ runner 和 ORT 推理脚本中的名字一致。
   checkpoint: ../stage2_ai_isp/runs/paired_rgb_sidd_tiny_dncnn_l2_300/checkpoints/best_psnr.pth
   source_config: ../stage2_ai_isp/configs/paired_rgb_sidd_tiny_dncnn_l2_300.yaml
   onnx_path: models/onnx/dncnn_sidd_tiny_fp32.onnx
@@ -14,8 +16,10 @@ model:
   clamp_output: true
 
 data:
+  # 复用 Week 0.5 生成的固定输入集合，避免导出验证更换样本。
   fixed_manifest: data/test_inputs/week0_fixed_manifest.csv
 
 alignment:
+  # 这些阈值用于判断 PyTorch 与 ORT 的数值差异是否需要人工关注。
   max_abs_warn: 0.0001
   mean_abs_warn: 0.00001

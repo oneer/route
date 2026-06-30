@@ -9,6 +9,8 @@
 
 namespace {
 
+// CPF32 文件里的 data 按 y-x-c interleaved 顺序组织；ImageBuffer 按 c-y-x planar 顺序组织。
+// 这里显式转换，避免算法层同时背负两套内存布局。
 cpp_isp::ImageBuffer<float> tensor_to_image(const cpp_isp::TensorF32& tensor) {
     cpp_isp::ImageBuffer<float> image(tensor.width, tensor.height, tensor.channels);
     for (std::uint32_t y = 0; y < tensor.height; ++y) {
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
         params.exposure = static_cast<float>(std::atof(argv[6]));
         params.gamma = static_cast<float>(std::atof(argv[7]));
 
+        // run_pipeline_single 会返回每个阶段的缓冲；本工具把它们全部落盘，方便逐步排错。
         const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
         const auto result = cpp_isp::run_pipeline_single(input_view, params);
         const std::string prefix = argv[2];

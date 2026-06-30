@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export Week 5 NAFNet-lite architecture and training analysis."""
+# 中文说明：导出 Week5 NAFNet 结构与实验分析。
 
 from __future__ import annotations
 
@@ -30,6 +31,10 @@ DEFAULT_CONFIGS = [
 
 @dataclass
 class ModelRunAnalysis:
+    """中文说明：模型运行分析结构，聚合配置、指标和结构统计。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     run: str
     model: str
     width: str
@@ -50,6 +55,11 @@ class ModelRunAnalysis:
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Week 5 NAFNet-lite analysis.")
     parser.add_argument("--configs", nargs="*", default=DEFAULT_CONFIGS)
     parser.add_argument("--runs-root", default="stage2_ai_isp/runs")
@@ -58,11 +68,21 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_config(path: Path) -> dict:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     with path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def read_metrics(run_dir: Path) -> tuple[float, int, float, int]:
+    """中文说明：读取训练过程记录的 metrics.csv，并转换成后续汇总需要的数据结构。
+    
+    输入：run_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     metrics_path = run_dir / "metrics.csv"
     with metrics_path.open("r", encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
@@ -77,6 +97,11 @@ def read_metrics(run_dir: Path) -> tuple[float, int, float, int]:
 
 
 def count_modules(model: torch.nn.Module) -> dict[str, int]:
+    """中文说明：实现 `count_modules` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：model。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return {
         "naf_blocks": sum(1 for module in model.modules() if isinstance(module, NAFBlock)),
         "simple_gates": sum(1 for module in model.modules() if isinstance(module, SimpleGate)),
@@ -85,6 +110,11 @@ def count_modules(model: torch.nn.Module) -> dict[str, int]:
 
 
 def shape_check(model: torch.nn.Module, patch_size: int) -> tuple[str, str]:
+    """中文说明：实现 `shape_check` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：model、patch_size。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     model.eval()
     x = torch.randn(2, 3, patch_size, patch_size)
     with torch.no_grad():
@@ -95,6 +125,11 @@ def shape_check(model: torch.nn.Module, patch_size: int) -> tuple[str, str]:
 
 
 def block_desc(config: dict, model: torch.nn.Module) -> str:
+    """中文说明：实现 `block_desc` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：config、model。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     model_cfg = config["model"]
     if model_cfg["name"] != "nafnet_lite":
         return "-"
@@ -107,6 +142,11 @@ def block_desc(config: dict, model: torch.nn.Module) -> str:
 
 
 def width_desc(config: dict) -> str:
+    """中文说明：实现 `width_desc` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：config。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     model_cfg = config["model"]
     if model_cfg["name"] == "nafnet_lite":
         return str(model_cfg.get("width"))
@@ -118,6 +158,11 @@ def width_desc(config: dict) -> str:
 
 
 def summarize(config_path: Path, runs_root: Path, dncnn_l1_psnr: float, dncnn_l2_psnr: float) -> ModelRunAnalysis:
+    """中文说明：从原始记录中提炼关键统计量，降低报告和诊断脚本的重复逻辑。
+    
+    输入：config_path、runs_root、dncnn_l1_psnr、dncnn_l2_psnr。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     config = read_config(config_path)
     run_name = config["experiment"]["name"]
     run_dir = runs_root / run_name
@@ -147,6 +192,11 @@ def summarize(config_path: Path, runs_root: Path, dncnn_l1_psnr: float, dncnn_l2
 
 
 def write_csv(rows: list[ModelRunAnalysis], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "week5_nafnet_analysis.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
@@ -198,6 +248,11 @@ def write_csv(rows: list[ModelRunAnalysis], output_dir: Path) -> Path:
 
 
 def write_markdown(rows: list[ModelRunAnalysis], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "week5_nafnet_analysis.md"
     lines = [
         "# Week 5 NAFNet-lite Analysis",
@@ -250,6 +305,11 @@ def write_markdown(rows: list[ModelRunAnalysis], output_dir: Path) -> Path:
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     runs_root = Path(args.runs_root)
 

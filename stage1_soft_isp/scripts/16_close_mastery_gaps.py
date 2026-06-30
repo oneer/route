@@ -1,3 +1,8 @@
+"""集中补齐 Stage 1 掌握缺口：AWB、DPC、LSC、demosaic、色彩和主观观察的综合实验脚本。
+
+中文注释说明：本文件的注释侧重解释数据流、算法意图和实验用途；除注释/docstring 外不改变运行逻辑。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -34,6 +39,7 @@ from soft_isp.tone import apply_gamma, normalize_by_percentile, reinhard_tone_ma
 SAMPLE_IDS_FOR_DETAIL = {"T01", "T08", "T09", "T13"}
 
 
+# 中文注释：展开命令行通配符路径，并去重排序，兼容不同 shell。
 def expand_paths(paths: list[Path]) -> list[Path]:
     expanded: list[Path] = []
     for path in paths:
@@ -45,14 +51,17 @@ def expand_paths(paths: list[Path]) -> list[Path]:
     return sorted(expanded)
 
 
+# 中文注释：从输入路径提取稳定样本名，用作图像、JSON 和报告文件的前缀。
 def sample_id(raw_path: Path) -> str:
     return raw_path.name.split("_", 1)[0]
 
 
+# 中文注释：把路径格式化成相对报告路径，避免报告中出现冗长的绝对路径。
 def rel(path: str | Path, report_path: Path) -> str:
     return Path(os.path.relpath(path, report_path.parent)).as_posix()
 
 
+# 中文注释：center_crop_image 从图像中心裁剪最大边长，降低大图实验成本，同时保持参考图与候选图区域一致。
 def center_crop_image(image: np.ndarray, max_size: int) -> np.ndarray:
     if max_size <= 0:
         return image
@@ -64,6 +73,7 @@ def center_crop_image(image: np.ndarray, max_size: int) -> np.ndarray:
     return image[y0 : y0 + crop_h, x0 : x0 + crop_w]
 
 
+# 中文注释：center_crop_bayer 裁剪 Bayer RAW 时强制偶数起点和偶数尺寸，避免破坏 2x2 Bayer 相位。
 def center_crop_bayer(raw: np.ndarray, max_size: int) -> np.ndarray:
     if max_size <= 0:
         return raw
@@ -79,17 +89,20 @@ def center_crop_bayer(raw: np.ndarray, max_size: int) -> np.ndarray:
     return raw[y0 : y0 + crop_h, x0 : x0 + crop_w]
 
 
+# 中文注释：读取参考 sRGB 图，并转换成统一的 RGB uint8 格式。
 def load_reference(raw_path: Path, reference_dir: Path, max_size: int) -> np.ndarray | None:
     path = reference_dir / f"{raw_path.stem}_rawpy_srgb.png"
     return center_crop_image(iio.imread(path), max_size) if path.exists() else None
 
 
+# 中文注释：align_pair 将两张图裁到共同宽高，确保后续 PSNR/SSIM/DeltaE 按像素一一比较。
 def align_pair(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     min_h = min(a.shape[0], b.shape[0])
     min_w = min(a.shape[1], b.shape[1])
     return a[:min_h, :min_w], b[:min_h, :min_w]
 
 
+# 中文注释：计算候选图相对参考图的 PSNR、SSIM 和平均绝对误差。
 def compute_metrics(candidate: np.ndarray, reference: np.ndarray) -> dict[str, float]:
     cand, ref = align_pair(candidate, reference)
     cand_f = cand.astype(np.float32) / 255.0
@@ -101,6 +114,7 @@ def compute_metrics(candidate: np.ndarray, reference: np.ndarray) -> dict[str, f
     }
 
 
+# 中文注释：mean_delta_e 抽样转换到 Lab 空间计算 CIEDE2000，近似衡量候选图与参考图的平均色差。
 def mean_delta_e(candidate: np.ndarray, reference: np.ndarray, stride: int = 8) -> float:
     cand, ref = align_pair(candidate, reference)
     cand_f = cand[::stride, ::stride].astype(np.float32) / 255.0
@@ -108,6 +122,7 @@ def mean_delta_e(candidate: np.ndarray, reference: np.ndarray, stride: int = 8) 
     return float(np.mean(deltaE_ciede2000(rgb2lab(ref_f), rgb2lab(cand_f))))
 
 
+# 中文注释：读取 RAW 像素和元数据，并应用配置中的黑电平/Bayer 覆盖项。
 def read_raw_context(raw_path: Path, max_size: int) -> dict:
     with rawpy.imread(str(raw_path)) as raw:
         raw_visible = center_crop_bayer(raw.raw_image_visible.copy(), max_size)
@@ -123,6 +138,7 @@ def read_raw_context(raw_path: Path, max_size: int) -> dict:
         }
 
 
+# 中文注释：prepare_linear_pipeline 串起 BLC、DPC、LSC、demosaic、AWB 和 CCM，产出后续对比实验共用的线性 RGB。
 def prepare_linear_pipeline(raw_path: Path, min_delta: int, mad_k: float, max_size: int) -> dict:
     ctx = read_raw_context(raw_path, max_size=max_size)
     raw_blc = apply_blc(ctx["raw_visible"], ctx["raw_pattern"], ctx["black_levels"], ctx["white_level"])
@@ -147,6 +163,7 @@ def prepare_linear_pipeline(raw_path: Path, min_delta: int, mad_k: float, max_si
     }
 
 
+# 中文注释：preview_from_linear 根据指定 tone 曲线把线性 RGB 转成 8-bit 预览，便于比较不同显示映射。
 def preview_from_linear(rgb: np.ndarray, gamma: float, tone_percentile: float, tone: str = "reinhard") -> np.ndarray:
     if tone == "reinhard":
         rgb_01 = reinhard_tone_map(rgb, percentile=tone_percentile)
@@ -163,22 +180,26 @@ def preview_from_linear(rgb: np.ndarray, gamma: float, tone_percentile: float, t
     raise ValueError(f"Unknown tone mode: {tone}")
 
 
+# 中文注释：srgb_oetf 实现标准 sRGB 光电转换函数，比简单 2.2 gamma 更接近显示规范。
 def srgb_oetf(rgb_01: np.ndarray) -> np.ndarray:
     x = np.clip(np.asarray(rgb_01, dtype=np.float32), 0.0, 1.0)
     return np.where(x <= 0.0031308, 12.92 * x, 1.055 * np.power(x, 1.0 / 2.4) - 0.055).astype(np.float32)
 
 
+# 中文注释：s_curve 使用 smoothstep 形 S 曲线提升中间调对比，同时压住 0 和 1 附近的斜率。
 def s_curve(rgb_01: np.ndarray) -> np.ndarray:
     x = np.clip(np.asarray(rgb_01, dtype=np.float32), 0.0, 1.0)
     return (x * x * (3.0 - 2.0 * x)).astype(np.float32)
 
 
+# 中文注释：cv2_code 根据 Bayer pattern 和算法名拼出 OpenCV demosaic 常量，缺失时返回 None。
 def cv2_code(pattern: str, method: str) -> int | None:
     suffix = "" if method == "bilinear" else "_EA"
     name = f"COLOR_Bayer{pattern.upper()}2RGB{suffix}"
     return getattr(cv2, name, None)
 
 
+# 中文注释：cv2_demosaic 调用 OpenCV bilinear/EA 去马赛克作为对照，失败时返回 None 让实验继续。
 def cv2_demosaic(raw_bayer: np.ndarray, pattern: str, method: str) -> np.ndarray | None:
     code = cv2_code(pattern, method)
     if code is None:
@@ -190,6 +211,7 @@ def cv2_demosaic(raw_bayer: np.ndarray, pattern: str, method: str) -> np.ndarray
         return None
 
 
+# 中文注释：从高亮且低饱和区域估计白点增益，适合有白色物体的场景。
 def white_patch_gains(rgb: np.ndarray, high_percentile: float = 99.0, max_gain: float = 8.0) -> np.ndarray:
     rgb_f = np.asarray(rgb, dtype=np.float32)
     lum = np.mean(rgb_f, axis=2)
@@ -202,6 +224,7 @@ def white_patch_gains(rgb: np.ndarray, high_percentile: float = 99.0, max_gain: 
     return np.clip(np.array([green / means[0], 1.0, green / means[2]], dtype=np.float32), 1.0 / max_gain, max_gain)
 
 
+# 中文注释：gray_roi_gains 从低饱和中间亮度区域估计灰卡式白平衡增益，并返回可用像素覆盖率。
 def gray_roi_gains(rgb: np.ndarray, max_gain: float = 8.0) -> tuple[np.ndarray, float]:
     rgb_f = np.asarray(rgb, dtype=np.float32)
     lum = np.mean(rgb_f, axis=2)
@@ -218,6 +241,7 @@ def gray_roi_gains(rgb: np.ndarray, max_gain: float = 8.0) -> tuple[np.ndarray, 
     return gains, coverage
 
 
+# 中文注释：make_static_detection 从动态 DPC 结果中抽取少量固定坏点，模拟工厂标定得到的 static defect map。
 def make_static_detection(dynamic_detection: dict, max_points_per_channel: int = 25) -> dict:
     masks = {}
     medians = dynamic_detection["local_medians"]
@@ -231,6 +255,7 @@ def make_static_detection(dynamic_detection: dict, max_points_per_channel: int =
     return {"masks": masks, "local_medians": medians, "thresholds": dynamic_detection["thresholds"]}
 
 
+# 中文注释：estimate_mesh_gain_from_synthetic_flat 用合成平场反推 LSC mesh，验证径向增益是否能被网格标定近似恢复。
 def estimate_mesh_gain_from_synthetic_flat(shape: tuple[int, int], pattern: str, tile: int = 32) -> dict:
     true_gain = make_lsc_gain_map(shape, pattern)
     flat = 2048.0 / np.maximum(true_gain, 1e-6)
@@ -249,6 +274,7 @@ def estimate_mesh_gain_from_synthetic_flat(shape: tuple[int, int], pattern: str,
     return {"true_gain": true_gain, "estimated_gain": est_gain, "mesh": tile_rows, "mae": mae}
 
 
+# 中文注释：roi_boxes 自动选择中心、暗部和高纹理 ROI，为主观/客观质量诊断提供固定观察窗口。
 def roi_boxes(image: np.ndarray) -> dict[str, tuple[int, int, int, int]]:
     h, w = image.shape[:2]
     size = max(96, min(h, w) // 8)
@@ -257,6 +283,7 @@ def roi_boxes(image: np.ndarray) -> dict[str, tuple[int, int, int, int]]:
     grad_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
     grad = np.abs(grad_x) + np.abs(grad_y)
 
+    # 中文注释：best_tile 在候选网格中寻找分数最高或最低的局部区域，用来挑选纹理/暗部代表 ROI。
     def best_tile(score: np.ndarray, mode: str) -> tuple[int, int, int, int]:
         best = None
         best_score = None
@@ -278,11 +305,13 @@ def roi_boxes(image: np.ndarray) -> dict[str, tuple[int, int, int, int]]:
     }
 
 
+# 中文注释：crop 按 ROI 坐标裁剪图像小块，供局部指标、网格展示和主观标签复用。
 def crop(image: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
     x, y, w, h = box
     return image[y : y + h, x : x + w]
 
 
+# 中文注释：subjective_tags 根据 SSIM、MAE、DeltaE 给结果打上可读标签，辅助快速定位锐度或色彩问题。
 def subjective_tags(metric: dict[str, float], delta_e: float) -> str:
     tags = []
     if metric["ssim"] < 0.75:
@@ -294,6 +323,7 @@ def subjective_tags(metric: dict[str, float], delta_e: float) -> str:
     return ", ".join(tags) if tags else "acceptable"
 
 
+# 中文注释：保存图像网格，把同一样本的多种处理结果放在同一张图中。
 def save_image_grid(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -> None:
     fig, axes = plt.subplots(1, len(panels), figsize=(4.0 * len(panels), 3.8), constrained_layout=True)
     if len(panels) == 1:
@@ -310,6 +340,7 @@ def save_image_grid(path: Path, title: str, panels: list[tuple[str, np.ndarray]]
     plt.close(fig)
 
 
+# 中文注释：保存曲线图，用于解释 gamma 或 tone mapping 的亮度映射关系。
 def save_curve_plot(path: Path) -> None:
     x = np.linspace(0.0, 1.0, 512, dtype=np.float32)
     plt.figure(figsize=(6, 4))
@@ -325,6 +356,7 @@ def save_curve_plot(path: Path) -> None:
     plt.close()
 
 
+# 中文注释：对单个样本运行多个实验分支，计算指标并保存可视化结果。
 def evaluate_one(
     raw_path: Path,
     out_dir: Path,
@@ -480,6 +512,7 @@ def evaluate_one(
     }
 
 
+# 中文注释：把数值格式化为报告友好的字符串，同时处理缺失或异常值。
 def fmt(value: float | int | None) -> str:
     if value is None:
         return "n/a"
@@ -488,6 +521,7 @@ def fmt(value: float | int | None) -> str:
     return f"{value:.4f}"
 
 
+# 中文注释：mean_metric 跨样本聚合同一实验分支的指标均值，用于报告中的总体对比表。
 def mean_metric(results: list[dict], section: str, variant: str, key: str) -> float | None:
     values = []
     for result in results:
@@ -498,6 +532,7 @@ def mean_metric(results: list[dict], section: str, variant: str, key: str) -> fl
     return float(np.mean(values)) if values else None
 
 
+# 中文注释：根据已收集的实验结果写 Markdown 报告。
 def write_report(results: list[dict], report_path: Path, curve_path: Path) -> None:
     lines = [
         "# Week 6 阶段毕业实验：综合验收与故障诊断",
@@ -660,6 +695,7 @@ def write_report(results: list[dict], report_path: Path, curve_path: Path) -> No
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Week6 experiments that close ISP module mastery gaps.")
     parser.add_argument("raw_paths", type=Path, nargs="+")

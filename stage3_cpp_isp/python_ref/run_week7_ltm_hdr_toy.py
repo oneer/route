@@ -1,3 +1,5 @@
+"""Week 7 脚本：生成局部 tone mapping 和 HDR toy pipeline 的图像、指标、对齐数据。"""
+
 from __future__ import annotations
 
 import csv

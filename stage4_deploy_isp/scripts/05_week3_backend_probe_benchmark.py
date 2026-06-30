@@ -1,3 +1,10 @@
+"""Week 3：探测后端环境并记录 ORT CPU FP32 延迟。
+
+这是较轻量的后端检查脚本：列出 ONNX Runtime 可用 provider 和常见 GPU 工具，
+同时用 CPUExecutionProvider 跑固定输入集，为后续 CUDA/TensorRT benchmark
+提供一个稳定的 FP32 参考延迟。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -33,11 +40,13 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 
 def load_input(path: str) -> np.ndarray:
+    # 统一转成 ORT 期望的 NCHW/float32/[0,1]。
     arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
     return np.transpose(arr, (2, 0, 1))[None, ...].astype(np.float32)
 
 
 def benchmark(session: ort.InferenceSession, inp: np.ndarray, runs: int) -> list[float]:
+    # 前 3 次为 warmup，不计入结果；随后统计每次 session.run 的耗时。
     for _ in range(3):
         session.run(["output"], {"input": inp})
     times = []
@@ -56,6 +65,7 @@ def main() -> None:
     rows = read_manifest(root / args.manifest)
 
     providers = ort.get_available_providers()
+    # shutil.which 只记录工具是否能从 PATH 找到，不主动调用外部程序。
     tools = {
         "trtexec": shutil.which("trtexec"),
         "nvcc": shutil.which("nvcc"),
@@ -67,6 +77,7 @@ def main() -> None:
     result_rows = []
     all_times = []
     for row in rows:
+        # 每个样本单独统计均值和分位数，最后再汇总到 backend summary。
         inp = load_input(row["noisy_path"])
         times = benchmark(session, inp, args.runs)
         all_times.extend(times)
@@ -105,4 +116,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

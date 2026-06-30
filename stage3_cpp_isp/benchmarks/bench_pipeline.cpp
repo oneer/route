@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+// 端到端 pipeline benchmark：比较 global/LUT/local tone 三条路径在不同分辨率下的整体耗时。
 namespace {
 
 cpp_isp::ImageBuffer<float> make_scene(std::uint32_t width, std::uint32_t height) {
@@ -44,6 +45,7 @@ struct PipelineCase {
 
 int main(int argc, char** argv) {
     const bool full = argc > 1 && std::string(argv[1]) == "--full";
+    // 默认跑小图用于快速反馈；--full 跑 1080p/4K 用于报告中的正式数据。
     constexpr int warmup_runs = 1;
     const int measured_runs = full ? 3 : 5;
     const std::vector<BenchCase> sizes = full
@@ -67,6 +69,7 @@ int main(int argc, char** argv) {
             params.exposure = pipeline.exposure;
             params.gamma = pipeline.gamma;
             const double ms = cpp_isp_bench::median_ms([&] {
+                // volatile 防止编译器把未使用的 pipeline 结果优化掉。
                 volatile auto result = cpp_isp::run_pipeline_single(input, params);
                 (void)result;
             }, warmup_runs, measured_runs);

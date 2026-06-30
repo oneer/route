@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compare PyTorch and ONNX Runtime outputs on one fixed RGB image."""
+# 中文说明：部署验证脚本代码，用于导出 ONNX、准备 C++ 对齐张量、比较不同后端输出。
 
 from __future__ import annotations
 
@@ -23,6 +24,11 @@ from ai_isp.models import build_model
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--checkpoint", required=True)
@@ -37,17 +43,32 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_input(path: str) -> tuple[np.ndarray, torch.Tensor]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rgb = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
     nchw = np.transpose(rgb, (2, 0, 1))[None].copy()
     return rgb, torch.from_numpy(nchw)
 
 
 def save_rgb(path: Path, nchw: np.ndarray) -> None:
+    """中文说明：实现 `save_rgb` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：path、nchw。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rgb = np.transpose(np.clip(nchw[0], 0.0, 1.0), (1, 2, 0))
     Image.fromarray((rgb * 255.0 + 0.5).astype(np.uint8)).save(path)
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     import onnxruntime as ort
 

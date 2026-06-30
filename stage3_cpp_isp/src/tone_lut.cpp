@@ -45,11 +45,13 @@ ToneCurveLut::ToneCurveLut(const ToneLutParams& params) : params_(params) {
     validate_lut_params(params_);
     input_max_code_ = max_value_for_bits(params_.input_bits);
     output_max_code_ = max_value_for_bits(params_.output_bits);
+    // input_scale: 线性浮点值 -> 输入码值；output_inv_scale: 输出码值 -> [0,1] 浮点值。
     input_scale_ = static_cast<float>(input_max_code_) / params_.input_max;
     output_inv_scale_ = 1.0F / static_cast<float>(output_max_code_);
     values_.resize(static_cast<std::size_t>(input_max_code_) + 1U);
 
     for (std::uint32_t code = 0; code <= input_max_code_; ++code) {
+        // 遍历每个输入码值，反量化到线性域，套用浮点 tone curve，再量化成输出码值。
         const float x = (static_cast<float>(code) / static_cast<float>(input_max_code_)) * params_.input_max;
         const float y = apply_tone_curve(x,
                                          params_.curve,
@@ -63,6 +65,7 @@ ToneCurveLut::ToneCurveLut(const ToneLutParams& params) : params_(params) {
 
 std::uint32_t ToneCurveLut::apply_code(float value) const {
     const float clamped = std::min(std::max(value, 0.0F), params_.input_max);
+    // +0.5F 做最近整数取整，减少直接截断带来的系统性偏暗。
     const auto code = static_cast<std::uint32_t>(clamped * input_scale_ + 0.5F);
     return values_[std::min(code, input_max_code_)];
 }
@@ -78,6 +81,7 @@ void tone_map_lut(const ImageView<const float>& input,
     const auto& params = lut.params();
 
     if (params.preserve_luminance && input.channels() >= 3) {
+        // LUT 路径和浮点 tone_map 保持同样的“压缩亮度、缩放 RGB”语义。
         for (std::uint32_t y = 0; y < input.height(); ++y) {
             for (std::uint32_t x = 0; x < input.width(); ++x) {
                 const float r = input(y, x, 0);

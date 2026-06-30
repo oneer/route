@@ -1,3 +1,10 @@
+"""Week 1：导出 ONNX 并验证 ONNX Runtime 与 PyTorch 对齐。
+
+部署链路的第一步是把 PyTorch 模型冻结成 ONNX。脚本导出模型、运行 ONNX
+checker、记录图结构摘要，并在固定输入集上比较 PyTorch 输出与 ORT 输出的
+绝对误差和质量指标。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -34,11 +41,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_manifest(path: Path) -> list[dict[str, str]]:
+    # 沿用 Week 0.5 固定 manifest，保证导出验证和 PyTorch 基线使用同一批图。
     with path.open("r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def graph_summary(model: onnx.ModelProto) -> dict[str, object]:
+    # 图摘要用于审计导出的模型结构，确认输入输出名、opset 和算子种类。
     graph = model.graph
     op_counts: dict[str, int] = {}
     for node in graph.node:
@@ -54,6 +63,7 @@ def graph_summary(model: onnx.ModelProto) -> dict[str, object]:
 
 
 def write_graph_summary(summary: dict[str, object], path: Path) -> None:
+    # 写成 Markdown，便于直接贴进阶段报告或代码审查记录。
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         f.write("# ONNX Graph Summary\n\n")
@@ -68,10 +78,12 @@ def write_graph_summary(summary: dict[str, object], path: Path) -> None:
 
 
 def export_onnx(cfg: dict, model: torch.nn.Module, onnx_path: Path) -> None:
+    # dummy_shape 必须与部署合同一致；本阶段默认固定 1x3x512x512。
     model.eval()
     dummy = torch.randn(*cfg["model"]["dummy_shape"], dtype=torch.float32)
     dynamic_axes = None
     if cfg["model"].get("dynamic_axes", False):
+        # 如果未来启用动态尺寸，这里会把 batch/height/width 标记为动态轴。
         dynamic_axes = {
             cfg["model"]["input_name"]: {0: "batch", 2: "height", 3: "width"},
             cfg["model"]["output_name"]: {0: "batch", 2: "height", 3: "width"},
@@ -107,6 +119,7 @@ def main() -> None:
         cfg["model"]["checkpoint"],
     ).cpu()
     onnx_path = root / cfg["model"]["onnx_path"]
+    # 先导出，再用 onnx.checker 做结构合法性检查，避免后续 ORT 报错难定位。
     export_onnx(cfg, model, onnx_path)
 
     onnx_model = onnx.load(str(onnx_path))
@@ -122,6 +135,7 @@ def main() -> None:
     metric_rows: list[dict[str, object]] = []
     with torch.no_grad():
         for row in rows:
+            # 同一输入分别跑 PyTorch 和 ORT，误差直接反映导出链路是否保持数值一致。
             sample_id = row["id"]
             inp = load_rgb_tensor(row["noisy_path"], device="cpu")
             clean = load_rgb_tensor(row["clean_path"], device="cpu")
@@ -151,6 +165,7 @@ def main() -> None:
             save_rgb(ort_out, ort_output_dir / f"{sample_id}_ort_output.png")
             save_error_map(ort_out, pytorch_out, error_dir / f"{sample_id}_ort_vs_pytorch_error_x1000.png", scale=1000.0)
 
+    # alignment CSV 是后续审计矩阵中“PyTorch -> ONNX Runtime”的证据来源。
     fieldnames = list(metric_rows[0].keys())
     with metrics_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -179,4 +194,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

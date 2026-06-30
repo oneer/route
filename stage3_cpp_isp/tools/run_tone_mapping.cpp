@@ -9,6 +9,7 @@
 
 namespace {
 
+// 浮点 tone mapping 工具：作为算法参考路径，也可选做 gamma 显示编码。
 cpp_isp::ToneCurve parse_curve(const std::string& value) {
     if (value == "reinhard") {
         return cpp_isp::ToneCurve::Reinhard;
@@ -79,6 +80,7 @@ int main(int argc, char** argv) {
 
         const float gamma = argc == 7 ? static_cast<float>(std::atof(argv[6])) : 1.0F;
         if (gamma == 1.0F) {
+            // gamma=1 时直接输出 tone mapping 结果，避免一次无意义拷贝。
             cpp_isp::write_cpf32(argv[2], image_to_tensor(tone_output));
         } else {
             const auto tone_view = static_cast<const cpp_isp::ImageBuffer<float>&>(tone_output).view();

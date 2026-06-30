@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Preview the pseudo RGGB pack used by the Stage 2 upgrade path."""
+# 中文说明：预览伪 RAW 数据集样本，检查 packed 表示是否合理。
 
 from __future__ import annotations
 
@@ -18,6 +19,11 @@ from ai_isp.data.pseudo_raw import rggb_pack_to_rgb_preview, rgb_to_rggb_pack
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Preview pseudo RAW RGGB packs.")
     parser.add_argument(
         "--input-dir",
@@ -34,11 +40,21 @@ def parse_args() -> argparse.Namespace:
 
 
 def to_image(tensor) -> Image.Image:
+    """中文说明：执行格式转换，让数据适配图像保存、模型输入或指标计算。
+    
+    输入：tensor。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     array = tensor.detach().clamp(0, 1).permute(1, 2, 0).numpy()
     return Image.fromarray((array * 255.0 + 0.5).astype(np.uint8))
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     input_dir = Path(args.input_dir)
     output_dir = Path(args.output_dir)

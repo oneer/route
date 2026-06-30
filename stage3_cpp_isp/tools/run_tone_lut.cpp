@@ -9,6 +9,7 @@
 
 namespace {
 
+// LUT 工具用于比较浮点 tone mapping 与定点/查表近似之间的误差和速度。
 cpp_isp::ToneCurve parse_curve(const std::string& value) {
     if (value == "reinhard") {
         return cpp_isp::ToneCurve::Reinhard;
@@ -77,6 +78,7 @@ int main(int argc, char** argv) {
         params.output_bits = static_cast<std::uint32_t>(std::atoi(argv[7]));
         params.input_max = static_cast<float>(std::atof(argv[8]));
 
+        // 构造 LUT 时一次性生成整张表；之后每个像素只做量化查表。
         cpp_isp::ToneCurveLut lut(params);
         const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
         cpp_isp::tone_map_lut(input_view, output.view(), lut);

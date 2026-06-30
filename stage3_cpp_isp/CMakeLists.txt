@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(stage3_cpp_isp LANGUAGES CXX)
 
+# ASAN 用于排查越界/Use-after-free；FetchContent 只在需要下载 GTest/Benchmark 时开启。
 option(CPP_ISP_ENABLE_ASAN "Enable AddressSanitizer when supported" OFF)
 option(CPP_ISP_USE_FETCHCONTENT "Download GoogleTest and Google Benchmark with FetchContent" OFF)
 
@@ -13,6 +14,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CompilerOptions)
 include(Sanitizers)
 
+# 核心库只包含算法、格式和指标逻辑；tools/tests/benchmarks 都链接这个库，避免重复实现。
 add_library(cpp_isp_core
     src/cpf32.cpp
     src/image.cpp
@@ -31,6 +33,7 @@ target_include_directories(cpp_isp_core PUBLIC include)
 cpp_isp_apply_compiler_options(cpp_isp_core)
 cpp_isp_enable_sanitizers(cpp_isp_core)
 
+# 命令行工具用于生成报告数据、对齐 Python reference、导出中间结果。
 add_executable(compare_with_reference tools/compare_with_reference.cpp)
 target_link_libraries(compare_with_reference PRIVATE cpp_isp_core)
 cpp_isp_apply_compiler_options(compare_with_reference)
@@ -74,6 +77,7 @@ cpp_isp_enable_sanitizers(dump_intermediate)
 enable_testing()
 
 if(CPP_ISP_USE_FETCHCONTENT)
+    # 可选路径：联网下载 GTest/Google Benchmark，适合想接入第三方测试框架时使用。
     include(FetchContent)
 
     FetchContent_Declare(
@@ -99,6 +103,7 @@ if(CPP_ISP_USE_FETCHCONTENT)
     target_compile_definitions(bench_smoke PRIVATE CPP_ISP_HAS_BENCHMARK=1)
     target_link_libraries(bench_smoke PRIVATE cpp_isp_core benchmark::benchmark_main)
 else()
+    # 默认路径：不依赖网络，使用项目里的轻量 main()/chrono fallback。
     add_executable(test_smoke tests/test_smoke.cpp)
     target_link_libraries(test_smoke PRIVATE cpp_isp_core)
     add_test(NAME test_smoke COMMAND test_smoke)
@@ -113,6 +118,7 @@ cpp_isp_apply_compiler_options(bench_smoke)
 cpp_isp_enable_sanitizers(bench_smoke)
 
 foreach(test_name IN ITEMS test_cpf32 test_image test_border test_denoise_basic test_tone_mapping test_fixed_point test_tone_lut test_local_tone_mapping test_hdr_merge)
+    # 大多数单元测试结构一致，用循环注册，减少 CMake 重复样板。
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE cpp_isp_core)
     cpp_isp_apply_compiler_options(${test_name})
@@ -122,6 +128,7 @@ endforeach()
 
 add_executable(test_pipeline_golden tests/test_pipeline_golden.cpp)
 target_link_libraries(test_pipeline_golden PRIVATE cpp_isp_core)
+# golden 测试需要知道源码目录，才能读取 data/pipeline_golden 下的固定参考文件。
 target_compile_definitions(test_pipeline_golden PRIVATE CPP_ISP_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 cpp_isp_apply_compiler_options(test_pipeline_golden)
 cpp_isp_enable_sanitizers(test_pipeline_golden)

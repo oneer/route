@@ -9,3 +9,4 @@ data 子包 — 数据集与图像退化模块。
     - paired_image_dataset.py: 真实 paired RGB 与同步 crop/augmentation
     - pseudo_raw.py:        sRGB 到 pseudo RGGB 的受控 shape bridge
 """
+# 中文说明：数据层代码，负责构造退化图像、读取配对数据、以及在 RGB 与伪 RAW 表示之间转换。

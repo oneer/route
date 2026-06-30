@@ -7,5 +7,6 @@ metrics 子包 — 图像质量评估指标。
 
 两者均在验证阶段使用，默认对 [0, 1] 范围的图像计算。
 """
+# 中文说明：图像质量评估指标代码，主要用于批量计算 PSNR/SSIM。
 
 from ai_isp.metrics.psnr_ssim import batch_psnr, batch_ssim

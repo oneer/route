@@ -1,3 +1,9 @@
+"""Week 6：CPU 与 NVRTC CUDA 预处理 benchmark。
+
+脚本用 ctypes 直接调用 NVRTC 和 CUDA Driver API：运行时编译一个 uint8 HWC 到
+float32 NCHW 的 normalize kernel，并与 NumPy CPU 预处理比较速度和数值误差。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -11,6 +17,7 @@ import numpy as np
 from PIL import Image
 
 KERNEL_SOURCE = r"""
+// CUDA kernel：把 RGB uint8 HWC 输入转换为模型需要的 float32 NCHW。
 extern "C" __global__ void normalize_u8_to_float_nchw(
     const unsigned char* input_hwc,
     float* output_nchw,
@@ -41,24 +48,29 @@ def parse_args() -> argparse.Namespace:
 
 
 def project_root() -> Path:
+    # 当前脚本位于 scripts/，父目录即 stage4_deploy_isp。
     return Path(__file__).resolve().parents[1]
 
 
 def check_nvrtc(status: int, message: str) -> None:
+    # NVRTC 返回整数状态码，非 0 时把调用点信息一起抛出，方便定位失败步骤。
     if status != 0:
         raise RuntimeError(f"{message}: nvrtc status {status}")
 
 
 def check_cuda(status: int, message: str) -> None:
+    # CUDA Driver API 同样返回整数状态码，统一检查能让主流程更清晰。
     if status != 0:
         raise RuntimeError(f"{message}: CUDA driver status {status}")
 
 
 def load_image_hwc(path: Path) -> np.ndarray:
+    # GPU kernel 输入保持 HWC/uint8，模拟真实图片解码后的内存布局。
     return np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
 
 
 def cpu_preprocess(hwc: np.ndarray, runs: int) -> tuple[np.ndarray, float]:
+    # CPU 参考实现执行同样的 uint8/255 和 HWC -> NCHW 转换。
     output = np.empty((3, hwc.shape[0], hwc.shape[1]), dtype=np.float32)
     start = time.perf_counter()
     for _ in range(runs):
@@ -68,6 +80,7 @@ def cpu_preprocess(hwc: np.ndarray, runs: int) -> tuple[np.ndarray, float]:
 
 
 def compile_ptx(nvrtc: ctypes.CDLL, arch: str) -> bytes:
+    # NVRTC 在运行时把字符串形式的 CUDA C++ 编译为 PTX，避免依赖单独的 nvcc 构建。
     program = ctypes.c_void_p()
     source = KERNEL_SOURCE.encode("utf-8")
     check_nvrtc(
@@ -86,6 +99,7 @@ def compile_ptx(nvrtc: ctypes.CDLL, arch: str) -> bytes:
     log_size = ctypes.c_size_t()
     nvrtc.nvrtcGetProgramLogSize(program, ctypes.byref(log_size))
     if log_size.value > 1:
+        # 编译日志可能包含 warning；即使最终成功也打印出来，便于复现实验环境。
         log = ctypes.create_string_buffer(log_size.value)
         nvrtc.nvrtcGetProgramLog(program, log)
         print(log.value.decode("utf-8", errors="replace"))
@@ -99,6 +113,7 @@ def compile_ptx(nvrtc: ctypes.CDLL, arch: str) -> bytes:
 
 
 def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, dict[str, float]]:
+    # 这里使用 pageable host memory，结果中会单独报告 H2D/D2H 拷贝成本。
     cuda_bin = r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin"
     if os.path.isdir(cuda_bin):
         os.add_dll_directory(cuda_bin)
@@ -108,6 +123,7 @@ def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, 
     ptx = compile_ptx(nvrtc, arch)
 
     check_cuda(cuda.cuInit(0), "cuInit failed")
+    # 创建独立 CUDA context，避免依赖 PyTorch/ORT 是否已经初始化 GPU。
     device = ctypes.c_int()
     check_cuda(cuda.cuDeviceGet(ctypes.byref(device), 0), "cuDeviceGet failed")
     context = ctypes.c_void_p()
@@ -129,6 +145,7 @@ def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, 
     check_cuda(cuda.cuMemAlloc_v2(ctypes.byref(device_input), input_bytes), "cuMemAlloc input failed")
     check_cuda(cuda.cuMemAlloc_v2(ctypes.byref(device_output), output_bytes), "cuMemAlloc output failed")
     h2d_start = time.perf_counter()
+    # H2D 只做一次：本 benchmark 主要关注 kernel 平均耗时，同时记录单次拷贝成本。
     check_cuda(
         cuda.cuMemcpyHtoD_v2(device_input, hwc.ctypes.data_as(ctypes.c_void_p), input_bytes),
         "cuMemcpyHtoD failed",
@@ -139,6 +156,7 @@ def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, 
     height, width, channels = hwc.shape
     total = width * height * channels
     threads = 256
+    # 每个线程处理一个 HWC 元素，并写入对应的 NCHW 位置。
     blocks = (total + threads - 1) // threads
     width_arg = ctypes.c_int(width)
     height_arg = ctypes.c_int(height)
@@ -157,6 +175,7 @@ def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, 
         cuda.cuLaunchKernel(function, blocks, 1, 1, threads, 1, 1, 0, None, kernel_params, None),
         "warmup cuLaunchKernel failed",
     )
+    # warmup 不计时，减少首次 launch 的额外开销。
     check_cuda(cuda.cuCtxSynchronize(), "warmup cuCtxSynchronize failed")
     start = time.perf_counter()
     for _ in range(runs):
@@ -167,6 +186,7 @@ def cuda_preprocess(hwc: np.ndarray, runs: int, arch: str) -> tuple[np.ndarray, 
     check_cuda(cuda.cuCtxSynchronize(), "timed cuCtxSynchronize failed")
     kernel_ms = (time.perf_counter() - start) * 1000.0 / runs
     d2h_start = time.perf_counter()
+    # D2H 只在所有 timed launch 后拷回一次，用于验证数值正确性。
     check_cuda(
         cuda.cuMemcpyDtoH_v2(output.ctypes.data_as(ctypes.c_void_p), device_output, output_bytes),
         "cuMemcpyDtoH failed",
@@ -195,6 +215,7 @@ def main() -> None:
     hwc = load_image_hwc(input_path)
     cpu_output, cpu_ms = cpu_preprocess(hwc, args.runs)
     cuda_output, cuda_timings = cuda_preprocess(hwc, args.runs, args.arch)
+    # 与 CPU 参考逐元素比较，确认 GPU 预处理没有改变归一化/布局语义。
     abs_err = np.abs(cpu_output - cuda_output)
     row = {
         "input": str(input_path),

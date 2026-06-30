@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Normalize paired RGB denoise images into train/val noisy-clean folders."""
+# 中文说明：从较大的配对图片目录中抽取固定数量样本和裁剪。
 
 from __future__ import annotations
 
@@ -14,6 +15,11 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(
         description="Prepare a small paired RGB denoise subset from noisy/clean folders."
     )
@@ -36,6 +42,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def list_images(root: Path) -> list[Path]:
+    """中文说明：枚举目录中的图片文件，并按文件名排序保证结果稳定。
+    
+    输入：root。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return [
         path
         for path in sorted(root.rglob("*"))
@@ -44,6 +55,11 @@ def list_images(root: Path) -> list[Path]:
 
 
 def pair_key(path: Path, root: Path) -> str:
+    """中文说明：实现 `pair_key` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：path、root。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rel = path.relative_to(root).with_suffix("")
     key = rel.as_posix().lower()
     key = re.sub(r"\b(noisy|clean|gt|srgb|rgb)\b", "", key)
@@ -52,6 +68,11 @@ def pair_key(path: Path, root: Path) -> str:
 
 
 def center_crop(image: Image.Image, size: int) -> Image.Image:
+    """中文说明：从图像中心裁剪固定大小区域，保证 noisy/clean 对齐且便于快速实验。
+    
+    输入：image、size。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     width, height = image.size
     scale = size / min(width, height)
     resized = image.resize((round(width * scale), round(height * scale)), Image.Resampling.BICUBIC)
@@ -61,6 +82,11 @@ def center_crop(image: Image.Image, size: int) -> Image.Image:
 
 
 def save_pair(noisy_path: Path, clean_path: Path, noisy_out: Path, clean_out: Path, size: int) -> None:
+    """中文说明：实现 `save_pair` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：noisy_path、clean_path、noisy_out、clean_out、size。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     noisy = Image.open(noisy_path).convert("RGB")
     clean = Image.open(clean_path).convert("RGB")
     if size > 0:
@@ -76,6 +102,11 @@ def save_pair(noisy_path: Path, clean_path: Path, noisy_out: Path, clean_out: Pa
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     noisy_root = Path(args.source_noisy_dir)
     clean_root = Path(args.source_clean_dir)

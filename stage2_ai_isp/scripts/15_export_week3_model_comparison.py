@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export Week 3 real RGB model comparison from existing run folders."""
+# 中文说明：导出 Week3 模型对比报告。
 
 from __future__ import annotations
 
@@ -31,6 +32,10 @@ DEFAULT_RUNS = [
 
 @dataclass
 class RunSummary:
+    """中文说明：单次训练运行的摘要结构，聚合最佳指标、最终指标和可视化路径。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     run: str
     group: str
     model: str
@@ -52,6 +57,11 @@ class RunSummary:
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Week 3 model comparison table.")
     parser.add_argument("--runs-root", default="stage2_ai_isp/runs")
     parser.add_argument("--output-dir", default="stage2_ai_isp/reports/figures/week3_model_comparison")
@@ -62,6 +72,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_metrics(path: Path) -> list[dict[str, float]]:
+    """中文说明：读取训练过程记录的 metrics.csv，并转换成后续汇总需要的数据结构。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     with path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         return [
@@ -76,6 +91,11 @@ def read_metrics(path: Path) -> list[dict[str, float]]:
 
 
 def read_checkpoint(run_dir: Path) -> tuple[dict, float]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：run_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     checkpoint_path = run_dir / "checkpoints" / "best_psnr.pth"
     if not checkpoint_path.exists():
         checkpoint_path = run_dir / "checkpoints" / "last.pth"
@@ -86,11 +106,21 @@ def read_checkpoint(run_dir: Path) -> tuple[dict, float]:
 
 
 def count_params(config: dict) -> int:
+    """中文说明：实现 `count_params` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：config。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     model = build_model(config["model"])
     return sum(parameter.numel() for parameter in model.parameters())
 
 
 def group_name(config: dict) -> str:
+    """中文说明：实现 `group_name` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：config。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     steps = int(config["train"]["steps"])
     if steps <= 300:
         return "short_300"
@@ -102,6 +132,11 @@ def group_name(config: dict) -> str:
 
 
 def summarize_run(run_dir: Path, input_psnr: float, input_ssim: float) -> RunSummary:
+    """中文说明：读取单次实验的曲线、checkpoint 和可视化资产，形成统一摘要。
+    
+    输入：run_dir、input_psnr、input_ssim。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rows = read_metrics(run_dir / "metrics.csv")
     config, checkpoint_mb = read_checkpoint(run_dir)
     best_psnr_row = max(rows, key=lambda row: row["val_psnr"])
@@ -132,6 +167,11 @@ def summarize_run(run_dir: Path, input_psnr: float, input_ssim: float) -> RunSum
 
 
 def write_csv(rows: list[RunSummary], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "week3_model_comparison.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
@@ -185,6 +225,11 @@ def write_csv(rows: list[RunSummary], output_dir: Path) -> Path:
 
 
 def write_markdown(rows: list[RunSummary], output_dir: Path, input_psnr: float, input_ssim: float) -> Path:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：rows、output_dir、input_psnr、input_ssim。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "week3_model_comparison.md"
     lines = [
         "# Week 3 Model Comparison",
@@ -234,6 +279,11 @@ def write_markdown(rows: list[RunSummary], output_dir: Path, input_psnr: float, 
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     runs_root = Path(args.runs_root)
     rows = [

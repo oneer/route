@@ -31,6 +31,7 @@ void validate_params(const HdrMergeParams& params) {
 }
 
 float max_channel(const ImageView<const float>& image, std::uint32_t y, std::uint32_t x) {
+    // 用最大通道判断饱和/欠曝，比单独看某个通道更稳。
     float value = image(y, x, 0);
     for (std::uint32_t c = 1; c < image.channels(); ++c) {
         value = std::max(value, image(y, x, c));
@@ -47,6 +48,7 @@ float saturation_weight(float value, float threshold) {
     if (value <= threshold) {
         return 1.0F;
     }
+    // threshold 以上逐渐降到 0，避免饱和高光主导融合。
     return clamp01((1.0F - value) / std::max(1.0F - threshold, 1.0e-6F));
 }
 
@@ -57,6 +59,7 @@ float underexposure_weight(float value, float threshold) {
     if (value >= threshold) {
         return 1.0F;
     }
+    // threshold 以下逐渐降权，避免短曝光暗部读噪声主导融合。
     return clamp01(value / std::max(threshold, 1.0e-6F));
 }
 
@@ -76,6 +79,7 @@ void hdr_merge_aligned(const ImageView<const float>& short_image,
             const float weight_sum = short_quality + long_quality + params.weight_epsilon;
 
             for (std::uint32_t c = 0; c < short_image.channels(); ++c) {
+                // 先除以曝光时间得到相对场景辐照度，再按质量权重融合。
                 const float short_radiance = short_image(y, x, c) / params.short_exposure;
                 const float long_radiance = long_image(y, x, c) / params.long_exposure;
                 output(y, x, c) = (short_quality * short_radiance + long_quality * long_radiance) / weight_sum;

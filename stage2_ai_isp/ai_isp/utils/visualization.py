@@ -5,6 +5,7 @@
     - tensor_to_uint8: 将 PyTorch 张量转换为 numpy uint8 数组（H, W, 3）
     - save_triplet:    保存 noisy / output / clean 三栏并排对比图
 """
+# 中文说明：把张量转成图片并保存 noisy/pred/clean 三联图。
 
 from __future__ import annotations
 
@@ -31,6 +32,7 @@ def tensor_to_uint8(image: torch.Tensor) -> np.ndarray:
     返回：
         numpy uint8 数组，形状 (H, W, 3)
     """
+    # 中文说明：把 [0,1] 范围张量转换为可保存的 uint8 图像数组。
     # 从计算图分离并移回 CPU，clamp 到合法范围
     image = image.detach().cpu().clamp(0.0, 1.0)
 
@@ -57,6 +59,7 @@ def save_triplet(noisy: torch.Tensor, output: torch.Tensor, target: torch.Tensor
         target: 干净目标图像，形状同上
         path:   输出 PNG 文件路径（自动创建父目录）
     """
+    # 中文说明：保存输入、预测、目标三联图，方便肉眼比较模型效果。
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 

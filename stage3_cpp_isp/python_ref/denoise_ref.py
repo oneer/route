@@ -1,3 +1,5 @@
+"""Python 降噪参考实现：用于验证 C++ box/gaussian/bilateral/LUT/NLM 行为是否一致。"""
+
 from __future__ import annotations
 
 import numpy as np

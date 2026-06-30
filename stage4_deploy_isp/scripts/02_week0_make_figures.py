@@ -1,3 +1,9 @@
+"""Week 0.5：把基线 CSV 和三联图整理成报告图片。
+
+脚本不重新跑模型，只读取 01 脚本产出的指标和 triplet 图片，生成 PSNR/SSIM
+柱状图以及 contact sheet，方便在报告里展示固定集的整体表现。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -24,11 +30,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_metrics(path: Path) -> list[dict[str, str]]:
+    # CSV 中的值先保持字符串，绘图时再按列转换成 float。
     with path.open("r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def plot_metric_bars(rows: list[dict[str, str]], figures_dir: Path) -> None:
+    # 同一张图并排展示 noisy 与模型输出，直接体现模型带来的指标提升。
     ids = [r["id"].replace("pair_", "") for r in rows]
     noisy_psnr = np.asarray([float(r["noisy_psnr"]) for r in rows])
     model_psnr = np.asarray([float(r["model_psnr"]) for r in rows])
@@ -63,6 +71,7 @@ def plot_metric_bars(rows: list[dict[str, str]], figures_dir: Path) -> None:
 
 
 def make_contact_sheet(triplet_dir: Path, figures_dir: Path, max_images: int) -> None:
+    # contact sheet 只取前几张代表样本，避免报告图片过长。
     paths = sorted(triplet_dir.glob("*_triplet.png"))[:max_images]
     if not paths:
         return
@@ -70,6 +79,7 @@ def make_contact_sheet(triplet_dir: Path, figures_dir: Path, max_images: int) ->
     target_width = 1200
     resized = []
     for image in images:
+        # 统一宽度，保留原始宽高比，让不同样本在一张长图里对齐。
         scale = target_width / image.width
         resized.append(image.resize((target_width, int(image.height * scale))))
     gap = 16
@@ -88,6 +98,7 @@ def main() -> None:
     out_dir = root / args.output_dir
     figures_dir = out_dir / "figures"
     figures_dir.mkdir(parents=True, exist_ok=True)
+    # 这里只做可视化汇总，不改变 week0_metrics.csv 的任何数值。
     rows = read_metrics(out_dir / "week0_metrics.csv")
     plot_metric_bars(rows, figures_dir)
     make_contact_sheet(out_dir / "triplets", figures_dir, args.max_contact_sheet)
@@ -96,4 +107,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

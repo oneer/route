@@ -1,4 +1,5 @@
 """Small pseudo RAW helpers for Stage 2 AI-ISP experiments."""
+# 中文说明：实现 RGB 图像与 RGGB packed 伪 RAW 张量之间的近似转换。
 
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ def rgb_to_rggb_pack(rgb: torch.Tensor) -> torch.Tensor:
     It samples R/G/B values from an already-rendered RGB image into an RGGB
     layout so Stage 2 can exercise RAW-shaped 4-channel models.
     """
+    # 中文说明：把 RGB 张量近似打包成 4 通道 RGGB Bayer 表示。
     if rgb.ndim != 3:
         raise ValueError(f"Expected CHW tensor, got shape {tuple(rgb.shape)}")
     if rgb.shape[0] != 3:
@@ -30,6 +32,7 @@ def rgb_to_rggb_pack(rgb: torch.Tensor) -> torch.Tensor:
 
 def rggb_pack_to_rgb_preview(pack: torch.Tensor) -> torch.Tensor:
     """Create a simple RGB preview from a 4-channel RGGB-like pack."""
+    # 中文说明：把 4 通道 packed RGGB 还原成便于观察的 RGB 预览图。
     if pack.ndim != 3:
         raise ValueError(f"Expected CHW tensor, got shape {tuple(pack.shape)}")
     if pack.shape[0] != 4:

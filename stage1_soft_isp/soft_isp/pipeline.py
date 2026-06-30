@@ -25,6 +25,7 @@ from soft_isp.stats import bayer_pattern_from_rawpy
 from soft_isp.tone import apply_gamma, normalize_by_percentile, reinhard_tone_map, to_uint8
 
 
+# 中文注释：保存一张 RAW 运行 pipeline 所需的元数据和可见像素。
 @dataclass(frozen=True)
 class RawContext:
     raw_visible: np.ndarray
@@ -36,6 +37,7 @@ class RawContext:
     ccm: np.ndarray
 
 
+# 中文注释：读取 YAML 配置并校验顶层必须是 mapping。
 def load_config(path: str | Path) -> dict[str, Any]:
     config = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     if not isinstance(config, dict):
@@ -43,6 +45,7 @@ def load_config(path: str | Path) -> dict[str, Any]:
     return config
 
 
+# 中文注释：读取 RAW 像素和元数据，并应用配置中的黑电平/Bayer 覆盖项。
 def read_raw_context(raw_path: str | Path, config: dict[str, Any]) -> RawContext:
     raw_config = config.get("raw", {})
     with rawpy.imread(str(raw_path)) as raw:

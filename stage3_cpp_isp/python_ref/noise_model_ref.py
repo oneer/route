@@ -1,3 +1,5 @@
+"""噪声模型和基础滤波参考实现：用于 Week 2/3 的降噪实验和指标计算。"""
+
 from __future__ import annotations
 
 import numpy as np

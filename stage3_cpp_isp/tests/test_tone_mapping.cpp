@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// 浮点 tone mapping 测试覆盖曲线单调性、已知值、百分位曝光、保亮度和 gamma 编码。
 namespace {
 
 void require(bool condition, const char* message) {

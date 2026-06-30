@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export Week 6 pseudo RAW/RGGB training summary."""
+# 中文说明：导出 Week6 伪 RAW 实验总结。
 
 from __future__ import annotations
 
@@ -30,6 +31,10 @@ DEFAULT_RUNS = [
 
 @dataclass
 class Week6Row:
+    """中文说明：Week6 伪 RAW 实验摘要行。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     label: str
     run: str
     dataset: str
@@ -48,6 +53,11 @@ class Week6Row:
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Week 6 pseudo RAW/RGGB summary.")
     parser.add_argument("--runs-root", default="stage2_ai_isp/runs")
     parser.add_argument("--output-dir", default="stage2_ai_isp/reports/figures/week6_pseudo_raw_training")
@@ -55,16 +65,31 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_config(path: Path) -> dict:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     with path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def resolve_project_path(path: str | Path) -> Path:
+    """中文说明：把配置中的相对路径解析到项目根目录下，避免从不同工作目录运行时路径漂移。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     resolved = Path(path)
     return resolved if resolved.is_absolute() else ROOT / resolved
 
 
 def build_val_dataset(config: dict):
+    """中文说明：构造后续流程需要的对象或可视化产物，把零散配置集中成可复用结果。
+    
+    输入：config。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     data_cfg = config["data"]
     val_cfg = data_cfg["val"]
     dataset_cls = PairedPseudoRawDataset if data_cfg["dataset"] == "paired_pseudo_raw" else PairedImageDenoiseDataset
@@ -78,6 +103,11 @@ def build_val_dataset(config: dict):
 
 
 def measure_input_baseline(config: dict) -> tuple[float, float]:
+    """中文说明：实现 `measure_input_baseline` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：config。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     dataset = build_val_dataset(config)
     loader = DataLoader(dataset, batch_size=config["train"]["batch_size"], shuffle=False)
     psnr_values = []
@@ -91,6 +121,11 @@ def measure_input_baseline(config: dict) -> tuple[float, float]:
 
 
 def read_metrics(run_dir: Path) -> tuple[float, int, float, int]:
+    """中文说明：读取训练过程记录的 metrics.csv，并转换成后续汇总需要的数据结构。
+    
+    输入：run_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     with (run_dir / "metrics.csv").open("r", encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
     best_psnr = max(rows, key=lambda row: float(row["val_psnr"]))
@@ -104,6 +139,11 @@ def read_metrics(run_dir: Path) -> tuple[float, int, float, int]:
 
 
 def effective_spatial(config: dict) -> str:
+    """中文说明：实现 `effective_spatial` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：config。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     patch_size = int(config["data"]["patch_size"])
     if config["data"]["dataset"] == "paired_pseudo_raw":
         return f"{patch_size // 2}x{patch_size // 2} pack from {patch_size}x{patch_size} RGB crop"
@@ -111,6 +151,11 @@ def effective_spatial(config: dict) -> str:
 
 
 def summarize(label: str, config_path: Path, runs_root: Path) -> Week6Row:
+    """中文说明：从原始记录中提炼关键统计量，降低报告和诊断脚本的重复逻辑。
+    
+    输入：label、config_path、runs_root。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     config = read_config(config_path)
     run_name = config["experiment"]["name"]
     channels = int(config["model"].get("in_channels", 3))
@@ -137,6 +182,11 @@ def summarize(label: str, config_path: Path, runs_root: Path) -> Week6Row:
 
 
 def write_csv(rows: list[Week6Row], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "week6_pseudo_raw_summary.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
@@ -184,6 +234,11 @@ def write_csv(rows: list[Week6Row], output_dir: Path) -> Path:
 
 
 def write_markdown(rows: list[Week6Row], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "week6_pseudo_raw_summary.md"
     lines = [
         "# Week 6 Pseudo RAW/RGGB Training Summary",
@@ -227,6 +282,11 @@ def write_markdown(rows: list[Week6Row], output_dir: Path) -> Path:
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     runs_root = Path(args.runs_root)
     rows = [summarize(label, Path(config), runs_root) for label, config in DEFAULT_RUNS]

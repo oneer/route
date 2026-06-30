@@ -1,3 +1,6 @@
+# 中文注释：Stage 1 Soft-ISP 默认配置。
+# pipeline 区域控制每个 ISP 阶段是否启用；parameters 区域保存各阶段的学习版参数。
+# 这些值优先选择“易理解、可复现实验”，不是手机量产 ISP 的最佳参数。
 raw:
   # null 表示优先使用 DNG metadata。只有做故障注入或对照实验时才覆盖。
   bayer_pattern: null

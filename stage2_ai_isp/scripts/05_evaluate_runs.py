@@ -4,6 +4,7 @@ This script is intentionally lightweight: it only depends on the standard
 library plus Pillow, so it can run in the same minimal environment as the
 training code.
 """
+# 中文说明：汇总多个训练 run 的曲线、图片和误差图，形成对比报告。
 
 from __future__ import annotations
 
@@ -18,6 +19,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 @dataclass
 class MetricRow:
+    """中文说明：单行指标记录的数据结构，便于后续排序、绘图和导出。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     step: int
     train_loss: float
     val_psnr: float
@@ -26,6 +31,10 @@ class MetricRow:
 
 @dataclass
 class RunSummary:
+    """中文说明：单次训练运行的摘要结构，聚合最佳指标、最终指标和可视化路径。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     name: str
     path: Path
     rows: list[MetricRow]
@@ -35,6 +44,11 @@ class RunSummary:
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", nargs="+", required=True, help="Run directories to summarize.")
     parser.add_argument(
@@ -52,6 +66,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_metrics(path: Path) -> list[MetricRow]:
+    """中文说明：读取训练过程记录的 metrics.csv，并转换成后续汇总需要的数据结构。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     metrics_path = path / "metrics.csv"
     if not metrics_path.exists():
         raise FileNotFoundError(metrics_path)
@@ -74,6 +93,11 @@ def read_metrics(path: Path) -> list[MetricRow]:
 
 
 def summarize_run(path: Path) -> RunSummary:
+    """中文说明：读取单次实验的曲线、checkpoint 和可视化资产，形成统一摘要。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rows = read_metrics(path)
     return RunSummary(
         name=path.name,
@@ -86,6 +110,11 @@ def summarize_run(path: Path) -> RunSummary:
 
 
 def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
+    """中文说明：选择绘图可用字体；找不到指定字体时回退到默认字体。
+    
+    输入：size、bold。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     candidates = [
         "C:/Windows/Fonts/msyhbd.ttc" if bold else "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
@@ -99,6 +128,11 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def write_summary_csv(summaries: list[RunSummary], output_dir: Path) -> Path:
+    """中文说明：将当前脚本整理出的结果写入磁盘，作为阶段产物或报告素材。
+    
+    输入：summaries、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "metrics_summary.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -131,6 +165,11 @@ def write_summary_csv(summaries: list[RunSummary], output_dir: Path) -> Path:
 
 
 def scale(value: float, min_value: float, max_value: float, low: int, high: int) -> int:
+    """中文说明：实现 `scale` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：value、min_value、max_value、low、high。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     if max_value <= min_value:
         return (low + high) // 2
     t = (value - min_value) / (max_value - min_value)
@@ -138,6 +177,11 @@ def scale(value: float, min_value: float, max_value: float, low: int, high: int)
 
 
 def draw_metric_plot(summaries: list[RunSummary], output_dir: Path) -> Path:
+    """中文说明：实现 `draw_metric_plot` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：summaries、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "metrics_plot.png"
     width, height = 1680, 900
     margin_left, margin_right = 95, 430
@@ -169,6 +213,11 @@ def draw_metric_plot(summaries: list[RunSummary], output_dir: Path) -> Path:
     ]
 
     def draw_panel(top: int, title: str, min_value: float, max_value: float) -> None:
+        """中文说明：实现 `draw_panel` 这一步的核心逻辑，供本文件的主流程复用。
+        
+        输入：top、title、min_value、max_value。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         draw.rectangle(
             [margin_left, top, margin_left + plot_w, top + plot_h],
             outline=(200, 210, 220),
@@ -188,6 +237,11 @@ def draw_metric_plot(summaries: list[RunSummary], output_dir: Path) -> Path:
         draw.text((margin_left, top + plot_h + 12), f"step: {x_min} .. {x_max}", fill=(84, 99, 116), font=font(15))
 
     def xy(step: int, value: float, values_min: float, values_max: float, top: int) -> tuple[int, int]:
+        """中文说明：实现 `xy` 这一步的核心逻辑，供本文件的主流程复用。
+        
+        输入：step、value、values_min、values_max、top。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         x = scale(step, x_min, x_max, margin_left + 20, margin_left + plot_w - 20)
         y = scale(value, values_min, values_max, top + plot_h - 30, top + 30)
         return x, y
@@ -227,6 +281,11 @@ def draw_metric_plot(summaries: list[RunSummary], output_dir: Path) -> Path:
 
 
 def pick_vis_images(run: Path) -> list[Path]:
+    """中文说明：实现 `pick_vis_images` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：run。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     vis_dir = run / "vis"
     if not vis_dir.exists():
         return []
@@ -237,6 +296,11 @@ def pick_vis_images(run: Path) -> list[Path]:
 
 
 def make_contact_sheet(summaries: list[RunSummary], output_dir: Path) -> Path | None:
+    """中文说明：构造后续流程需要的对象或可视化产物，把零散配置集中成可复用结果。
+    
+    输入：summaries、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     selected: list[tuple[str, Path]] = []
     for summary in summaries:
         for image_path in pick_vis_images(summary.path):
@@ -271,6 +335,11 @@ def make_contact_sheet(summaries: list[RunSummary], output_dir: Path) -> Path | 
 
 
 def make_error_maps(summaries: list[RunSummary], output_dir: Path) -> list[Path]:
+    """中文说明：构造后续流程需要的对象或可视化产物，把零散配置集中成可复用结果。
+    
+    输入：summaries、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     paths: list[Path] = []
     error_dir = output_dir / "error_maps"
     error_dir.mkdir(parents=True, exist_ok=True)
@@ -301,6 +370,11 @@ def make_error_maps(summaries: list[RunSummary], output_dir: Path) -> list[Path]
 
 
 def rel(path: Path, base: Path) -> str:
+    """中文说明：实现 `rel` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：path、base。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     try:
         return path.relative_to(base).as_posix()
     except ValueError:
@@ -316,6 +390,11 @@ def write_markdown(
     error_maps: list[Path],
     title: str,
 ) -> None:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：summaries、output_dir、report_path、metric_plot、contact_sheet、error_maps、title。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     base = report_path.parent
     lines = [
         f"# {title}",
@@ -377,6 +456,11 @@ def write_markdown(
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

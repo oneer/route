@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create a tiny noisy/clean paired RGB dataset for pipeline smoke tests."""
+# 中文说明：生成极小配对 RGB smoke 数据集，用来快速验证真实图片路径。
 
 from __future__ import annotations
 
@@ -14,6 +15,11 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Prepare a paired RGB smoke dataset.")
     parser.add_argument(
         "--source-dir",
@@ -33,6 +39,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def center_crop(image: Image.Image, size: int) -> Image.Image:
+    """中文说明：从图像中心裁剪固定大小区域，保证 noisy/clean 对齐且便于快速实验。
+    
+    输入：image、size。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     width, height = image.size
     scale = size / min(width, height)
     resized = image.resize((round(width * scale), round(height * scale)), Image.Resampling.BICUBIC)
@@ -42,6 +53,11 @@ def center_crop(image: Image.Image, size: int) -> Image.Image:
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     source_dir = Path(args.source_dir)
     output_dir = Path(args.output_dir)

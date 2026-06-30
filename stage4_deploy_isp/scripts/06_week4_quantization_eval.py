@@ -1,3 +1,9 @@
+"""Week 4：静态 INT8 QDQ 量化与独立评估。
+
+脚本把固定样本拆成 calibration/evaluation 两部分：前者只用于收集量化范围，
+后者才用于质量和延迟评估。这样可以避免“用校准集评估自己”的数据泄漏。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -15,11 +21,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def read_manifest(path: Path) -> list[dict[str, str]]:
+    # 读取固定输入集合，之后会显式拆分为校准集和评估集。
     with path.open("r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def write_manifest(path: Path, rows: list[dict[str, str]]) -> None:
+    # 把拆分结果落盘，报告和审计可以追踪每张图属于哪个 split。
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
@@ -28,6 +36,7 @@ def write_manifest(path: Path, rows: list[dict[str, str]]) -> None:
 
 
 def load_input(path: str) -> np.ndarray:
+    # ONNX 模型的输入合同是 NCHW float32，像素范围 [0,1]。
     arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
     return np.transpose(arr, (2, 0, 1))[None].astype(np.float32)
 
@@ -38,6 +47,7 @@ def psnr(pred: np.ndarray, target: np.ndarray, eps: float = 1e-8) -> float:
 
 
 def ssim(pred: np.ndarray, target: np.ndarray) -> float:
+    # 与 common.simple_ssim 保持同样的全局 SSIM 近似，便于跨周比较。
     x, y = pred.astype(np.float64), target.astype(np.float64)
     c1, c2 = 0.01**2, 0.03**2
     mux, muy = x.mean(), y.mean()
@@ -55,6 +65,7 @@ def to_u8(array: np.ndarray) -> np.ndarray:
 
 
 def save_diagnostics(sample_id: str, noisy: np.ndarray, clean: np.ndarray, fp32: np.ndarray, int8: np.ndarray, out_dir: Path) -> None:
+    # 只保存最差样本的诊断图，突出 INT8 相对 FP32 的主要退化位置。
     err = np.mean(np.abs(int8 - fp32), axis=1)[0]
     scaled = np.clip(err * 32.0, 0.0, 1.0)
     heat = np.stack([scaled, np.sqrt(scaled), np.zeros_like(scaled)], axis=2)
@@ -72,6 +83,7 @@ def save_diagnostics(sample_id: str, noisy: np.ndarray, clean: np.ndarray, fp32:
 
 
 class Reader(CalibrationDataReader):
+    # ORT 静态量化通过 CalibrationDataReader 按需拉取校准样本。
     def __init__(self, rows: list[dict[str, str]]) -> None:
         self.rows = iter(rows)
 
@@ -84,6 +96,7 @@ class Reader(CalibrationDataReader):
 
 
 def run(session: ort.InferenceSession, inp: np.ndarray, warmup: int, runs: int) -> tuple[np.ndarray, list[float]]:
+    # 返回最后一次输出和每次推理耗时；输出会裁剪到可视化/指标使用的 [0,1]。
     for _ in range(warmup):
         session.run(["output"], {"input": inp})
     timings = []
@@ -114,6 +127,7 @@ def main() -> None:
     rows = read_manifest(ROOT / args.manifest)
     if not 0 < args.calibration_count < len(rows):
         raise ValueError("calibration-count must leave at least one independent evaluation sample.")
+    # 校准集和评估集必须互斥，这是本周量化结论可信的关键约束。
     calibration_rows = rows[: args.calibration_count]
     evaluation_rows = rows[args.calibration_count :]
     calibration_ids = {row["id"] for row in calibration_rows}
@@ -131,6 +145,7 @@ def main() -> None:
     int8_model = ROOT / args.int8_onnx
     int8_model.parent.mkdir(parents=True, exist_ok=True)
     quantize_static(
+        # QDQ 格式保留量化/反量化节点，便于 ORT 执行和模型图审计。
         model_input=str(fp32_model),
         model_output=str(int8_model),
         calibration_data_reader=Reader(calibration_rows),
@@ -146,6 +161,7 @@ def main() -> None:
     metrics, fp32_times, int8_times = [], [], []
     arrays: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = {}
     for row in evaluation_rows:
+        # 每个评估样本同时跑 FP32 与 INT8，分别比较质量和 INT8 对齐误差。
         inp, clean = load_input(row["noisy_path"]), load_input(row["clean_path"])
         fp32_out, ft = run(fp32_session, inp, args.warmup, args.runs)
         int8_out, it = run(int8_session, inp, args.warmup, args.runs)
@@ -174,6 +190,7 @@ def main() -> None:
         arrays[row["id"]] = (inp, clean, fp32_out, int8_out)
 
     worst = sorted(metrics, key=lambda row: float(row["psnr_drop"]), reverse=True)
+    # 按 PSNR drop 排序，保存退化最大的样本，方便报告中解释量化风险。
     for row in worst[: args.diagnostic_count]:
         for directory in ("error_maps", "failure_cases"):
             (out_dir / directory).mkdir(parents=True, exist_ok=True)

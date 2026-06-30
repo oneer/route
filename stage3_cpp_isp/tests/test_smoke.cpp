@@ -8,6 +8,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// Smoke test 是最小生命体征检查：确认库能链接，CPF32/metrics 基本类型能被调用。
 #ifdef CPP_ISP_HAS_GTEST
 TEST(SmokeTest, IdenticalTensorsHaveZeroError) {
     cpp_isp::TensorF32 a;

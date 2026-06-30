@@ -1,19 +1,21 @@
-# Default reproducible Stage 3 pipeline settings.
-# The C++ command-line tools keep parsing explicit arguments; this file records
-# the reference configuration used by Week 8/Week 9 reports.
+# Stage 3 默认可复现实验配置。
+# C++ 命令行工具仍然通过参数显式控制；这个 YAML 用来记录 Week 8/Week 9 报告采用的参考设置。
 
 input:
+  # CPF32 文件里保存的是线性 float32 张量；layout 记录文件语义，核心 C++ 会再转成 planar ImageBuffer。
   range: linear_float
   dtype: float32
   layout: HWC_CPF32
 
 denoise:
+  # 默认用半径 1 的 Gaussian 作为轻量降噪基线，reflect 边界能减少图像边缘变暗。
   mode: gaussian
   radius: 1
   sigma: 1.0
   border: reflect
 
 tone:
+  # 全局 Reinhard + 保亮度是稳定基线；gamma 2.2 用于显示编码。
   mode: global
   curve: reinhard
   exposure: 0.216
@@ -21,12 +23,14 @@ tone:
   gamma: 2.2
 
 lut:
+  # 12-bit LUT 模拟常见 ISP 定点查表模块，input_max 是线性域覆盖上限。
   input_bits: 12
   output_bits: 12
   input_max: 8.0
   lookup: nearest
 
 local_tone_mapping:
+  # 局部 tone mapping 默认用 bilateral base，减少亮暗边界 halo。
   base_filter: bilateral
   base_radius: 3
   base_sigma_spatial: 2.4
@@ -34,6 +38,7 @@ local_tone_mapping:
   detail_strength: 0.75
 
 hdr_merge:
+  # HDR 参数假设短/长曝光已经空间对齐；阈值控制欠曝/饱和区域的融合权重。
   short_exposure: 0.18
   long_exposure: 0.72
   saturation_threshold: 0.92

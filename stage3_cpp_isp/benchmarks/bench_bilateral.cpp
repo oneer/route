@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+// 对比直接 bilateral 和 range-LUT bilateral 的耗时，输入是带轻微纹理的灰度渐变图。
 namespace {
 
 cpp_isp::ImageBuffer<float> make_gradient_noise(std::uint32_t width, std::uint32_t height) {
@@ -21,6 +22,7 @@ cpp_isp::ImageBuffer<float> make_gradient_noise(std::uint32_t width, std::uint32
 
 int main() {
     for (const auto size : {128U, 256U}) {
+        // 小尺寸用于快速 sanity benchmark，避免直接 bilateral 在大图上耗时过长。
         auto input = make_gradient_noise(size, size);
         cpp_isp::ImageBuffer<float> output(size, size, 1);
         const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();

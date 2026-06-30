@@ -16,6 +16,7 @@ TinyCNN — 最简 3 层卷积 Baseline。
     Week 0.5 训练管线检查 —— 确保数据流动、loss 下降、checkpoint 保存等
     基础设施正常工作，再切换到更复杂的模型。
 """
+# 中文说明：实现最小 CNN baseline，适合 smoke test 和管线调试。
 
 from __future__ import annotations
 
@@ -31,8 +32,14 @@ class TinyCNN(nn.Module):
         out_channels: 输出通道数，默认 3（RGB 去噪图）
         features:     中间层特征通道数，默认 32
     """
+    # 中文说明：极小 CNN baseline：用于确认数据、训练和指标管线是否能跑通。
 
     def __init__(self, in_channels: int = 3, out_channels: int = 3, features: int = 32) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：in_channels、out_channels、features。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
 
         # Sequential 堆叠 3 层卷积 + 2 层 ReLU
@@ -59,4 +66,5 @@ class TinyCNN(nn.Module):
         返回：
             输出去噪后张量，形状 (B, out_channels, H, W)
         """
+        # 中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
         return self.net(x)

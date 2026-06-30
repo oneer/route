@@ -50,10 +50,12 @@ from soft_isp.orientation import apply_rawpy_orientation
 from soft_isp.stats import bayer_pattern_from_rawpy, describe_array
 
 
+# 中文注释：从输入路径提取稳定样本名，用作图像、JSON 和报告文件的前缀。
 def sample_id(raw_path: Path) -> str:
     return raw_path.name.split("_", 1)[0]
 
 
+# 中文注释：统计 RGB 图像的形状、范围和通道均值，帮助诊断色彩偏移。
 def describe_rgb(rgb: np.ndarray) -> dict:
     return {
         "shape": rgb.shape,
@@ -64,10 +66,12 @@ def describe_rgb(rgb: np.ndarray) -> dict:
     }
 
 
+# 中文注释：计算图像各通道均值，用于 AWB 前后对比。
 def channel_means(rgb: np.ndarray) -> list[float]:
     return [float(np.mean(rgb[:, :, index])) for index in range(3)]
 
 
+# 中文注释：保存多个面板组成的对比图，便于报告中展示实验现象。
 def save_compare_figure(
     raw_path: Path,
     before_preview: np.ndarray,
@@ -100,6 +104,7 @@ def save_compare_figure(
     return out_path
 
 
+# 中文注释：处理单个 RAW 样本并返回结构化统计，供批处理和报告复用。
 def analyze_one(
     raw_path: Path,
     out_dir: Path,
@@ -172,10 +177,12 @@ def analyze_one(
     return result
 
 
+# 中文注释：把数值格式化为报告友好的字符串，同时处理缺失或异常值。
 def fmt(value: float) -> str:
     return f"{value:.3f}"
 
 
+# 中文注释：根据已收集的实验结果写 Markdown 报告。
 def write_report(results: list[dict], report_path: Path) -> None:
     lines = [
         "# Week 3 AWB 学习报告",
@@ -270,6 +277,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Apply BLC + DPC + demosaic + gray-world AWB.")
     parser.add_argument("raw_paths", type=Path, nargs="+", help="One or more RAW/DNG files.")

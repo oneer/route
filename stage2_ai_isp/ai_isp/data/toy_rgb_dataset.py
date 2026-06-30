@@ -20,6 +20,7 @@ Toy RGB 去噪数据集 —— 用程序化生成的合成图像构造 clean/noi
     - patch 尺寸、sigma 范围等超参数可在构造时配置
     - 返回字典格式：{"noisy", "clean", "sigma"}，兼容通用训练循环
 """
+# 中文说明：生成合成 RGB 去噪样本，用于快速验证训练管线和模型行为。
 
 from __future__ import annotations
 
@@ -44,6 +45,7 @@ class ToyRGBDenoiseDataset(Dataset):
         sigma_max:  加噪时 sigma 的最大值
         seed:       随机种子（同一 seed + index 每次生成相同数据）
     """
+    # 中文说明：合成 RGB 去噪数据集：动态生成 clean 图案，再按配置加入噪声。
 
     def __init__(
         self,
@@ -58,6 +60,11 @@ class ToyRGBDenoiseDataset(Dataset):
         read_min: float = 0.0,
         read_max: float = 0.0,
     ) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：size、patch_size、sigma_min、sigma_max、seed、noise_type、shot_min、shot_max、read_min、read_max。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         self.size = int(size)
         self.patch_size = int(patch_size)
         self.sigma_min = float(sigma_min)
@@ -71,6 +78,7 @@ class ToyRGBDenoiseDataset(Dataset):
 
     def __len__(self) -> int:
         """返回数据集总样本数。"""
+        # 中文说明：返回数据集中可采样样本数量，供 DataLoader 计算 epoch 长度。
         return self.size
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
@@ -82,6 +90,7 @@ class ToyRGBDenoiseDataset(Dataset):
             {"noisy": Tensor, "clean": Tensor, "sigma": Tensor}
             noisy/clean 的形状均为 (3, patch_size, patch_size)，值域 [0, 1]
         """
+        # 中文说明：按索引读取一个样本，并返回训练/验证所需的张量字典。
         # 用确定性种子创建随机数生成器（seed + index 保证每个样本独立但可复现）
         generator = torch.Generator().manual_seed(self.seed + int(index))
 
@@ -127,6 +136,7 @@ class ToyRGBDenoiseDataset(Dataset):
         返回：
             形状为 (3, patch_size, patch_size) 的 RGB 张量，值域 [0, 1]
         """
+        # 中文说明：补充说明：`_make_clean_patch` 是当前模块流程中的一个复用步骤。
         h = w = self.patch_size
 
         # 创建 [0, 1] 范围的像素坐标网格（indexing="ij" 表示矩阵坐标）

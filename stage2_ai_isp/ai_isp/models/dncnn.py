@@ -26,6 +26,7 @@ DnCNN — 小型 DnCNN 风格图像去噪网络。
     - features: 中间层通道数
     - residual: 是否启用残差学习（True = 预测噪声，False = 直接预测干净图像）
 """
+# 中文说明：实现 DnCNN 残差去噪网络，预测噪声后从输入中扣除。
 
 from __future__ import annotations
 
@@ -46,6 +47,7 @@ class DnCNN(nn.Module):
         depth:        卷积层总数，默认 5
         residual:     是否使用残差学习，默认 True
     """
+    # 中文说明：DnCNN 去噪网络：用卷积堆叠估计噪声残差，再从输入图像中减去。
 
     def __init__(
         self,
@@ -55,6 +57,11 @@ class DnCNN(nn.Module):
         depth: int = 5,
         residual: bool = True,
     ) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：in_channels、out_channels、features、depth、residual。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
         if depth < 2:
             raise ValueError("DnCNN depth must be at least 2.")
@@ -93,6 +100,7 @@ class DnCNN(nn.Module):
             - residual=True:  去噪图像 = x - net(x)（从输入中减去预测的噪声）
             - residual=False: 去噪图像 = net(x)（直接预测干净图像）
         """
+        # 中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
         pred = self.net(x)
         out = x - pred if self.residual else pred
         return out

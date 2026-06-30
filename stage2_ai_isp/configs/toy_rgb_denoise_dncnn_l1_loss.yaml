@@ -1,3 +1,6 @@
+# 中文说明：Stage2 AI ISP 实验配置 `toy rgb denoise dncnn l1 loss`。
+# 作用：集中声明数据集、模型、损失、优化器、训练步数、验证和输出目录。
+# 阅读方式：先看 dataset/model/loss 确认实验目标，再看 train/val/output 确认可复现细节。
 experiment:
   name: toy_rgb_denoise_dncnn_l1_loss
   seed: 42
@@ -13,6 +16,7 @@ data:
     sigma_max: 0.12
 
 model:
+  # 中文说明：网络结构名称及宽度、深度等模型超参数。
   name: dncnn
   in_channels: 3
   out_channels: 3
@@ -21,6 +25,7 @@ model:
   residual: true
 
 train:
+  # 中文说明：batch、学习率、步数、随机种子等训练控制项。
   steps: 300
   batch_size: 8
   learning_rate: 0.001

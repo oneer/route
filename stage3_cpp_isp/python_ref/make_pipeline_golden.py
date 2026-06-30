@@ -1,3 +1,5 @@
+"""生成 pipeline golden 数据：C++ golden test 会逐阶段读取这些 CPF32 文件做回归检查。"""
+
 from __future__ import annotations
 
 from pathlib import Path

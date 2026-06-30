@@ -168,11 +168,13 @@ def rgb_preview(
     return (preview * 255.0 + 0.5).astype(np.uint8)
 
 
+# 中文注释：兼容旧接口的 demosaic 包装函数。
 def demosaic_bilinear(raw: np.ndarray, bayer_pattern: str) -> np.ndarray:
     """Backward-compatible alias for bilinear_demosaic."""
     return bilinear_demosaic(raw, bayer_pattern)
 
 
+# 中文注释：把 RGB 图像按最大值归一化到 0..1。
 def normalize_rgb(rgb: np.ndarray, white_level: float | None = None) -> np.ndarray:
     """Backward-compatible 0..1 preview normalization."""
     rgb_f32 = rgb.astype(np.float32)

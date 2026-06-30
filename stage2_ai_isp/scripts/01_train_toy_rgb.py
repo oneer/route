@@ -39,6 +39,7 @@
       log_every: 25
       val_every: 50
 """
+# 中文说明：训练 toy RGB 去噪实验，是最小可运行训练入口。
 
 from __future__ import annotations
 
@@ -62,6 +63,7 @@ def parse_args() -> argparse.Namespace:
         argparse.Namespace，包含:
             --config: YAML 配置文件路径（必需）
     """
+    # 中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
     parser = argparse.ArgumentParser(description="Train toy RGB denoise baseline.")
     parser.add_argument("--config", required=True, help="Path to YAML config.")
     return parser.parse_args()
@@ -69,6 +71,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     """加载 YAML 配置并启动训练。"""
+    # 中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
     # 第 1 步：读取命令行参数。
     # 例如：
     #   --config configs/toy_rgb_denoise_tiny.yaml

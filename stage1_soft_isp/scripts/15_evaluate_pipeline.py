@@ -69,10 +69,12 @@ VARIANTS = {
 }
 
 
+# 中文注释：从输入路径提取稳定样本名，用作图像、JSON 和报告文件的前缀。
 def sample_id(raw_path: Path) -> str:
     return raw_path.name.split("_", 1)[0]
 
 
+# 中文注释：按指定开关组合运行 pipeline，用于消融比较。
 def run_variant(raw_path: Path, options: dict, min_delta: int, mad_k: float, gamma: float, tone_percentile: float) -> np.ndarray:
     with rawpy.imread(str(raw_path)) as raw:
         raw_visible = raw.raw_image_visible.copy()
@@ -106,6 +108,7 @@ def run_variant(raw_path: Path, options: dict, min_delta: int, mad_k: float, gam
     return apply_rawpy_orientation(preview, display_flip)
 
 
+# 中文注释：读取参考 sRGB 图，并转换成统一的 RGB uint8 格式。
 def load_reference(raw_path: Path, reference_dir: Path) -> np.ndarray | None:
     reference_path = reference_dir / f"{raw_path.stem}_rawpy_srgb.png"
     if not reference_path.exists():
@@ -113,6 +116,7 @@ def load_reference(raw_path: Path, reference_dir: Path) -> np.ndarray | None:
     return iio.imread(reference_path)
 
 
+# 中文注释：把多个 pipeline 变体排成网格图，快速比较消融效果。
 def save_grid(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -> None:
     fig, axes = plt.subplots(1, len(panels), figsize=(4.4 * len(panels), 4.0), constrained_layout=True)
     for ax, (panel_title, image) in zip(axes, panels):
@@ -124,6 +128,7 @@ def save_grid(path: Path, title: str, panels: list[tuple[str, np.ndarray]]) -> N
     plt.close(fig)
 
 
+# 中文注释：对单个样本运行多个实验分支，计算指标并保存可视化结果。
 def evaluate_one(raw_path: Path, out_dir: Path, reference_dir: Path, min_delta: int, mad_k: float, gamma: float, tone_percentile: float) -> dict:
     reference = load_reference(raw_path, reference_dir)
     previews = {}
@@ -143,19 +148,23 @@ def evaluate_one(raw_path: Path, out_dir: Path, reference_dir: Path, min_delta: 
     return {"file": str(raw_path), "sample_id": sample_id(raw_path), "metrics": metrics, "ablation": str(grid_path)}
 
 
+# 中文注释：把路径格式化成相对报告路径，避免报告中出现冗长的绝对路径。
 def rel(path: str, report_path: Path) -> str:
     return Path(os.path.relpath(path, report_path.parent)).as_posix()
 
 
+# 中文注释：把数值格式化为报告友好的字符串，同时处理缺失或异常值。
 def fmt(value: float) -> str:
     return f"{value:.4f}"
 
 
+# 中文注释：聚合某个 pipeline 变体在多张样本上的指标。
 def summarize_variant(results: list[dict], variant: str, key: str) -> float:
     values = [result["metrics"][variant][key] for result in results if variant in result["metrics"]]
     return float(np.mean(values)) if values else float("nan")
 
 
+# 中文注释：根据已收集的实验结果写 Markdown 报告。
 def write_report(results: list[dict], report_path: Path) -> None:
     lines = [
         "# Week 5 IQA / 消融实验报告",
@@ -218,6 +227,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：展开命令行通配符路径，并去重排序，兼容不同 shell。
 def expand_paths(paths: list[Path]) -> list[Path]:
     expanded: list[Path] = []
     for path in paths:
@@ -229,6 +239,7 @@ def expand_paths(paths: list[Path]) -> list[Path]:
     return sorted(expanded)
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate Week5 IQA metrics and ablation variants.")
     parser.add_argument("raw_paths", type=Path, nargs="+")

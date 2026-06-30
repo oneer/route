@@ -1,3 +1,5 @@
+"""Week 3 SIDD 桥接脚本：在真实小样本上跑降噪并导出 crops/metrics。"""
+
 from __future__ import annotations
 
 import argparse

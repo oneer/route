@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// 定点工具测试关注三个硬件常见行为：Q 格式转换、带四舍五入右移、码值饱和裁剪。
 namespace {
 
 void require(bool condition, const char* message) {

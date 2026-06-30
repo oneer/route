@@ -1,3 +1,5 @@
+"""Week 8 总结脚本：串联端到端 pipeline，导出最终对比图和汇总指标。"""
+
 from __future__ import annotations
 
 import csv

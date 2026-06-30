@@ -9,6 +9,7 @@
 
 namespace {
 
+// 将命令行字符串映射为库里的枚举，工具层负责把用户输入限制在明确选项内。
 cpp_isp::ToneCurve parse_curve(const std::string& value) {
     if (value == "reinhard") {
         return cpp_isp::ToneCurve::Reinhard;
@@ -88,6 +89,7 @@ int main(int argc, char** argv) {
         params.base_sigma_range = static_cast<float>(std::atof(argv[8]));
         params.detail_strength = static_cast<float>(std::atof(argv[9]));
 
+        // 局部 tone mapping 的 base/filter/radius 都从命令行传入，便于报告里做参数消融。
         const auto input_view = static_cast<const cpp_isp::ImageBuffer<float>&>(input).view();
         cpp_isp::local_tone_map(input_view, output.view(), params);
         cpp_isp::write_cpf32(argv[2], image_to_tensor(output));

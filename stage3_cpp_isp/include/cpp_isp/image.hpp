@@ -8,6 +8,10 @@
 
 namespace cpp_isp {
 
+// ImageView 是“不拥有内存”的图像视图，只记录数据指针和布局信息。
+// 本阶段统一使用 planar 布局：同一个通道的像素连续存放，通道之间用 channel_stride 跳转。
+// 访问公式是 data[c * channel_stride + y * row_stride + x]，这让算法代码可以同时处理
+// 1 通道 RAW/灰度图和 3/4 通道 RGB/RGBA 数据。
 template <typename T>
 class ImageView {
 public:
@@ -49,6 +53,7 @@ public:
         return data_[offset(y, x, c)];
     }
 
+    // at() 做越界检查，适合测试和调试；operator() 不检查边界，适合内层像素循环。
     T& at(std::uint32_t y, std::uint32_t x, std::uint32_t c = 0) const {
         if (x >= width_ || y >= height_ || c >= channels_) {
             throw std::out_of_range("ImageView index out of range");
@@ -64,6 +69,8 @@ public:
     T* data() const { return data_; }
 
 private:
+    // row_stride 允许每行尾部有 padding；channel_stride 允许每个平面之间有间隔。
+    // 这样可以模拟真实 ISP/硬件缓冲区里常见的对齐布局，而不是假设完全紧密排列。
     std::size_t offset(std::uint32_t y, std::uint32_t x, std::uint32_t c) const {
         return static_cast<std::size_t>(c) * channel_stride_ +
                static_cast<std::size_t>(y) * row_stride_ + x;
@@ -77,6 +84,8 @@ private:
     std::uint32_t channel_stride_ = 0;
 };
 
+// ImageBuffer 是拥有内存的容器；它负责分配 vector，然后用 view() 暴露成 ImageView。
+// 这种分层让算法函数只依赖 ImageView，既能处理自己分配的缓冲，也能处理外部传入的数据。
 template <typename T>
 class ImageBuffer {
 public:

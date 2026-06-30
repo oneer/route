@@ -22,6 +22,7 @@ UNet — 紧凑型 Encoder-Decoder 去噪网络。
 ConvBlock 说明：
     每个 ConvBlock 包含两层 3×3 Conv + ReLU，用于局部非线性特征提取。
 """
+# 中文说明：实现带跳连的 U-Net，用多尺度特征做图像复原。
 
 from __future__ import annotations
 
@@ -40,8 +41,14 @@ class ConvBlock(nn.Module):
         in_channels:  输入通道数
         out_channels: 输出通道数
     """
+    # 中文说明：U-Net 中的双卷积基础块，用于局部特征提取。
 
     def __init__(self, in_channels: int, out_channels: int) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：in_channels、out_channels。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
         self.net = nn.Sequential(
             # 第 1 层：输入 → 输出通道
@@ -54,6 +61,7 @@ class ConvBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """前向传播：输入 → 两层卷积 + ReLU → 输出。"""
+        # 中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
         return self.net(x)
 
 
@@ -76,8 +84,14 @@ class UNet(nn.Module):
         out_channels:  输出通道数，默认 3（RGB 去噪图）
         base_channels: 基础通道数 c，每层翻倍（c → 2c → 4c），默认 16
     """
+    # 中文说明：U-Net 图像复原网络：编码器提取多尺度特征，解码器结合跳连恢复细节。
 
     def __init__(self, in_channels: int = 3, out_channels: int = 3, base_channels: int = 16) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：in_channels、out_channels、base_channels。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
         c = int(base_channels)
 
@@ -106,6 +120,7 @@ class UNet(nn.Module):
         返回：
             去噪图像，形状 (B, out_channels, H, W)
         """
+        # 中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
         # --- Encoder ---
         e1 = self.enc1(x)                                      # (B, c,   H,   W)
         e2 = self.enc2(F.avg_pool2d(e1, 2))                    # (B, 2c,  H/2, W/2) — 2× 下采样

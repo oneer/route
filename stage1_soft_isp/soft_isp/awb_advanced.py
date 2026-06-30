@@ -1,7 +1,6 @@
-"""Small AWB baselines for scene-level debugging.
+"""进阶 AWB baseline：白点法、Shades-of-Gray 和中性区域误差，用于定位灰度世界失败场景。
 
-These methods are intentionally simple. They make AWB failure modes visible
-without pretending to be a production 3A stack.
+中文注释说明：本文件的注释侧重解释数据流、算法意图和实验用途；除注释/docstring 外不改变运行逻辑。
 """
 
 from __future__ import annotations
@@ -11,6 +10,7 @@ import numpy as np
 from soft_isp.awb import apply_awb, gray_world_gains
 
 
+# 中文注释：从高亮且低饱和区域估计白点增益，适合有白色物体的场景。
 def white_patch_gains(rgb_linear: np.ndarray, percentile: float = 99.0, max_gain: float = 8.0) -> np.ndarray:
     """Estimate gains from bright, low-saturation pixels."""
     rgb = np.asarray(rgb_linear, dtype=np.float32)
@@ -31,6 +31,7 @@ def white_patch_gains(rgb_linear: np.ndarray, percentile: float = 99.0, max_gain
     return np.clip(gains, 1.0 / max_gain, max_gain)
 
 
+# 中文注释：使用 Minkowski 均值估计白平衡，比普通灰度世界更强调高亮像素。
 def shades_of_gray_gains(
     rgb_linear: np.ndarray,
     minkowski_p: float = 6.0,
@@ -57,6 +58,7 @@ def shades_of_gray_gains(
     return np.clip(gains, 1.0 / max_gain, max_gain)
 
 
+# 中文注释：评估疑似中性像素的通道偏差，用作 AWB 效果的诊断指标。
 def neutrality_error(rgb_linear: np.ndarray, sample_fraction: float = 0.25) -> dict[str, float]:
     """Measure how far likely neutral pixels are from equal RGB channels."""
     rgb = np.asarray(rgb_linear, dtype=np.float32)
@@ -83,6 +85,7 @@ def neutrality_error(rgb_linear: np.ndarray, sample_fraction: float = 0.25) -> d
     }
 
 
+# 中文注释：在同一张图上比较多种 AWB 方法的增益和中性误差。
 def compare_awb_methods(rgb_linear: np.ndarray, white_level: float | None = None) -> dict[str, dict[str, float | list[float]]]:
     """Apply several AWB baselines and return gains plus neutral errors."""
     methods = {

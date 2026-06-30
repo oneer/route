@@ -9,6 +9,7 @@ import numpy as np
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 
+# 中文注释：把候选图和参考图裁剪到共同尺寸，避免指标计算 shape 不一致。
 def align_images(candidate: np.ndarray, reference: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if candidate.ndim != 3 or reference.ndim != 3:
         raise ValueError("candidate and reference must be HxWxC images")
@@ -17,6 +18,7 @@ def align_images(candidate: np.ndarray, reference: np.ndarray) -> tuple[np.ndarr
     return candidate[:min_h, :min_w], reference[:min_h, :min_w]
 
 
+# 中文注释：计算候选图相对参考图的 PSNR、SSIM 和平均绝对误差。
 def compute_metrics(candidate: np.ndarray, reference: np.ndarray) -> dict[str, float]:
     candidate, reference = align_images(candidate, reference)
     cand = candidate.astype(np.float32) / 255.0

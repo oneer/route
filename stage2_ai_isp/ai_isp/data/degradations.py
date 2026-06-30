@@ -13,6 +13,7 @@
 注意：
     所有退化操作要求输入张量的值域为 [0, 1]，输出也保持在 [0, 1] 内。
 """
+# 中文说明：定义训练/评估中常用的图像噪声退化函数。
 
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ def add_shot_read_noise(
     generator: torch.Generator | None = None,
 ) -> tuple[torch.Tensor, dict[str, float]]:
     """Add signal-dependent shot noise plus signal-independent read noise."""
+    # 中文说明：加入符合相机成像直觉的 shot/read 噪声：亮处受 shot noise 影响，暗处 read noise 更明显。
     shot = (
         torch.rand((), generator=generator, dtype=clean.dtype)
         .mul_(shot_max - shot_min)
@@ -67,6 +69,7 @@ def add_gaussian_noise(
     返回：
         (noisy, sigma): 加噪后的图像张量（clamp 到 [0, 1]）与实际使用的 sigma 值
     """
+    # 中文说明：加入简单高斯噪声，作为最直接的 RGB 去噪退化 baseline。
     # 在 [sigma_min, sigma_max] 区间均匀随机采样一个 sigma
     sigma = (
         torch.rand((), generator=generator, dtype=clean.dtype)

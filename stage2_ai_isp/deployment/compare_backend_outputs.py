@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compare a quantized PNG backend output against a reference output PNG."""
+# 中文说明：部署验证脚本代码，用于导出 ONNX、准备 C++ 对齐张量、比较不同后端输出。
 
 from __future__ import annotations
 
@@ -19,6 +20,11 @@ from ai_isp.metrics import batch_psnr, batch_ssim
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reference", required=True)
     parser.add_argument("--candidate", required=True)
@@ -28,11 +34,21 @@ def parse_args() -> argparse.Namespace:
 
 
 def load(path: str) -> torch.Tensor:
+    """中文说明：实现 `load` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     array = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
     return torch.from_numpy(np.transpose(array, (2, 0, 1))[None].copy())
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     reference = load(args.reference)
     candidate = load(args.candidate)

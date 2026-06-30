@@ -11,6 +11,7 @@ std::int32_t float_to_fixed(float value, std::uint32_t fractional_bits) {
         throw std::invalid_argument("fractional_bits must be < 30");
     }
     const double scale = static_cast<double>(std::int64_t{1} << fractional_bits);
+    // 乘以 2^fractional_bits 后取整，就是把小数部分编码进整数低位。
     const double rounded = std::round(static_cast<double>(value) * scale);
     if (rounded > static_cast<double>(std::numeric_limits<std::int32_t>::max()) ||
         rounded < static_cast<double>(std::numeric_limits<std::int32_t>::min())) {
@@ -36,8 +37,10 @@ std::int64_t round_shift(std::int64_t value, std::uint32_t shift) {
     }
     const std::int64_t offset = std::int64_t{1} << (shift - 1U);
     if (value >= 0) {
+        // 正数右移前加半个 LSB，相当于四舍五入而不是向下截断。
         return (value + offset) >> shift;
     }
+    // 负数单独处理，保持“远离 0/靠近最近整数”的对称取整语义。
     return -(((-value) + offset) >> shift);
 }
 

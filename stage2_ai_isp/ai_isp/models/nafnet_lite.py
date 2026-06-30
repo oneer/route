@@ -1,4 +1,5 @@
 """NAFNet-lite blocks for small image restoration experiments."""
+# 中文说明：实现轻量 NAFNet 风格网络，使用门控和残差缩放提升图像复原能力。
 
 from __future__ import annotations
 
@@ -9,22 +10,39 @@ import torch.nn.functional as F
 
 class SimpleGate(nn.Module):
     """Split channels into two halves and multiply them elementwise."""
+    # 中文说明：NAFNet 的简化门控单元，把通道一分为二后相乘形成非线性。
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
+        
+        输入：x。
+        输出：返回同尺寸空间分辨率的门控特征张量。
+        """
         x1, x2 = x.chunk(2, dim=1)
         return x1 * x2
 
 
 class LayerNorm2d(nn.Module):
     """Channel-wise LayerNorm for NCHW tensors."""
+    # 中文说明：面向 NCHW 图像张量的 LayerNorm，按通道做归一化。
 
     def __init__(self, channels: int, eps: float = 1e-6) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：channels、eps。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
         self.weight = nn.Parameter(torch.ones(1, channels, 1, 1))
         self.bias = nn.Parameter(torch.zeros(1, channels, 1, 1))
         self.eps = float(eps)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
+        
+        输入：x。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         mean = x.mean(dim=1, keepdim=True)
         var = (x - mean).pow(2).mean(dim=1, keepdim=True)
         return (x - mean) / torch.sqrt(var + self.eps) * self.weight + self.bias
@@ -36,8 +54,14 @@ class NAFBlock(nn.Module):
     This block keeps input/output shape unchanged. It uses SimpleGate for
     nonlinearity and a lightweight channel attention branch.
     """
+    # 中文说明：NAFNet 基础残差块，结合归一化、门控、通道注意力和可学习残差缩放。
 
     def __init__(self, channels: int, expansion: int = 2) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：channels、expansion。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
         hidden = channels * expansion
         if hidden % 2 != 0:
@@ -67,6 +91,11 @@ class NAFBlock(nn.Module):
         self.gamma = nn.Parameter(torch.zeros(1, channels, 1, 1))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
+        
+        输入：x。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         y = self.norm1(x)
         y = self.expand(y)
         y = self.depthwise(y)
@@ -84,6 +113,7 @@ class NAFBlock(nn.Module):
 
 class NAFNetLite(nn.Module):
     """Compact U-shaped NAFNet-style model for paired RGB denoise."""
+    # 中文说明：轻量版 NAFNet，保留核心残差/门控思想以控制参数量。
 
     def __init__(
         self,
@@ -95,6 +125,11 @@ class NAFNetLite(nn.Module):
         decoder_blocks: tuple[int, ...] = (1, 1),
         residual: bool = False,
     ) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：in_channels、out_channels、width、middle_blocks、encoder_blocks、decoder_blocks、residual。
+        输出：构造函数不返回业务数据，只完成成员变量和子模块初始化。
+        """
         super().__init__()
         if len(encoder_blocks) != len(decoder_blocks):
             raise ValueError("encoder_blocks and decoder_blocks must have the same length.")
@@ -127,6 +162,11 @@ class NAFNetLite(nn.Module):
             self.decoders.append(nn.Sequential(*[NAFBlock(channels) for _ in range(num_blocks)]))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """中文说明：定义前向传播：输入张量如何经过当前模块得到输出张量。
+        
+        输入：x。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         original_h, original_w = x.shape[-2:]
         padded = self._pad_to_multiple(x, 2 ** len(self.encoders))
 
@@ -149,6 +189,11 @@ class NAFNetLite(nn.Module):
 
     @staticmethod
     def _pad_to_multiple(x: torch.Tensor, multiple: int) -> torch.Tensor:
+        """中文说明：实现 `_pad_to_multiple` 这一步的核心逻辑，供本文件的主流程复用。
+        
+        输入：x、multiple。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         h, w = x.shape[-2:]
         pad_h = (multiple - h % multiple) % multiple
         pad_w = (multiple - w % multiple) % multiple

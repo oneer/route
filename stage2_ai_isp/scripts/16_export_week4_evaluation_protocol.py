@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export Week 4 evaluation protocol summaries from metrics_summary.csv files."""
+# 中文说明：导出 Week4 评估协议和测试结果表。
 
 from __future__ import annotations
 
@@ -27,6 +28,10 @@ DEFAULT_EVALS = [
 
 @dataclass
 class EvalRow:
+    """中文说明：测试集评估结果的一行结构。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     eval_name: str
     run: str
     best_psnr: float
@@ -42,10 +47,20 @@ class EvalRow:
 
     @property
     def rank_gap(self) -> int:
+        """中文说明：实现 `rank_gap` 这一步的核心逻辑，供本文件的主流程复用。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         return abs(self.psnr_rank - self.ssim_rank)
 
     @property
     def metric_note(self) -> str:
+        """中文说明：实现 `metric_note` 这一步的核心逻辑，供本文件的主流程复用。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         if self.rank_gap >= 2:
             return "PSNR/SSIM disagree; inspect triplet and error map"
         if self.best_psnr_step != self.best_ssim_step:
@@ -54,6 +69,11 @@ class EvalRow:
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Week 4 evaluation protocol summary.")
     parser.add_argument("--output-dir", default="stage2_ai_isp/reports/figures/week4_evaluation_protocol")
     parser.add_argument("--input-psnr", type=float, default=26.7302)
@@ -62,6 +82,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_eval(eval_name: str, path: Path, input_psnr: float, input_ssim: float) -> list[EvalRow]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：eval_name、path、input_psnr、input_ssim。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     if not path.exists():
         return []
     rows: list[EvalRow] = []
@@ -94,6 +119,11 @@ def read_eval(eval_name: str, path: Path, input_psnr: float, input_ssim: float) 
 
 
 def write_csv(rows: list[EvalRow], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "week4_evaluation_protocol.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
@@ -135,6 +165,11 @@ def write_csv(rows: list[EvalRow], output_dir: Path) -> Path:
 
 
 def write_markdown(rows: list[EvalRow], output_dir: Path, input_psnr: float, input_ssim: float) -> Path:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：rows、output_dir、input_psnr、input_ssim。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     path = output_dir / "week4_evaluation_protocol.md"
     lines = [
         "# Week 4 Evaluation Protocol Summary",
@@ -176,6 +211,11 @@ def write_markdown(rows: list[EvalRow], output_dir: Path, input_psnr: float, inp
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     output_dir = Path(args.output_dir)
     rows: list[EvalRow] = []

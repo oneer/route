@@ -1,13 +1,6 @@
-"""Feasible RAW quality audit using existing DNG files.
+"""面向现有 RAW 样本的可行画质审计：生成 ROI、直方图、坏点注入/扫描和报告。
 
-This script fills the gap between "we need real phone/lab data" and "we can
-still produce useful evidence today". It does not claim lab-grade IQ testing.
-
-Outputs:
-  - reports/feasible_raw_quality_audit.md
-  - reports/figures/feasible_raw_quality_audit/summary.csv
-  - reports/figures/feasible_raw_quality_audit/awb_methods.json
-  - reports/figures/feasible_raw_quality_audit/dpc_injection.json
+中文注释说明：本文件的注释侧重解释数据流、算法意图和实验用途；除注释/docstring 外不改变运行逻辑。
 """
 
 from __future__ import annotations
@@ -52,6 +45,7 @@ DPC_SCAN_MIN_DELTA = (256, 512, 1024, 2048)
 DPC_SCAN_MAD_K = (6.0, 12.0, 16.0)
 
 
+# 中文注释：_roi_from_percentile 按亮度分位点选择 ROI，用来稳定抽取暗部/中间调/高光区域。
 def _roi_from_percentile(raw: np.ndarray, percentile: float, roi_size: int, stride: int) -> tuple[int, int, int, int]:
     target = float(np.percentile(raw, percentile))
     height, width = raw.shape
@@ -67,6 +61,7 @@ def _roi_from_percentile(raw: np.ndarray, percentile: float, roi_size: int, stri
     return (best[1], best[2], roi_size, roi_size)
 
 
+# 中文注释：_edge_roi 根据梯度强度寻找边缘区域，为锐度和 MTF50 代理指标提供输入。
 def _edge_roi(raw: np.ndarray, roi_size: int, stride: int) -> tuple[int, int, int, int]:
     data = raw.astype(np.float32)
     gx = np.zeros_like(data)
@@ -87,6 +82,7 @@ def _edge_roi(raw: np.ndarray, roi_size: int, stride: int) -> tuple[int, int, in
     return (best[1], best[2], roi_size, roi_size)
 
 
+# 中文注释：_center_even_crop 从中心裁剪偶数尺寸 RAW，保持 Bayer 2x2 相位不变。
 def _center_even_crop(raw: np.ndarray, max_side: int = 1024) -> np.ndarray:
     height, width = raw.shape
     crop_h = min(height, max_side)
@@ -98,6 +94,7 @@ def _center_even_crop(raw: np.ndarray, max_side: int = 1024) -> np.ndarray:
     return raw[y : y + crop_h, x : x + crop_w]
 
 
+# 中文注释：_raw_preview 用分位点拉伸生成 RAW 灰度预览，让审计报告可以直接观察曝光和结构。
 def _raw_preview(raw: np.ndarray, black_level: float, white_level: float) -> np.ndarray:
     display_max = min(float(np.percentile(raw, 99.5)), float(white_level))
     display_min = float(black_level)
@@ -107,6 +104,7 @@ def _raw_preview(raw: np.ndarray, black_level: float, white_level: float) -> np.
     return np.clip(preview, 0.0, 1.0)
 
 
+# 中文注释：_plot_raw_diagnostic 组合预览、直方图和 ROI 标注，形成单张 RAW 的诊断图。
 def _plot_raw_diagnostic(
     raw: np.ndarray,
     black_level: float,
@@ -139,6 +137,7 @@ def _plot_raw_diagnostic(
     plt.close(fig)
 
 
+# 中文注释：_plot_contact_sheet 将多张样本预览拼成联系表，快速比较样本曝光和内容差异。
 def _plot_contact_sheet(results: list[dict], out_path: Path, max_samples: int = 6) -> None:
     selected = results[:max_samples]
     if not selected:
@@ -158,6 +157,7 @@ def _plot_contact_sheet(results: list[dict], out_path: Path, max_samples: int = 
     plt.close(fig)
 
 
+# 中文注释：_inject_defects 在 Bayer 同色位置注入高/低坏点，构造可重复的 DPC 检测真值。
 def _inject_defects(
     raw_blc: np.ndarray,
     white_level: int,
@@ -193,6 +193,7 @@ def _inject_defects(
     return injected, mask
 
 
+# 中文注释：_run_dpc_injection 在合成坏点样本上跑 DPC，输出 precision/recall 评价检测能力。
 def _run_dpc_injection(
     raw_blc: np.ndarray,
     bayer_pattern: str,
@@ -225,6 +226,7 @@ def _run_dpc_injection(
     }
 
 
+# 中文注释：_run_dpc_scan 在真实 RAW 上扫描异常像素数量，作为潜在坏点或热噪声提示。
 def _run_dpc_scan(raw_blc: np.ndarray, bayer_pattern: str, white_level: int, count: int) -> list[dict[str, float | int]]:
     return [
         _run_dpc_injection(raw_blc, bayer_pattern, white_level, count=count, mad_k=mad_k, min_delta=min_delta)
@@ -233,6 +235,7 @@ def _run_dpc_scan(raw_blc: np.ndarray, bayer_pattern: str, white_level: int, cou
     ]
 
 
+# 中文注释：audit_one 对单张 RAW 执行完整质量审计：统计、ROI、SNR、动态范围、边缘和 DPC 结果。
 def audit_one(raw_path: Path, config: dict, roi_size: int, stride: int, dpc_injections: int, out_dir: Path) -> dict:
     ctx = read_raw_context(raw_path, config)
     black_level = float(min(ctx.black_levels))
@@ -299,14 +302,17 @@ def audit_one(raw_path: Path, config: dict, roi_size: int, stride: int, dpc_inje
     }
 
 
+# 中文注释：_fmt 统一格式化审计报告中的数值，避免 None/NaN 破坏 Markdown 表格。
 def _fmt(value: float) -> str:
     return f"{value:.4f}"
 
 
+# 中文注释：_report_rel 将图片路径转换为相对报告路径，使 Markdown 在目录移动后仍尽量可读。
 def _report_rel(path: Path, report_path: Path) -> str:
     return Path(os.path.relpath(path, report_path.parent)).as_posix()
 
 
+# 中文注释：把审计结果、图表和汇总报告统一写入磁盘。
 def write_outputs(results: list[dict], out_dir: Path, report_path: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -542,6 +548,7 @@ def write_outputs(results: list[dict], out_dir: Path, report_path: Path) -> None
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run feasible RAW/IQ diagnostics on existing DNG files.")
     parser.add_argument(

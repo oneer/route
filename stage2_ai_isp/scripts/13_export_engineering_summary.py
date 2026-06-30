@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export a job-facing engineering summary for Stage 2 runs."""
+# 中文说明：导出工程摘要，关注参数量、checkpoint 和可部署性信息。
 
 from __future__ import annotations
 
@@ -19,6 +20,10 @@ from ai_isp.models import build_model
 
 @dataclass
 class RunEngineeringSummary:
+    """中文说明：工程维度摘要，记录参数量、checkpoint 信息和关键指标。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     run: str
     task: str
     model: str
@@ -32,6 +37,11 @@ class RunEngineeringSummary:
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Stage 2 engineering summary.")
     parser.add_argument(
         "--leaderboard",
@@ -53,11 +63,21 @@ def parse_args() -> argparse.Namespace:
 
 
 def count_params(config: dict) -> int:
+    """中文说明：实现 `count_params` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：config。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     model = build_model(config["model"])
     return sum(parameter.numel() for parameter in model.parameters())
 
 
 def read_checkpoint(run_dir: Path) -> tuple[dict, float]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：run_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     checkpoint_path = run_dir / "checkpoints" / "best_psnr.pth"
     if not checkpoint_path.exists():
         checkpoint_path = run_dir / "checkpoints" / "last.pth"
@@ -71,6 +91,11 @@ def read_checkpoint(run_dir: Path) -> tuple[dict, float]:
 
 
 def load_rows(leaderboard: Path, runs_root: Path) -> list[RunEngineeringSummary]:
+    """中文说明：读取外部文件或模型状态，并转换成当前脚本后续步骤需要的格式。
+    
+    输入：leaderboard、runs_root。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rows: list[RunEngineeringSummary] = []
     with leaderboard.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
@@ -97,6 +122,11 @@ def load_rows(leaderboard: Path, runs_root: Path) -> list[RunEngineeringSummary]
 
 
 def write_csv(rows: list[RunEngineeringSummary], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "stage2_engineering_summary.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
@@ -134,6 +164,11 @@ def write_csv(rows: list[RunEngineeringSummary], output_dir: Path) -> Path:
 
 
 def write_markdown(rows: list[RunEngineeringSummary], report_path: Path, csv_path: Path) -> None:
+    """中文说明：把汇总结果写成 Markdown，便于直接放入阶段文档。
+    
+    输入：rows、report_path、csv_path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     lines = [
         "# Stage 2 Engineering Summary",
         "",
@@ -177,6 +212,11 @@ def write_markdown(rows: list[RunEngineeringSummary], report_path: Path, csv_pat
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     rows = load_rows(Path(args.leaderboard), Path(args.runs_root))
     csv_path = write_csv(rows, Path(args.output_dir))

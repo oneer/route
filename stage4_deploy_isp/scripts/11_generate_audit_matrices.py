@@ -1,3 +1,9 @@
+"""生成 Stage 4 部署审计产物。
+
+脚本汇总前几周的输出 CSV、模型哈希、ONNX 图信息和软件版本，生成 model card、
+correctness matrix、latency matrix 与资产追踪表。它不重新跑推理，只整理证据。
+"""
+
 from __future__ import annotations
 
 import csv
@@ -16,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
+    # 某些周的产物可能尚未生成；缺失时返回空列表，让审计表显示 not verified。
     if not path.exists():
         return []
     with path.open("r", encoding="utf-8") as f:
@@ -23,6 +30,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 
 
 def write_rows(path: Path, rows: list[dict[str, object]]) -> None:
+    # 空表不写文件，避免生成只有表头含义也不清楚的审计产物。
     if not rows:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -33,6 +41,7 @@ def write_rows(path: Path, rows: list[dict[str, object]]) -> None:
 
 
 def sha256(path: Path) -> str:
+    # 模型和权重哈希用于追踪“报告中的结果到底对应哪个二进制资产”。
     digest = hashlib.sha256()
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
@@ -41,10 +50,12 @@ def sha256(path: Path) -> str:
 
 
 def mean(rows: list[dict[str, str]], key: str) -> float | str:
+    # 审计矩阵允许缺失值；没有对应列时返回空字符串，而不是抛异常中断汇总。
     return float(np.mean([float(row[key]) for row in rows])) if rows and key in rows[0] else ""
 
 
 def maximum(rows: list[dict[str, str]], key: str) -> float | str:
+    # 最大误差通常比均值更适合作为正确性风险的告警指标。
     return max(float(row[key]) for row in rows) if rows and key in rows[0] else ""
 
 
@@ -52,12 +63,14 @@ def main() -> None:
     out_dir = ROOT / "outputs/audit"
     out_dir.mkdir(parents=True, exist_ok=True)
     contract = yaml.safe_load((ROOT / "configs/deployment_contract.yaml").read_text(encoding="utf-8"))
+    # deployment_contract.yaml 是本阶段输入输出约定的单一说明来源。
     checkpoint = (ROOT / contract["model"]["checkpoint"]).resolve()
     onnx_path = ROOT / "models/onnx/dncnn_sidd_tiny_fp32.onnx"
     onnx_data = Path(str(onnx_path) + ".data")
     int8_path = ROOT / "models/onnx/dncnn_sidd_tiny_int8_qdq.onnx"
 
     model = onnx.load(str(onnx_path), load_external_data=False)
+    # ONNX 大权重可能放在外部 .data 文件里，这里记录外部文件名以便审计。
     external = sorted(
         {
             entry.value
@@ -67,6 +80,7 @@ def main() -> None:
         }
     )
     model_card = {
+        # model_card 汇总模型来源、文件哈希、ONNX 元信息和当前软件环境。
         "generated_at": "2026-06-23",
         "contract": contract,
         "hashes": {
@@ -97,6 +111,7 @@ def main() -> None:
     week3 = read_rows(ROOT / "outputs/week3_backend/week3_gpu_alignment_latency.csv")
     week4 = read_rows(ROOT / "outputs/week4_quantization/week4_int8_metrics.csv")
     correctness = [
+        # 正确性矩阵按“后端/精度/参考实现”组织，便于看每条部署链路是否已验证。
         {
             "backend": "ONNX Runtime Python CPU",
             "precision": "FP32",
@@ -125,6 +140,7 @@ def main() -> None:
         },
     ]
     for backend in ("cuda", "trt_fp32", "trt_fp16"):
+        # Week 3 的 CUDA/TensorRT 后端都以 ORT CPU FP32 为参考。
         rows = [row for row in week3 if row["backend"] == backend]
         correctness.append(
             {
@@ -161,6 +177,7 @@ def main() -> None:
     latency = []
     week0 = read_rows(ROOT / "outputs/week0_baseline/week0_summary.csv")
     if week0:
+        # PyTorch 基线延迟来自 Week 0.5，作为部署前参考。
         latency.append(
             {
                 "backend": "PyTorch",
@@ -181,6 +198,7 @@ def main() -> None:
             }
         )
     for row in read_rows(ROOT / "outputs/week3_backend/week3_backend_summary.csv"):
+        # ORT 后端延迟包含 session.run 内部的 provider 调度和必要拷贝。
         latency.append(
             {
                 "backend": f"ORT {row['backend']}",
@@ -201,6 +219,7 @@ def main() -> None:
             }
         )
     for row in read_rows(ROOT / "outputs/week3_backend/week3_trtexec_summary.csv"):
+        # trtexec 延迟来自 TensorRT 官方工具，能拆出 H2D/compute/D2H。
         latency.append(
             {
                 "backend": f"trtexec {row['precision']}",
@@ -222,6 +241,7 @@ def main() -> None:
         )
     int8_summary = read_rows(ROOT / "outputs/week4_quantization/week4_int8_summary.csv")
     if int8_summary:
+        # INT8 与 FP32 使用同一独立 evaluation split，避免量化校准样本泄漏。
         row = int8_summary[0]
         for precision, prefix in (("FP32", "fp32"), ("INT8 QDQ", "int8")):
             latency.append(
@@ -245,6 +265,7 @@ def main() -> None:
             )
     pipeline = read_rows(ROOT / "outputs/week6_pipeline/week6_pipeline_summary.csv")
     if pipeline:
+        # 端到端 pipeline 把 preprocess/inference/postprocess 拆开，文件 I/O 单独说明。
         row = pipeline[0]
         latency.append(
             {
@@ -267,6 +288,7 @@ def main() -> None:
         )
     cuda_pre = read_rows(ROOT / "outputs/week6_pipeline/week6_cuda_preprocess_summary.csv")
     if cuda_pre:
+        # CUDA normalize 只衡量预处理 kernel 和 pageable memory 拷贝，不代表完整模型延迟。
         row = cuda_pre[0]
         latency.append(
             {
@@ -290,6 +312,7 @@ def main() -> None:
     write_rows(out_dir / "latency_matrix.csv", latency)
 
     assets = [
+        # 资产追踪表把 checkpoint、ONNX、engine/model、输入集、输出和报告串起来。
         {
             "checkpoint": str(checkpoint),
             "onnx": str(onnx_path),

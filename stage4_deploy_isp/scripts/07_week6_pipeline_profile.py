@@ -1,3 +1,9 @@
+"""Week 6：端到端 RGB 推理流水线分段计时。
+
+该脚本把一次部署调用拆成 preprocess、inference、postprocess 和一次性保存图片
+几段，帮助判断瓶颈是在图像转换、ORT 推理还是输出落盘。
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -18,6 +24,7 @@ from deploy.common import project_root
 
 
 def read_manifest(path: Path) -> list[dict[str, str]]:
+    # 固定 manifest 让端到端 profile 与前几周的样本一致。
     with path.open("r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
@@ -25,12 +32,13 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 def preprocess(path: str) -> np.ndarray:
     image = Image.open(path).convert("RGB")
     arr = np.asarray(image, dtype=np.float32) / 255.0
-    # Placeholder for ISP preprocess: BLC/LSC/RAW pack would live before this
-    # point for RAW-domain models. RGB denoise keeps only normalize + layout.
+    # ISP 原始域模型通常会在这里做黑电平校正、镜头阴影校正、RAW pack 等。
+    # 本阶段模型是 RGB 降噪，所以只保留归一化和 HWC -> NCHW 布局转换。
     return np.transpose(arr, (2, 0, 1))[None, ...].astype(np.float32)
 
 
 def postprocess(output: np.ndarray) -> Image.Image:
+    # 模型输出仍是 NCHW float；保存图片前裁剪、转 HWC，并量化到 uint8。
     out = np.clip(output[0], 0.0, 1.0)
     hwc = np.transpose(out, (1, 2, 0))
     return Image.fromarray((hwc * 255.0 + 0.5).astype(np.uint8))
@@ -56,12 +64,14 @@ def main() -> None:
 
     records = []
     for row in rows:
+        # warmup 只预热推理后端，不写入 profile CSV。
         warm_input = preprocess(row["noisy_path"])
         for _ in range(args.warmup):
             session.run(["output"], {"input": warm_input})
         sample_records = []
         last_image = None
         for run_index in range(args.runs):
+            # 每次都重新 preprocess，模拟真实单张图片进入部署流水线的成本。
             t0 = time.perf_counter()
             inp = preprocess(row["noisy_path"])
             t1 = time.perf_counter()
@@ -81,6 +91,7 @@ def main() -> None:
             )
         assert last_image is not None
         save_start = time.perf_counter()
+        # 保存图片通常不属于纯计算路径，因此单独记录一次 save_ms_once。
         last_image.save(out_dir / "outputs" / f"{row['id']}_pipeline_output.png")
         save_ms = (time.perf_counter() - save_start) * 1000.0
         for record in sample_records:
@@ -96,6 +107,7 @@ def main() -> None:
         writer.writerows(records)
 
     summary = {"samples": len(rows), "warmup_per_image": args.warmup, "runs_per_image": args.runs}
+    # summary 汇总均值和分位数，profile CSV 保留逐样本逐 run 明细。
     for key in ("preprocess_ms", "inference_ms", "postprocess_ms", "compute_e2e_ms"):
         values = [r[key] for r in records]
         summary[f"mean_{key}"] = float(np.mean(values))

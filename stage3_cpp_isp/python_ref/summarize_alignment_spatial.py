@@ -1,3 +1,5 @@
+"""汇总 C++/Python 对齐的空间误差，用 CSV 形式服务 alignment report。"""
+
 from __future__ import annotations
 
 import csv

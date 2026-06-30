@@ -1,3 +1,5 @@
+"""Week 6 LUT/定点脚本：评估不同 bit width 的 tone LUT 误差、速度和视觉差异。"""
+
 from __future__ import annotations
 
 import csv

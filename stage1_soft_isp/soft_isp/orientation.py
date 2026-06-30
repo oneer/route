@@ -15,6 +15,7 @@ from __future__ import annotations
 import numpy as np
 
 
+# 中文注释：根据 rawpy/LibRaw flip 编码对图像做显示方向变换。
 def apply_rawpy_orientation(image: np.ndarray, flip: int) -> np.ndarray:
     """Apply LibRaw/rawpy display orientation to an image array."""
     if flip == 0:
@@ -37,6 +38,7 @@ def apply_rawpy_orientation(image: np.ndarray, flip: int) -> np.ndarray:
     return image
 
 
+# 中文注释：把轴对齐 ROI 框转换到显示方向坐标系。
 def transform_box_for_orientation(
     x: float,
     y: float,

@@ -1,4 +1,5 @@
 """Paired RGB image dataset for noisy/clean denoise experiments."""
+# 中文说明：读取 noisy/clean 成对 RGB 图片，并在训练时随机裁剪成 patch。
 
 from __future__ import annotations
 
@@ -14,6 +15,11 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
 
 def _list_images(root: Path) -> dict[str, Path]:
+    """中文说明：实现 `_list_images` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：root。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     return {
         path.name: path
         for path in sorted(root.iterdir())
@@ -22,6 +28,11 @@ def _list_images(root: Path) -> dict[str, Path]:
 
 
 def _load_rgb_tensor(path: Path) -> torch.Tensor:
+    """中文说明：实现 `_load_rgb_tensor` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     image = Image.open(path).convert("RGB")
     array = np.asarray(image, dtype=np.float32) / 255.0
     return torch.from_numpy(array).permute(2, 0, 1)
@@ -33,6 +44,7 @@ class PairedImageDenoiseDataset(Dataset):
     The two folders must contain files with matching names. If `size` is larger
     than the number of image pairs, pairs are reused with deterministic crops.
     """
+    # 中文说明：配对图像去噪数据集：从 noisy_dir 和 clean_dir 读取同名样本。
 
     def __init__(
         self,
@@ -43,6 +55,11 @@ class PairedImageDenoiseDataset(Dataset):
         seed: int = 42,
         augment: bool = False,
     ) -> None:
+        """中文说明：初始化模块参数和子层；真正的数据流在 forward 中执行。
+        
+        输入：noisy_dir、clean_dir、patch_size、size、seed、augment。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         self.noisy_dir = Path(noisy_dir)
         self.clean_dir = Path(clean_dir)
         self.patch_size = int(patch_size) if patch_size is not None else None
@@ -61,9 +78,19 @@ class PairedImageDenoiseDataset(Dataset):
         self.size = int(size) if size is not None else len(self.pairs)
 
     def __len__(self) -> int:
+        """中文说明：返回数据集中可采样样本数量，供 DataLoader 计算 epoch 长度。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         return self.size
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+        """中文说明：按索引读取一个样本，并返回训练/验证所需的张量字典。
+        
+        输入：index。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         noisy_path, clean_path = self.pairs[int(index) % len(self.pairs)]
         noisy = _load_rgb_tensor(noisy_path)
         clean = _load_rgb_tensor(clean_path)
@@ -84,6 +111,11 @@ class PairedImageDenoiseDataset(Dataset):
     def _crop_pair(
         self, noisy: torch.Tensor, clean: torch.Tensor, index: int
     ) -> tuple[torch.Tensor, torch.Tensor]:
+        """中文说明：实现 `_crop_pair` 这一步的核心逻辑，供本文件的主流程复用。
+        
+        输入：noisy、clean、index。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         _, h, w = clean.shape
         assert self.patch_size is not None
         if h < self.patch_size or w < self.patch_size:
@@ -102,6 +134,11 @@ class PairedImageDenoiseDataset(Dataset):
     def _augment_pair(
         self, noisy: torch.Tensor, clean: torch.Tensor, index: int
     ) -> tuple[torch.Tensor, torch.Tensor]:
+        """中文说明：实现 `_augment_pair` 这一步的核心逻辑，供本文件的主流程复用。
+        
+        输入：noisy、clean、index。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         generator = torch.Generator().manual_seed(self.seed + index + 20000)
         if bool(torch.randint(0, 2, (1,), generator=generator)):
             noisy, clean = noisy.flip(-1), clean.flip(-1)

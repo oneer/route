@@ -1,4 +1,5 @@
 """练习：独立实现 PSNR，并解释 SSIM 为什么不能只写一个全局公式。"""
+# 中文说明：练习骨架代码，保留关键 TODO，帮助逐步实现数据集、训练循环和指标。
 
 from __future__ import annotations
 
@@ -11,6 +12,11 @@ def batch_psnr_exercise(
     eps: float = 1e-8,
 ) -> torch.Tensor:
     # TODO: 返回每个 batch 样本一个 PSNR 值。
+    """中文说明：实现 `batch_psnr_exercise` 这一步的核心逻辑，供本文件的主流程复用。
+    
+    输入：prediction、target、eps。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     raise NotImplementedError
 
 

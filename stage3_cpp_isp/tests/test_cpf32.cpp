@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 
+// CPF32 测试保证测试向量格式可靠：shape/payload 能往返，异常 payload 和 NaN 对齐检查会失败。
 namespace {
 
 void require(bool condition, const char* message) {
@@ -17,6 +18,7 @@ void require(bool condition, const char* message) {
 }
 
 struct TempFile {
+    // 简单 RAII 临时文件，测试结束自动删除，避免工作区留下中间文件。
     explicit TempFile(std::string path) : path(std::move(path)) {}
     ~TempFile() { std::remove(path.c_str()); }
     std::string path;

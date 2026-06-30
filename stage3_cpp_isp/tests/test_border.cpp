@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// 边界策略是所有卷积/滤波器的基础设施，这里单独验证 index 映射和带边界采样。
 namespace {
 
 void require(bool condition, const char* message) {

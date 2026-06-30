@@ -1,3 +1,8 @@
+"""IQ 指标与进阶 AWB 的单元测试，确认返回值有限且绿色通道作为增益锚点。
+
+中文注释说明：本文件的注释侧重解释数据流、算法意图和实验用途；除注释/docstring 外不改变运行逻辑。
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -6,6 +11,7 @@ from soft_isp.awb_advanced import compare_awb_methods, shades_of_gray_gains, whi
 from soft_isp.iq_metrics import approximate_dynamic_range_db, clipping_fractions, edge_mtf50_proxy, roi_snr_db
 
 
+# 中文注释：验证 IQ 指标在简单 ROI 上返回有限数值。
 def test_iq_metrics_return_finite_values() -> None:
     raw = np.tile(np.linspace(64, 1023, 64, dtype=np.float32), (64, 1))
     clip = clipping_fractions(raw, black_level=64, white_level=1023, margin=1)
@@ -20,6 +26,7 @@ def test_iq_metrics_return_finite_values() -> None:
     assert mtf["mtf50_proxy_cyc_per_px"] >= 0.0
 
 
+# 中文注释：验证 AWB 方法都以绿色通道增益 1.0 作为锚点。
 def test_awb_methods_keep_green_gain_as_anchor() -> None:
     rgb = np.ones((16, 16, 3), dtype=np.float32)
     rgb[..., 0] *= 0.5

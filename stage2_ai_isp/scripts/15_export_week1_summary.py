@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export Week 1 toy RGB denoise summary from existing run metrics."""
+# 中文说明：导出 Week1 toy 实验总结。
 
 from __future__ import annotations
 
@@ -13,6 +14,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 @dataclass(frozen=True)
 class ExperimentSpec:
+    """中文说明：实验规格描述，用于把多个 Week1 实验统一汇总和绘图。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     group: str
     run: str
     label: str
@@ -37,6 +42,11 @@ EXPERIMENTS = [
 
 
 def parse_args() -> argparse.Namespace:
+    """中文说明：解析命令行参数，把脚本可调项集中到 argparse 命名空间。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回 argparse.Namespace，供 main() 读取脚本参数。
+    """
     parser = argparse.ArgumentParser(description="Create Week 1 summary table and figure.")
     parser.add_argument("--runs-root", default="stage2_ai_isp/runs")
     parser.add_argument("--output-dir", default="stage2_ai_isp/reports/figures/week1_summary")
@@ -44,6 +54,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
+    """中文说明：选择绘图可用字体；找不到指定字体时回退到默认字体。
+    
+    输入：size、bold。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     candidates = [
         "C:/Windows/Fonts/msyhbd.ttc" if bold else "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
@@ -57,6 +72,11 @@ def font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def read_metrics(path: Path) -> list[dict[str, str]]:
+    """中文说明：读取训练过程记录的 metrics.csv，并转换成后续汇总需要的数据结构。
+    
+    输入：path。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     if not path.exists():
         return []
     with path.open("r", encoding="utf-8", newline="") as f:
@@ -64,6 +84,11 @@ def read_metrics(path: Path) -> list[dict[str, str]]:
 
 
 def summarize_run(runs_root: Path, spec: ExperimentSpec) -> dict[str, str] | None:
+    """中文说明：读取单次实验的曲线、checkpoint 和可视化资产，形成统一摘要。
+    
+    输入：runs_root、spec。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     rows = read_metrics(runs_root / spec.run / "metrics.csv")
     if not rows:
         return None
@@ -87,6 +112,11 @@ def summarize_run(runs_root: Path, spec: ExperimentSpec) -> dict[str, str] | Non
 
 
 def write_csv(rows: list[dict[str, str]], output_dir: Path) -> Path:
+    """中文说明：把汇总结果写成 CSV，便于表格查看和后续报告引用。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "week1_core_experiments.csv"
     fieldnames = [
@@ -111,6 +141,11 @@ def write_csv(rows: list[dict[str, str]], output_dir: Path) -> Path:
 
 
 def write_png(rows: list[dict[str, str]], output_dir: Path) -> Path:
+    """中文说明：将当前脚本整理出的结果写入磁盘，作为阶段产物或报告素材。
+    
+    输入：rows、output_dir。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     width = 1760
     header_h = 88
     row_h = 48
@@ -154,6 +189,11 @@ def write_png(rows: list[dict[str, str]], output_dir: Path) -> Path:
 
 
 def main() -> None:
+    """中文说明：脚本主入口，按顺序组织读取输入、执行核心逻辑和写出结果。
+    
+    输入：主要依赖当前对象状态或命令行参数。
+    输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+    """
     args = parse_args()
     runs_root = Path(args.runs_root)
     output_dir = Path(args.output_dir)

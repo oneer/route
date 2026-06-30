@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 
+// LUT tone mapping benchmark：比较不同曲线和 bit width 的查表路径耗时。
 namespace {
 
 cpp_isp::ImageBuffer<float> make_hdr_like_rgb(std::uint32_t width, std::uint32_t height) {
@@ -36,6 +37,7 @@ void run_case(std::uint32_t width,
 
     cpp_isp::ToneLutParams params;
     params.curve = curve;
+    // 用 99 分位曝光把合成 HDR 场景映射到显示范围，模拟自动曝光后的 tone mapping。
     params.exposure = cpp_isp::compute_percentile_exposure(input_view, 99.0F, 1.0F, true);
     params.preserve_luminance = preserve_luminance;
     params.input_bits = input_bits;

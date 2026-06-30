@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from soft_isp.pipeline import load_config, run_pipeline
 
 
+# 中文注释：save_outputs 将 pipeline 的最终预览、中间阶段和 metadata 分别保存，方便逐阶段排查。
 def save_outputs(result: dict, output_dir: Path, save_intermediate: bool, save_numpy: bool) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     iio.imwrite(output_dir / "preview.png", result["preview"])
@@ -43,6 +44,7 @@ def save_outputs(result: dict, output_dir: Path, save_intermediate: bool, save_n
         )
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the config-driven Stage 1 Soft-ISP pipeline.")
     parser.add_argument("raw_path", type=Path)

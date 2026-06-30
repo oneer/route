@@ -22,6 +22,7 @@ void box_filter(const ImageView<const float>& input,
                 BorderPolicy border_policy) {
     validate_same_shape(input, output);
     const int r = static_cast<int>(radius);
+    // 窗口大小是 (2r + 1)^2，box filter 对窗口内每个样本给相同权重。
     const float norm = 1.0F / static_cast<float>((2 * r + 1) * (2 * r + 1));
 
     for (std::uint32_t c = 0; c < input.channels(); ++c) {
@@ -53,11 +54,13 @@ std::vector<float> make_gaussian_kernel_1d(std::uint32_t radius, float sigma) {
     std::vector<float> kernel(static_cast<std::size_t>(2 * r + 1));
     float sum = 0.0F;
     for (int i = -r; i <= r; ++i) {
+        // 高斯权重 exp(-x^2 / 2sigma^2)，距离中心越远贡献越小。
         const float value = std::exp(-0.5F * static_cast<float>(i * i) / (sigma * sigma));
         kernel[static_cast<std::size_t>(i + r)] = value;
         sum += value;
     }
     for (float& value : kernel) {
+        // 归一化后常量图像仍保持原值，不会整体变亮或变暗。
         value /= sum;
     }
     return kernel;
@@ -75,6 +78,8 @@ void gaussian_filter(const ImageView<const float>& input,
     ImageBuffer<float> temp(input.width(), input.height(), input.channels(), input.row_stride());
     auto temp_view = temp.view();
 
+    // 高斯核可分离：先横向卷积写入 temp，再纵向卷积写入 output。
+    // 复杂度从 O(radius^2) 降到 O(radius)，这也是 ISP 里常见的实现方式。
     for (std::uint32_t c = 0; c < input.channels(); ++c) {
         for (std::uint32_t y = 0; y < input.height(); ++y) {
             for (std::uint32_t x = 0; x < input.width(); ++x) {

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// 基础降噪测试覆盖 box filter 的常量/冲激响应，以及 Gaussian kernel 的归一化和对称性。
 namespace {
 
 void require(bool condition, const char* message) {

@@ -7,3 +7,4 @@ engine 子包 — 训练与验证引擎。
     - checkpoint.py: 模型保存/恢复（checkpoint）
     - logger.py:     CSV 日志与 TensorBoard 日志（可选）
 """
+# 中文说明：训练与验证引擎代码，把配置、模型、数据、损失、日志和 checkpoint 串成可复现实验。

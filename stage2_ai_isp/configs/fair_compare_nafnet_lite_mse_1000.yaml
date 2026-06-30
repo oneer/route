@@ -1,3 +1,6 @@
+# 中文说明：Stage2 AI ISP 实验配置 `fair compare nafnet lite mse 1000`。
+# 作用：集中声明数据集、模型、损失、优化器、训练步数、验证和输出目录。
+# 阅读方式：先看 dataset/model/loss 确认实验目标，再看 train/val/output 确认可复现细节。
 experiment:
   name: fair_compare_nafnet_lite_mse_1000
   seed: 42
@@ -10,15 +13,18 @@ data:
   val_size: 200
   augment: false
   train:
+  # 中文说明：batch、学习率、步数、随机种子等训练控制项。
     noisy_dir: datasets/sidd_tiny/train/noisy
     clean_dir: datasets/sidd_tiny/train/clean
   val:
+  # 中文说明：验证频率、验证样本数和评估时使用的数据设置。
     noisy_dir: datasets/sidd_tiny/val/noisy
     clean_dir: datasets/sidd_tiny/val/clean
   noise:
     type: real_paired_rgb
 
 model:
+  # 中文说明：网络结构名称及宽度、深度等模型超参数。
   name: nafnet_lite
   in_channels: 3
   out_channels: 3

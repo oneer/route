@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// LUT tone mapping 测试验证表大小/边界饱和，并确保查表路径与浮点路径误差可控。
 namespace {
 
 void require(bool condition, const char* message) {

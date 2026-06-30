@@ -32,6 +32,7 @@ from pathlib import Path
 from week4_common import build_week4_base, gamma_preview, reference_panel, rel, save_compare
 
 
+# 中文注释：汇总 Week 4 多个实验结果，为周总结准备数据。
 def analyze_summary(raw_path: Path, out_dir: Path, reference_dir: Path, min_delta: int, mad_k: float, gamma: float, tone_percentile: float) -> dict:
     base = build_week4_base(raw_path, min_delta=min_delta, mad_k=mad_k)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -53,6 +54,7 @@ def analyze_summary(raw_path: Path, out_dir: Path, reference_dir: Path, min_delt
     return result
 
 
+# 中文注释：write_summary 把 Week 4 多个模块的实验观察合并成总览，突出每个阶段对最终图的贡献。
 def write_summary(results: list[dict], report_path: Path) -> None:
     lines = [
         "# Week 4 总结：CCM / Gamma / Tone Mapping",
@@ -118,6 +120,7 @@ def write_summary(results: list[dict], report_path: Path) -> None:
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Write the Week4 summary report.")
     parser.add_argument("raw_paths", type=Path, nargs="+")

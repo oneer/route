@@ -10,6 +10,7 @@
 
 使用 @torch.no_grad() 装饰器禁用梯度计算，节省显存和加速推理。
 """
+# 中文说明：在验证集上执行推理并汇总损失、PSNR、SSIM 等指标。
 
 from __future__ import annotations
 
@@ -35,6 +36,7 @@ def validate(model: torch.nn.Module, loader: DataLoader, device: torch.device) -
             - "first_batch": 首个 batch 的 {"noisy", "output", "clean"} 张量字典
                             （仅第一个样本，已 detach 到 CPU，供可视化保存）
     """
+    # 中文说明：在验证 DataLoader 上关闭梯度执行模型推理，并汇总图像质量指标。
     # 切换到评估模式（禁用 dropout、BN 统计更新等）
     model.eval()
 

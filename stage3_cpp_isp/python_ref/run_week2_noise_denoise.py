@@ -1,3 +1,5 @@
+"""Week 2 实验脚本：生成噪声样例、基础降噪结果、PSNR/边缘指标和报告图。"""
+
 from __future__ import annotations
 
 import csv

@@ -1,9 +1,6 @@
-"""Feasible RAW/IQ diagnostics for Stage 1.
+"""可行 RAW/IQ 诊断指标：裁剪比例、ROI SNR、近似动态范围和边缘 MTF50 代理指标。
 
-These helpers intentionally avoid claiming lab-grade image quality results.
-They use existing RAW frames and local ROIs to produce interview-useful
-diagnostics: clipping, approximate SNR, approximate dynamic range, and an
-edge-based MTF50 proxy.
+中文注释说明：本文件的注释侧重解释数据流、算法意图和实验用途；除注释/docstring 外不改变运行逻辑。
 """
 
 from __future__ import annotations
@@ -13,6 +10,7 @@ import math
 import numpy as np
 
 
+# 中文注释：估计 RAW 中接近黑电平和白电平的像素比例。
 def clipping_fractions(raw: np.ndarray, black_level: float, white_level: float, margin: float = 16.0) -> dict[str, float]:
     """Return near-black and near-white fractions for a RAW image."""
     data = np.asarray(raw, dtype=np.float32)
@@ -25,6 +23,7 @@ def clipping_fractions(raw: np.ndarray, black_level: float, white_level: float, 
     }
 
 
+# 中文注释：在指定 ROI 内估计信噪比，单位为 dB。
 def roi_snr_db(roi: np.ndarray, black_level: float) -> dict[str, float]:
     """Estimate ROI SNR from mean signal above black and local standard deviation.
 
@@ -42,6 +41,7 @@ def roi_snr_db(roi: np.ndarray, black_level: float) -> dict[str, float]:
     }
 
 
+# 中文注释：用黑白电平和噪声估计近似动态范围。
 def approximate_dynamic_range_db(white_level: float, black_level: float, noise_floor: float) -> float:
     """Estimate dynamic range from usable signal and a chosen noise floor."""
     usable_signal = max(float(white_level) - float(black_level), 1e-6)
@@ -49,6 +49,7 @@ def approximate_dynamic_range_db(white_level: float, black_level: float, noise_f
     return float(20.0 * math.log10(usable_signal / floor))
 
 
+# 中文注释：用边缘梯度频谱估计 MTF50 代理值，只用于相对比较。
 def edge_mtf50_proxy(gray: np.ndarray, roi: tuple[int, int, int, int]) -> dict[str, float]:
     """Return a lightweight edge sharpness proxy for a local gray ROI.
 

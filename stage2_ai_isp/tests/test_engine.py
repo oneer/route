@@ -1,3 +1,8 @@
+"""中文说明：单元测试代码，用小规模输入检查数据、模型、指标和训练引擎的基本行为。
+
+本文件属于 Stage2 AI ISP 实验代码；注释重点解释数据流、训练逻辑或导出用途，不改变任何运行行为。
+"""
+
 from __future__ import annotations
 
 import tempfile
@@ -12,11 +17,25 @@ from ai_isp.models import build_model
 
 
 class EngineTests(unittest.TestCase):
+    """中文说明：训练引擎相关单元测试集合。
+    
+    这个类把同一职责的数据和方法放在一起，方便训练、评估或报告脚本复用。
+    """
     def test_unknown_loss_fails(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         with self.assertRaises(ValueError):
             build_criterion("charbonier")
 
     def test_checkpoint_round_trip(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         with tempfile.TemporaryDirectory() as directory:
             model = build_model({"name": "tiny_cnn", "features": 4})
             optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
@@ -29,6 +48,11 @@ class EngineTests(unittest.TestCase):
                 self.assertTrue(torch.equal(left, right))
 
     def test_minimal_training_smoke(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         with tempfile.TemporaryDirectory() as directory:
             config = {
                 "experiment": {"seed": 1, "output_dir": directory},
@@ -65,6 +89,11 @@ class EngineTests(unittest.TestCase):
             self.assertTrue((output / "checkpoints" / "last.pth").exists())
 
     def test_resume_appends_metrics(self) -> None:
+        """中文说明：测试一个具体行为是否符合预期，避免后续修改破坏阶段功能。
+        
+        输入：主要依赖当前对象状态或命令行参数。
+        输出：返回值会被后续训练、评估、导出或测试流程继续使用。
+        """
         with tempfile.TemporaryDirectory() as directory:
             config = {
                 "experiment": {"seed": 2, "output_dir": directory},

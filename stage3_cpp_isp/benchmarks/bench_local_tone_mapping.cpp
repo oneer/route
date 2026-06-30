@@ -6,10 +6,12 @@
 #include <iostream>
 #include <string>
 
+// 局部 tone mapping benchmark：比较 box base 与 bilateral base 在不同半径/分辨率下的耗时。
 namespace {
 
 cpp_isp::ImageBuffer<float> make_hdr_like_rgb(std::uint32_t width, std::uint32_t height) {
     cpp_isp::ImageBuffer<float> image(width, height, 3);
+    // 合成一个 HDR-like 场景：渐变背景 + 右上角高亮窗口，用来触发动态范围压缩路径。
     for (std::uint32_t y = 0; y < height; ++y) {
         for (std::uint32_t x = 0; x < width; ++x) {
             const float gx = static_cast<float>(x) / static_cast<float>(std::max(1U, width - 1U));

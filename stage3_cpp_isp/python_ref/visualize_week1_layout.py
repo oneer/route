@@ -1,3 +1,5 @@
+"""Week 1 可视化脚本：画出 stride、planar 和 border policy 布局示意图。"""
+
 from __future__ import annotations
 
 from pathlib import Path

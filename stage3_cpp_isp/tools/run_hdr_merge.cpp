@@ -8,6 +8,7 @@
 
 namespace {
 
+// HDR 工具只做格式转换和参数解析，真正的融合逻辑在 hdr_merge_aligned()。
 cpp_isp::ImageBuffer<float> tensor_to_image(const cpp_isp::TensorF32& tensor) {
     cpp_isp::ImageBuffer<float> image(tensor.width, tensor.height, tensor.channels);
     for (std::uint32_t y = 0; y < tensor.height; ++y) {
@@ -64,6 +65,7 @@ int main(int argc, char** argv) {
         params.underexposure_threshold = static_cast<float>(std::atof(argv[7]));
         params.weight_epsilon = static_cast<float>(std::atof(argv[8]));
 
+        // 输入假设已经空间对齐；这里不做配准，只做逐像素曝光融合。
         const auto short_view = static_cast<const cpp_isp::ImageBuffer<float>&>(short_image).view();
         const auto long_view = static_cast<const cpp_isp::ImageBuffer<float>&>(long_image).view();
         cpp_isp::hdr_merge_aligned(short_view, long_view, output.view(), params);

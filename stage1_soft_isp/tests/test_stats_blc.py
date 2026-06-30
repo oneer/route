@@ -1,3 +1,8 @@
+"""统计工具和黑电平校正的单元测试，覆盖 Bayer 推断、通道拆分和归一化。
+
+中文注释说明：本文件的注释侧重解释数据流、算法意图和实验用途；除注释/docstring 外不改变运行逻辑。
+"""
+
 from __future__ import annotations
 
 import unittest
@@ -8,7 +13,9 @@ from soft_isp.blc import apply_blc, normalized_after_blc
 from soft_isp.stats import bayer_pattern_from_rawpy, split_bayer
 
 
+# 中文注释：StatsAndBlcTests 类封装一个 ISP 处理阶段或测试场景，实例方法负责具体计算流程。
 class StatsAndBlcTests(unittest.TestCase):
+    # 中文注释：test_split_bayer_rggb 负责本文件中的一个处理步骤；阅读时重点关注输入数组形状、输出结构和副作用。
     def test_split_bayer_rggb(self) -> None:
         raw = np.arange(16, dtype=np.uint16).reshape(4, 4)
         channels = split_bayer(raw, "RGGB")
@@ -17,10 +24,12 @@ class StatsAndBlcTests(unittest.TestCase):
         np.testing.assert_array_equal(channels["Gb"], [[4, 6], [12, 14]])
         np.testing.assert_array_equal(channels["B"], [[5, 7], [13, 15]])
 
+    # 中文注释：test_pattern_inference_uses_color_desc_indices 负责本文件中的一个处理步骤；阅读时重点关注输入数组形状、输出结构和副作用。
     def test_pattern_inference_uses_color_desc_indices(self) -> None:
         pattern = np.array([[0, 1], [3, 2]], dtype=np.uint8)
         self.assertEqual(bayer_pattern_from_rawpy(pattern, "RGBG"), "RGGB")
 
+    # 中文注释：test_blc_uses_per_position_black_level_without_underflow 负责本文件中的一个处理步骤；阅读时重点关注输入数组形状、输出结构和副作用。
     def test_blc_uses_per_position_black_level_without_underflow(self) -> None:
         raw = np.array([[100, 200], [300, 400]], dtype=np.uint16)
         pattern = np.array([[0, 1], [3, 2]], dtype=np.uint8)
@@ -28,6 +37,7 @@ class StatsAndBlcTests(unittest.TestCase):
         np.testing.assert_array_equal(corrected, [[0, 80], [170, 260]])
         self.assertEqual(corrected.dtype, np.uint16)
 
+    # 中文注释：test_normalized_blc_is_finite_and_bounded 负责本文件中的一个处理步骤；阅读时重点关注输入数组形状、输出结构和副作用。
     def test_normalized_blc_is_finite_and_bounded(self) -> None:
         raw = np.array([[0, 1000], [500, 1200]], dtype=np.uint16)
         pattern = np.array([[0, 1], [3, 2]], dtype=np.uint8)

@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+// 浮点 tone mapping benchmark：作为 LUT 路径的算法/性能参照。
 namespace {
 
 cpp_isp::ImageBuffer<float> make_hdr_like_rgb(std::uint32_t width, std::uint32_t height) {
@@ -35,6 +36,7 @@ void run_case(std::uint32_t width,
 
     cpp_isp::ToneMappingParams params;
     params.curve = curve;
+    // 每个场景先估计曝光，保证不同曲线在类似亮度目标下比较。
     params.exposure = cpp_isp::compute_percentile_exposure(input_view, 99.0F, 1.0F, true);
     params.preserve_luminance = preserve_luminance;
 

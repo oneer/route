@@ -4,6 +4,8 @@
 #include <iostream>
 #include <stdexcept>
 
+// 双边滤波测试覆盖三件事：
+// 1. 常量图不应被改变；2. 强边缘不应被跨边缘平均；3. LUT/分块/多线程优化应接近直接公式。
 namespace {
 
 void require(bool condition, const char* message) {

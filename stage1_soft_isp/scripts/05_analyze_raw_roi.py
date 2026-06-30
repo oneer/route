@@ -50,6 +50,7 @@ ROI_COLORS = {
 }
 
 
+# 中文注释：把单通道 Bayer RAW 转成灰度预览，帮助定位 ROI 和异常区域。
 def make_raw_preview(raw_visible: np.ndarray, black_levels: list[int], white_level: int) -> np.ndarray:
     black_level = min(black_levels)
     display_max = min(float(np.percentile(raw_visible, 99.5)), float(white_level))
@@ -62,6 +63,7 @@ def make_raw_preview(raw_visible: np.ndarray, black_levels: list[int], white_lev
     return np.repeat(gray8[:, :, None], 3, axis=2)
 
 
+# 中文注释：从图像中选择用于分析的 ROI，保证坐标落在有效范围内。
 def pick_roi(raw_visible: np.ndarray, target_value: float, roi_size: int, stride: int) -> dict[str, int | float]:
     height, width = raw_visible.shape
     best: dict[str, int | float] | None = None
@@ -79,6 +81,7 @@ def pick_roi(raw_visible: np.ndarray, target_value: float, roi_size: int, stride
     return best
 
 
+# 中文注释：计算 ROI 内 Bayer 通道均值，用于局部曝光和色偏分析。
 def roi_channel_means(raw_visible: np.ndarray, bayer_pattern: str, roi: dict[str, int | float]) -> dict[str, float]:
     x = int(roi["x"])
     y = int(roi["y"])
@@ -99,6 +102,7 @@ def roi_channel_means(raw_visible: np.ndarray, bayer_pattern: str, roi: dict[str
     return {name: float(np.mean(channel)) for name, channel in channels.items()}
 
 
+# 中文注释：在预览图上绘制 ROI 标注，方便报告中定位分析区域。
 def annotate_preview(
     preview: np.ndarray,
     raw_shape: tuple[int, int],
@@ -138,6 +142,7 @@ def annotate_preview(
     plt.close(fig)
 
 
+# 中文注释：读取并分析一张 RAW 的 ROI、通道统计和预览图。
 def analyze_raw(raw_path: Path, out_dir: Path, roi_size: int, stride: int) -> dict:
     with rawpy.imread(str(raw_path)) as raw:
         raw_visible = raw.raw_image_visible.copy()
@@ -198,10 +203,12 @@ def analyze_raw(raw_path: Path, out_dir: Path, roi_size: int, stride: int) -> di
     return result
 
 
+# 中文注释：把统计数值格式化为固定精度文本，用于 Markdown 表格。
 def format_number(value: float) -> str:
     return f"{value:.2f}"
 
 
+# 中文注释：根据已收集的实验结果写 Markdown 报告。
 def write_report(results: list[dict], report_path: Path) -> None:
     lines = [
         "# Week 1 ROI 分析",
@@ -286,6 +293,7 @@ def write_report(results: list[dict], report_path: Path) -> None:
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# 中文注释：脚本入口：解析命令行参数，调用本文件的处理流程，并把结果写入输出目录。
 def main() -> None:
     parser = argparse.ArgumentParser(description="Analyze dark/midtone/highlight ROIs in RAW files.")
     parser.add_argument("raw_paths", type=Path, nargs="+", help="One or more RAW/DNG files.")

@@ -9,6 +9,7 @@ namespace {
 
 bool host_is_little_endian() {
     const std::uint16_t value = 1;
+    // CPF32 payload 直接写 float 内存；因此这里明确要求 little-endian，避免跨平台字节序误读。
     return *reinterpret_cast<const unsigned char*>(&value) == 1;
 }
 
@@ -33,6 +34,7 @@ TensorF32 read_cpf32(const std::string& path) {
 
     std::string magic;
     in >> magic;
+    // magic 用来快速识别文件类型，避免把其它二进制误读成 float 张量。
     if (magic != "CPF32") {
         throw std::runtime_error("invalid CPF32 magic in: " + path);
     }
@@ -45,12 +47,14 @@ TensorF32 read_cpf32(const std::string& path) {
 
     in.get();
     tensor.data.resize(tensor.size());
+    // 头部之后就是紧密排列的 float32 payload，顺序与 ImageBuffer 的 planar 存储一致。
     in.read(reinterpret_cast<char*>(tensor.data.data()),
             static_cast<std::streamsize>(tensor.data.size() * sizeof(float)));
     if (!in) {
         throw std::runtime_error("truncated CPF32 payload in: " + path);
     }
     if (in.peek() != std::char_traits<char>::eof()) {
+        // 如果还有多余字节，说明头部 shape 和 payload 不一致，测试数据应立即失败。
         throw std::runtime_error("CPF32 payload size does not match shape in: " + path);
     }
 
@@ -73,6 +77,7 @@ void write_cpf32(const std::string& path, const TensorF32& tensor) {
 
     out << "CPF32\n";
     out << tensor.width << ' ' << tensor.height << ' ' << tensor.channels << '\n';
+    // 写出时不做文本格式化，保持 float32 原始值，便于精确比较 C++/Python 输出。
     out.write(reinterpret_cast<const char*>(tensor.data.data()),
               static_cast<std::streamsize>(tensor.data.size() * sizeof(float)));
 }

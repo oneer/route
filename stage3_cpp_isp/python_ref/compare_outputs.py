@@ -1,3 +1,5 @@
+"""比较 CPF32 输出和参考结果，并生成误差统计/可视化，服务 C++ 与 Python 对齐验证。"""
+
 from __future__ import annotations
 
 import argparse

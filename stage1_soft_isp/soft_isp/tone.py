@@ -17,6 +17,7 @@ from __future__ import annotations
 import numpy as np
 
 
+# 中文注释：用高分位点作为显示白点，把线性 RGB 缩放到 0..1。
 def normalize_by_percentile(rgb_linear: np.ndarray, percentile: float = 99.5) -> np.ndarray:
     """Scale linear RGB to 0..1 using a high percentile as display white."""
     rgb = np.asarray(rgb_linear, dtype=np.float32)
@@ -24,12 +25,14 @@ def normalize_by_percentile(rgb_linear: np.ndarray, percentile: float = 99.5) ->
     return np.clip(rgb / white, 0.0, 1.0).astype(np.float32)
 
 
+# 中文注释：对曝光归一化后的 RGB 应用全局 Reinhard 曲线。
 def reinhard_tone_map(rgb_linear: np.ndarray, percentile: float = 99.5) -> np.ndarray:
     """Apply a simple global Reinhard tone curve after percentile exposure scaling."""
     exposed = normalize_by_percentile(rgb_linear, percentile)
     return (exposed / (1.0 + exposed)).astype(np.float32)
 
 
+# 中文注释：把 0..1 线性 RGB 通过 1/gamma 幂函数编码为显示亮度。
 def apply_gamma(rgb_01: np.ndarray, gamma: float = 2.2) -> np.ndarray:
     """Apply display gamma to a 0..1 RGB image."""
     rgb = np.clip(np.asarray(rgb_01, dtype=np.float32), 0.0, 1.0)
@@ -38,6 +41,7 @@ def apply_gamma(rgb_01: np.ndarray, gamma: float = 2.2) -> np.ndarray:
     return np.power(rgb, 1.0 / gamma).astype(np.float32)
 
 
+# 中文注释：把 0..1 浮点 RGB 转换为 0..255 的 uint8 图像。
 def to_uint8(rgb_01: np.ndarray) -> np.ndarray:
     """Convert a 0..1 RGB image to uint8."""
     rgb = np.clip(np.asarray(rgb_01, dtype=np.float32), 0.0, 1.0)

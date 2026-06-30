@@ -17,8 +17,10 @@ int map_border_index(int index, int size, BorderPolicy policy) {
         case BorderPolicy::Constant:
             return -1;
         case BorderPolicy::Replicate:
+            // 复制边界：左侧全部取 0，右侧全部取 size - 1。
             return index < 0 ? 0 : size - 1;
         case BorderPolicy::Reflect:
+            // 镜像边界：-1 -> 1，size -> size - 2。while 支持半径远大于图像尺寸的情况。
             if (size == 1) {
                 return 0;
             }
