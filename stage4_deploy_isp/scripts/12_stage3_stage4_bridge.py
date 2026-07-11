@@ -34,6 +34,26 @@ from deploy.stage3_bridge import hwc_to_nchw, psnr, read_cpf32, write_cpf32
 INFERENCE_MEAN = re.compile(r"inference_mean_ms=([0-9.eE+-]+)")
 
 
+def run_checked(command: list[str], environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    """运行 C++ 节点，并在失败时保留退出码和捕获的诊断输出。"""
+    try:
+        return subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            env=environment,
+        )
+    except subprocess.CalledProcessError as error:
+        code = error.returncode
+        code_text = f"{code} (0x{code:08X})" if code >= 0 else str(code)
+        raise RuntimeError(
+            f"Command failed with exit code {code_text}: {command[0]}\n"
+            f"stdout:\n{error.stdout or '<empty>'}\n"
+            f"stderr:\n{error.stderr or '<empty>'}"
+        ) from error
+
+
 def parse_args() -> argparse.Namespace:
     """定义桥接验证所需的输入、可执行文件、输出位置和重复次数。"""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -114,7 +134,7 @@ def main() -> None:
 
         # Stage 3 的 wall time 包含进程启动和 CPF32 文件 I/O，不能与纯推理耗时混用。
         stage3_start = time.perf_counter()
-        subprocess.run(
+        run_checked(
             [
                 str(stage3_runner),
                 "single",
@@ -126,10 +146,7 @@ def main() -> None:
                 "1.0",
                 "1.0",
             ],
-            check=True,
-            capture_output=True,
-            text=True,
-            env=environment,
+            environment,
         )
         stage3_wall_ms = (time.perf_counter() - stage3_start) * 1000.0
         stage3_float = read_cpf32(stage3_cpf32)
@@ -143,7 +160,7 @@ def main() -> None:
         python_reference = python_session.run(["output"], {"input": input_nchw})[0].astype(np.float32)
 
         # 预热 1 次后重复推理 args.runs 次；runner 另存可视化 PPM 和原始 float32。
-        completed = subprocess.run(
+        completed = run_checked(
             [
                 str(stage4_runner),
                 str(model),
@@ -153,10 +170,7 @@ def main() -> None:
                 "1",
                 str(args.runs),
             ],
-            check=True,
-            capture_output=True,
-            text=True,
-            env=environment,
+            environment,
         )
         timing_match = INFERENCE_MEAN.search(completed.stdout)
         if timing_match is None:

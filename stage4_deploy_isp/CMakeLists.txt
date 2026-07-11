@@ -36,9 +36,16 @@ if(STAGE4_BUILD_ORT)
   endif()
 
   if(WIN32)
-    # Windows 使用 onnxruntime.lib 导入库，运行时还需要 onnxruntime.dll 在 PATH 或 exe 旁边。
+    # Windows 使用 onnxruntime.lib 导入库。把匹配版本的 DLL 放到 exe 旁边，
+    # 避免系统目录中的其他 ONNX Runtime 版本抢先被加载。
     target_link_libraries(stage4_ort_runner PRIVATE
       ${ONNXRUNTIME_ROOT}/lib/onnxruntime.lib
+    )
+    add_custom_command(TARGET stage4_ort_runner POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll
+        $<TARGET_FILE_DIR:stage4_ort_runner>
+      VERBATIM
     )
   else()
     # Linux/macOS 类环境按共享库名称链接。

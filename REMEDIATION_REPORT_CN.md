@@ -114,9 +114,9 @@
 27. [x] 接入真实 sensor RAW 数据和 metadata contract。
     - 验收：black/white level、Bayer pattern、bit depth、orientation、CCM/illuminant 信息可追踪。
 
-28. [ ] 将 Stage 3 C++ ISP 串入 Stage 4。
+28. [x] 将 Stage 3 C++ ISP 串入 Stage 4。
     - 验收：不是独立 benchmark，而是同一 manifest 下的真实前处理或后处理节点。
-    - 当前：桥接脚本、CPF32 I/O helper、Stage 4 ORT CMake preset 和汇总逻辑已实现，Stage 4 C++ runner 已成功编译；受本轮工具执行额度限制，1 张/20 张 runtime smoke 尚未执行，因此不勾选。
+    - 当前：固定 20 张 RGB manifest 均实际经过 Stage 3 global Reinhard 节点和 Stage 4 C++ ORT；C++/Python ORT 最大误差均为 `0`。这证明两个 C++ 阶段已串联，但不等于真实 RAW capstone 已完成。
 
 29. [ ] 将 CUDA normalize/pack RAW 接入真实推理链路。
     - 验收：GPU buffer 不做无意义的中间回传，输出与 CPU reference 在阈值内对齐。
@@ -134,7 +134,7 @@
 2. [x] Stage 1：20/20 通过，原先静默漏跑的 IQ/AWB 两项及 RAW contract 三项已纳入。
 3. [x] Stage 2：16/16 通过，新增 4 项 split 审计回归。
 4. [x] Stage 3：MSVC 19.51 + CMake/Ninja 构建 67 个目标，CTest 12/12 通过，包含 pipeline golden test。
-5. [x] Stage 4：5/5 合同回归通过，latency 数值列与计时边界已机器校验。
+5. [x] Stage 4：8/8 合同回归通过，latency 数值列、计时边界和 Windows ORT DLL 随 runner 部署均已机器校验。
 6. [x] 仓库审计：3085 个跟踪文件、2117 个 LFS 文件、当前跟踪工作树约 1563.97 MB、无单文件超过 50 MB。
 7. [x] `pyproject.toml`、`CMakePresets.json`、GitHub Actions YAML 均已完成语法解析。
 8. [x] 三个 Stage 4 manifest 不再包含个人绝对路径；本机相对路径加载 smoke test 得到 `[1,3,512,512]`。
@@ -144,6 +144,6 @@
 12. [x] RTX 4060 Ti 临时复验：同一 20 张 manifest 上 CUDA、TensorRT FP32/FP16 provider 均实际启用；最大误差分别为 `3.58e-7`、`5.29e-4`、`1.61e-3`。
 13. [x] 14 张真实 FiveK DNG 已生成 metadata contract，含 SHA-256、尺寸、Bayer、黑白电平、方向、白平衡和色彩矩阵；ISO/曝光保持显式 unknown。
 14. [ ] GitHub hosted CI：workflow 已创建，但本轮未被授权提交/推送，因此没有远端运行结果。
-15. [ ] 资产外迁、根许可证、扩大数据集、Stage 3/4 串联、CUDA 真接入和 ARM 实机仍按未完成状态保留。
+15. [ ] 资产外迁、根许可证、扩大数据集、真实 RAW capstone、CUDA 真接入和 ARM 实机仍按未完成状态保留。
 16. [x] Stage 4 `ort-verify` preset 已使用 MSVC 19.51 和 ONNX Runtime 1.26 CPU SDK 构建成功。
-17. [ ] Stage 3→Stage 4 bridge 的 runtime 命令因本轮桌面工具沙箱外执行额度用尽而未运行；代码完成不等于验收完成。
+17. [x] Stage 3→Stage 4 bridge 已完成 1 张和固定 20 张 runtime 验证；Windows runner 随构建复制匹配的 ORT 1.26 DLL，避免 System32 旧版本抢先加载。

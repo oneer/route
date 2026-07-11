@@ -9,7 +9,7 @@
 ## 当前能力边界
 
 - Stage 2 的主要实测任务是 paired RGB restoration；pseudo RGGB 仅是 RAW-like shape bridge，不是真实 sensor RAW。
-- Stage 3 是学习型 C++17 ISP 验证库，不是生产实时 ISP，目前尚未串入 Stage 4。
+- Stage 3 是学习型 C++17 ISP 验证库，不是生产实时 ISP；已通过固定 RGB manifest 串入 Stage 4 C++ ORT，但尚未形成真实 RAW 端到端链路。
 - Stage 4 已完成指定环境下的 ONNX/ORT/TensorRT/INT8 实验，但 CUDA 前处理尚未接入真实推理，ARM/Android 尚无实机结果。
 - 因此当前仓库证明的是分阶段学习和部署验证能力，不声称真实 RAW 到端侧产品链路已经完成。
 

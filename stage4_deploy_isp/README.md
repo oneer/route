@@ -13,7 +13,7 @@
 | ORT QDQ INT8 | 已复验 | 10 张校准、10 张独立评价；无 split overlap |
 | CUDA normalize | 已复验但未接入推理 | NVRTC kernel、H2D/kernel/D2H 拆时和 CPU 对齐 |
 | Android/ARM 移动端 | 未完成 | 无设备、`adb`、NCNN/MNN 工具链；仅保留设计章节 |
-| 阶段三 C++ ISP 串联 | 未完成 | 当前链路仍是 RGB normalize → AI denoise |
+| 阶段三 C++ ISP 串联 | 已复验 | 固定 20 张 manifest；Stage 3 global Reinhard → Stage 4 C++ ORT；C++/Python max error `0` |
 
 “已复验”只代表表中明确的环境和口径。TensorRT engine 不承诺跨 GPU、CUDA 或 TensorRT 版本通用。
 
@@ -94,11 +94,10 @@ cmake --build --preset ort-verify
 然后对固定 manifest 执行桥接：
 
 ```powershell
-python stage4_deploy_isp/scripts/12_stage3_stage4_bridge.py `
-  --ort-lib-dir "$env:ONNXRUNTIME_ROOT\lib"
+python stage4_deploy_isp/scripts/12_stage3_stage4_bridge.py
 ```
 
-真实数据流是 `PNG → CPF32 → Stage 3 C++ global Reinhard node → 8-bit PPM → Stage 4 C++ ORT → f32`。中间文件写入已忽略的 `out/`，汇总写入 `reports/stage3_stage4_bridge_summary.csv`。Python ORT 参考读取同一个量化后 PPM tensor，因此 C++/Python 对齐不会把 PPM 量化误差混进后端误差。该桥接证明两个 C++ 阶段可串联，但 Stage 3 tone node 与原 DnCNN 训练域存在 domain shift，不等于真实 RAW AI-ISP 已完成。
+构建会把匹配版本的 `onnxruntime.dll` 复制到 runner 旁，避免 Windows 系统目录中的其他 ORT 版本被优先加载。真实数据流是 `PNG → CPF32 → Stage 3 C++ global Reinhard node → 8-bit PPM → Stage 4 C++ ORT → f32`。中间文件写入已忽略的 `out/`，汇总写入 `reports/stage3_stage4_bridge_summary.csv`。Python ORT 参考读取同一个量化后 PPM tensor，因此 C++/Python 对齐不会把 PPM 量化误差混进后端误差。固定 20 张实测的 C++/Python max error 均为 `0`；该桥接证明两个 C++ 阶段可串联，但 Stage 3 tone node 与原 DnCNN 训练域存在 domain shift，不等于真实 RAW AI-ISP 已完成。
 
 从仓库根目录执行：
 

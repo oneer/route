@@ -9,7 +9,7 @@ A self-directed, project-driven learning repository for mastering the full Image
 ## Current Boundaries
 
 - Stage 2 is primarily evaluated on paired RGB restoration; pseudo RGGB is a RAW-like shape bridge, not real sensor RAW.
-- Stage 3 is a learning-oriented C++17 verification library, not a production realtime ISP, and is not yet connected to Stage 4.
+- Stage 3 is a learning-oriented C++17 verification library, not a production realtime ISP; it is connected to Stage 4 C++ ORT on the fixed RGB manifest, but not yet as a real RAW end-to-end pipeline.
 - Stage 4 has verified ONNX/ORT/TensorRT/INT8 experiments in the documented environment, but CUDA preprocessing is not wired into inference and ARM/Android has no device result.
 - The repository therefore demonstrates staged learning and deployment verification; it does not claim that a real RAW-to-device product pipeline is complete.
 

@@ -122,6 +122,13 @@ class DeploymentContractTests(unittest.TestCase):
                 if value.strip():
                     self.assertGreaterEqual(float(value), 0.0)
 
+    def test_windows_runner_bundles_matching_onnxruntime_dll(self) -> None:
+        """Windows runner 必须优先加载构建时链接的 ORT DLL，而不是系统同名 DLL。"""
+        cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+        self.assertIn("add_custom_command(TARGET stage4_ort_runner POST_BUILD", cmake)
+        self.assertIn("${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll", cmake)
+        self.assertIn("$<TARGET_FILE_DIR:stage4_ort_runner>", cmake)
+
 
 if __name__ == "__main__":
     unittest.main()
