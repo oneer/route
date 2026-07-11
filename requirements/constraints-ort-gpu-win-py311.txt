@@ -1,0 +1,9 @@
+# Verified direct constraints for the Windows ORT GPU runtime profile.
+# This is an inference/backend profile, not a PyTorch training environment.
+onnxruntime-gpu==1.21.1
+onnx==1.22.0
+numpy==2.4.6
+Pillow==12.2.0
+PyYAML==6.0.3
+matplotlib==3.11.0
+opencv-python==4.13.0.92

@@ -73,6 +73,33 @@ PNG RGB uint8/HWC/host
 
 ## 最小复现
 
+先运行不需要数据集、checkpoint 或 GPU 的合同回归：
+
+```powershell
+python -m unittest discover -s stage4_deploy_isp/tests -v
+```
+
+该测试检查 tensor contract、模型卡、跟踪模型 hash、manifest 数量、路径可移植性和 INT8 校准/评价 split 隔离。
+
+### Stage 3 C++ → Stage 4 C++ ORT 串联
+
+先在已加载 MSVC 环境且可找到 Ninja 的终端构建 Stage 4 runner：
+
+```powershell
+$env:ONNXRUNTIME_ROOT='D:\Env\onnxruntime\cpu\onnxruntime-win-x64-1.26.0'
+cmake --preset ort-verify
+cmake --build --preset ort-verify
+```
+
+然后对固定 manifest 执行桥接：
+
+```powershell
+python stage4_deploy_isp/scripts/12_stage3_stage4_bridge.py `
+  --ort-lib-dir "$env:ONNXRUNTIME_ROOT\lib"
+```
+
+真实数据流是 `PNG → CPF32 → Stage 3 C++ global Reinhard node → 8-bit PPM → Stage 4 C++ ORT → f32`。中间文件写入已忽略的 `out/`，汇总写入 `reports/stage3_stage4_bridge_summary.csv`。Python ORT 参考读取同一个量化后 PPM tensor，因此 C++/Python 对齐不会把 PPM 量化误差混进后端误差。该桥接证明两个 C++ 阶段可串联，但 Stage 3 tone node 与原 DnCNN 训练域存在 domain shift，不等于真实 RAW AI-ISP 已完成。
+
 从仓库根目录执行：
 
 ```powershell

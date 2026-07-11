@@ -37,7 +37,10 @@ def write_manifest(path: Path, rows: list[dict[str, str]]) -> None:
 
 def load_input(path: str) -> np.ndarray:
     # ONNX 模型的输入合同是 NCHW float32，像素范围 [0,1]。
-    arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
+    source = Path(path)
+    if not source.is_absolute():
+        source = ROOT / source
+    arr = np.asarray(Image.open(source).convert("RGB"), dtype=np.float32) / 255.0
     return np.transpose(arr, (2, 0, 1))[None].astype(np.float32)
 
 

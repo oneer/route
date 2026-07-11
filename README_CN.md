@@ -4,6 +4,15 @@
 
 面向 AI-ISP 算法工程师方向的自驱动、项目驱动学习仓库，覆盖从传感器物理、传统 ISP 算法到 AI 图像恢复、最终 C++/CUDA 部署的完整链路。
 
+[整改报告](REMEDIATION_REPORT_CN.md) · [环境矩阵](docs/ENVIRONMENT_MATRIX_CN.md) · [依赖约束](requirements/README_CN.md) · [Benchmark 规范](docs/BENCHMARK_PROTOCOL_CN.md) · [资产策略](docs/REPOSITORY_ASSET_POLICY_CN.md) · [第三方内容清单](THIRD_PARTY_NOTICES.md)
+
+## 当前能力边界
+
+- Stage 2 的主要实测任务是 paired RGB restoration；pseudo RGGB 仅是 RAW-like shape bridge，不是真实 sensor RAW。
+- Stage 3 是学习型 C++17 ISP 验证库，不是生产实时 ISP，目前尚未串入 Stage 4。
+- Stage 4 已完成指定环境下的 ONNX/ORT/TensorRT/INT8 实验，但 CUDA 前处理尚未接入真实推理，ARM/Android 尚无实机结果。
+- 因此当前仓库证明的是分阶段学习和部署验证能力，不声称真实 RAW 到端侧产品链路已经完成。
+
 ## 仓库地图
 
 ```
@@ -37,7 +46,7 @@ ONNX Runtime C++ CPU 推理 smoke test。个人是否真正掌握，仍需通过
 
 ### [stage3_cpp_isp/](stage3_cpp_isp/) — 阶段三：C++ 高性能 ISP 库
 
-第三阶段将关键 ISP 算法从 Python 参考实现移植到生产级 C++17，遵循严格闭环：Python 参考 → C++ 实现 → 对齐测试 → 性能基准 → 报告。使用自定义 `CPF32` 二进制张量格式进行跨语言验证。
+第三阶段将关键 ISP 算法从 Python 参考实现移植到学习型 C++17 验证库，遵循严格闭环：Python 参考 → C++ 实现 → 对齐测试 → 性能基准 → 报告。使用自定义 `CPF32` 二进制张量格式进行跨语言验证。
 
 **状态：** 已完成（Week 0–8）。项目骨架、图像布局、RAW 噪声建模、基础去噪（高斯 / box / bilateral / NLM）、SIDD 真实数据桥接、去噪性能基准测试、全局色调映射（Reinhard / Filmic / ACES / percentile）、Tone LUT 定点量化、局部色调映射 + HDR 合成、全管线集成均已全部完成，含 Python 参考实现、对齐测试、性能基准和周报。
 
@@ -78,6 +87,14 @@ ONNX Runtime C++ CPU 推理 smoke test。个人是否真正掌握，仍需通过
 - 最终用可学习模块替代传统模块时，确切知道自己替换了什么
 
 ## 快速开始
+
+先运行不依赖 C++ 工具链的统一回归：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/verify_project.ps1 -SkipCpp
+```
+
+安装 CMake 与 Ninja 后，移除 `-SkipCpp` 即可同时配置、构建和测试 Stage 3。整改状态与尚未达到的验收条件见 [整改报告](REMEDIATION_REPORT_CN.md)。
 
 从 [stage1_soft_isp/](stage1_soft_isp/) 开始 —— Python 学习项目不需要 C++ 工具链，能立刻产生可视化输出。
 
@@ -125,4 +142,4 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 
 ## 许可
 
-个人学习作品集。所有原创代码可供参考和教育用途。
+本仓库尚未选择根级开源许可证；“可供参考和教育用途”不是标准许可证授权。原创代码许可证需要由仓库所有者确认，第三方代码、论文、数据集、教程改写和 PDF 导出内容也必须分别满足其上游许可。当前盘点见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

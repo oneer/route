@@ -1,0 +1,29 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ort-verify",
+      "displayName": "Stage 4 ORT CPU runner",
+      "description": "使用 Ninja 以 Release 模式构建 Stage 4 CPU ONNX Runtime 验证程序",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/ort-verify",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ONNXRUNTIME_ROOT": "$env{ONNXRUNTIME_ROOT}",
+        "STAGE4_BUILD_ORT": "ON",
+        "STAGE4_BUILD_CUDA_PREPROCESS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ort-verify",
+      "configurePreset": "ort-verify"
+    }
+  ]
+}

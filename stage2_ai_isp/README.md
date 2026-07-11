@@ -97,6 +97,14 @@ $env:PYTHONPATH="stage2_ai_isp"
 python -m unittest discover -s stage2_ai_isp/tests -v
 ```
 
+真实 paired 数据准备完成后运行 source-scene 泄漏审计：
+
+```powershell
+python stage2_ai_isp/scripts/23_audit_dataset_splits.py
+```
+
+审计会检查 train/val/test 的 noisy-clean 配对、manifest 覆盖、重复行、尺寸一致性和 source scene 交叉；任一失败都会返回非零退出码。
+
 ## Week 1 常用命令
 
 TinyCNN probe：

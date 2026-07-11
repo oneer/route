@@ -1,26 +1,33 @@
 {
-  "dataset_root": "stage2_ai_isp\\datasets\\sidd_tiny",
+  "dataset_root": "C:/Users/10439/Desktop/route/stage2_ai_isp/datasets/sidd_tiny",
+  "manifest_errors": [],
   "splits": {
     "train": {
       "noisy_count": 80,
       "clean_count": 80,
       "paired_count": 80,
       "unmatched_noisy": [],
-      "unmatched_clean": []
+      "unmatched_clean": [],
+      "unmanifested_pairs": [],
+      "manifest_rows_without_pair": []
     },
     "val": {
       "noisy_count": 20,
       "clean_count": 20,
       "paired_count": 20,
       "unmatched_noisy": [],
-      "unmatched_clean": []
+      "unmatched_clean": [],
+      "unmanifested_pairs": [],
+      "manifest_rows_without_pair": []
     },
     "test": {
       "noisy_count": 20,
       "clean_count": 20,
       "paired_count": 20,
       "unmatched_noisy": [],
-      "unmatched_clean": []
+      "unmatched_clean": [],
+      "unmanifested_pairs": [],
+      "manifest_rows_without_pair": []
     }
   },
   "source_scene_leakage": {

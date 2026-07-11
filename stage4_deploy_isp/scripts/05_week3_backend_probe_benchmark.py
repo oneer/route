@@ -22,7 +22,7 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
-from deploy.common import project_root
+from deploy.common import project_root, resolve_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,7 +41,7 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 def load_input(path: str) -> np.ndarray:
     # 统一转成 ORT 期望的 NCHW/float32/[0,1]。
-    arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
+    arr = np.asarray(Image.open(resolve_path(path)).convert("RGB"), dtype=np.float32) / 255.0
     return np.transpose(arr, (2, 0, 1))[None, ...].astype(np.float32)
 
 

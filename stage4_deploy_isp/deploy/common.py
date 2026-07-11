@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import csv
+import os
 import sys
 import time
 from pathlib import Path
@@ -88,15 +89,26 @@ def write_manifest(rows: list[dict[str, str]], path: str | Path) -> None:
     # manifest 是后续 ONNX、C++、量化和审计阶段共享的固定输入集合。
     out = resolve_path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
+    portable_rows = []
+    for row in rows:
+        portable_row = dict(row)
+        for key in ("noisy_path", "clean_path"):
+            source = Path(portable_row[key]).resolve()
+            try:
+                portable_row[key] = Path(os.path.relpath(source, project_root())).as_posix()
+            except ValueError:
+                # Windows 跨盘符时无法构造相对路径，保留绝对路径并由合同测试显式暴露。
+                portable_row[key] = str(source)
+        portable_rows.append(portable_row)
     with out.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "name", "noisy_path", "clean_path"])
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(portable_rows)
 
 
 def load_rgb_tensor(path: str | Path, device: torch.device | str = "cpu") -> torch.Tensor:
     # PIL 读入是 HWC/uint8，这里转成模型需要的 NCHW/float32/[0,1]。
-    image = Image.open(path).convert("RGB")
+    image = Image.open(resolve_path(path)).convert("RGB")
     array = np.asarray(image, dtype=np.float32) / 255.0
     tensor = torch.from_numpy(array).permute(2, 0, 1).unsqueeze(0)
     return tensor.to(device)

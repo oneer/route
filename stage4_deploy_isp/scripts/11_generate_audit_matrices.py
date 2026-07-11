@@ -208,14 +208,18 @@ def main() -> None:
                 "warmup_runs": 5,
                 "timed_runs": "configured/image",
                 "pre_ms": "",
-                "h2d_ms": "included in session.run" if row["backend"] != "cpu" else "",
+                "h2d_ms": "",
                 "infer_mean_ms": row["latency_mean_ms"],
                 "infer_p50_ms": row["latency_p50_ms"],
                 "infer_p90_ms": row["latency_p90_ms"],
-                "d2h_ms": "included in session.run" if row["backend"] != "cpu" else "",
+                "d2h_ms": "",
                 "post_ms": "",
                 "e2e_ms": "",
-                "includes_io": "no file I/O; Python session call",
+                "includes_io": (
+                    "no file I/O; Python session.run includes provider transfers"
+                    if row["backend"] != "cpu"
+                    else "no file I/O; Python session call"
+                ),
             }
         )
     for row in read_rows(ROOT / "outputs/week3_backend/week3_trtexec_summary.csv"):

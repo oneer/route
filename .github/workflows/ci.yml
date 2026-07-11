@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements/constraints-cpu.txt
+            stage1_soft_isp/requirements.txt
+            stage2_ai_isp/requirements.txt
+            stage2_ai_isp/deployment/requirements.txt
+            stage4_deploy_isp/requirements.txt
+      - name: Install Python test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -c requirements/constraints-cpu.txt \
+            -r stage1_soft_isp/requirements.txt \
+            -r stage2_ai_isp/requirements.txt \
+            -r stage2_ai_isp/deployment/requirements.txt \
+            -r stage4_deploy_isp/requirements.txt
+          python tools/check_environment.py --constraints requirements/constraints-cpu.txt
+          python -m pip check
+      - name: Run Stage 1 tests
+        working-directory: stage1_soft_isp
+        run: python -m unittest discover -s tests -v
+      - name: Run Stage 2 tests
+        env:
+          PYTHONPATH: stage2_ai_isp
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m unittest discover -s stage2_ai_isp/tests -v
+      - name: Run Stage 4 contract tests
+        run: python -m unittest discover -s stage4_deploy_isp/tests -v
+
+  cpp-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Configure Stage 3
+        working-directory: stage3_cpp_isp
+        run: cmake --preset verify
+      - name: Build Stage 3
+        working-directory: stage3_cpp_isp
+        run: cmake --build --preset verify
+      - name: Test Stage 3
+        working-directory: stage3_cpp_isp
+        run: ctest --preset verify

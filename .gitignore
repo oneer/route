@@ -3,6 +3,7 @@ build/
 build_ninja/
 build_ninja_release/
 build_verify/
+build_ci/
 out/
 
 # CMake generated

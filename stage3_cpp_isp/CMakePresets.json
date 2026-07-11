@@ -1,0 +1,36 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "verify",
+      "displayName": "Portable release verification",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/verify",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CPP_ISP_ENABLE_ASAN": "OFF",
+        "CPP_ISP_USE_FETCHCONTENT": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "verify",
+      "configurePreset": "verify"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "verify",
+      "configurePreset": "verify",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

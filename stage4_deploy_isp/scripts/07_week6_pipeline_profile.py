@@ -20,7 +20,7 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
-from deploy.common import project_root
+from deploy.common import project_root, resolve_path
 
 
 def read_manifest(path: Path) -> list[dict[str, str]]:
@@ -30,7 +30,7 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 
 def preprocess(path: str) -> np.ndarray:
-    image = Image.open(path).convert("RGB")
+    image = Image.open(resolve_path(path)).convert("RGB")
     arr = np.asarray(image, dtype=np.float32) / 255.0
     # ISP 原始域模型通常会在这里做黑电平校正、镜头阴影校正、RAW pack 等。
     # 本阶段模型是 RGB 降噪，所以只保留归一化和 HWC -> NCHW 布局转换。

@@ -24,6 +24,14 @@ python scripts/17_run_pipeline.py data/raw/T01_a0006-IMG_2787.dng
 
 The config-driven pipeline reads [configs/default.yaml](configs/default.yaml), supports module switches, and saves inspectable intermediate summaries.
 
+Real DNG metadata is tracked separately from rendering assumptions. Regenerate and validate the machine-readable contract after changing RAW samples:
+
+```powershell
+python scripts/19_generate_raw_metadata_manifest.py
+```
+
+The contract records file hashes, dimensions, Bayer layout, black/white levels, orientation, white balance and color matrices. ISO/exposure remain explicitly unknown until a separate EXIF audit is added.
+
 ## Learning Pipeline
 
 ```text

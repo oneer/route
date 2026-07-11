@@ -65,7 +65,10 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 def load_input(path: str) -> np.ndarray:
     # 所有后端共用 NCHW float32 输入，避免把布局差异误判为后端数值误差。
-    arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
+    source = Path(path)
+    if not source.is_absolute():
+        source = project_root() / source
+    arr = np.asarray(Image.open(source).convert("RGB"), dtype=np.float32) / 255.0
     return np.transpose(arr, (2, 0, 1))[None, ...].astype(np.float32)
 
 

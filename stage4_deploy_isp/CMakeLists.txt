@@ -29,6 +29,12 @@ if(STAGE4_BUILD_ORT)
     ${ONNXRUNTIME_ROOT}/include
   )
 
+  if(MSVC)
+    target_compile_options(stage4_ort_runner PRIVATE /W4 /permissive- /utf-8)
+  else()
+    target_compile_options(stage4_ort_runner PRIVATE -Wall -Wextra -Wpedantic)
+  endif()
+
   if(WIN32)
     # Windows 使用 onnxruntime.lib 导入库，运行时还需要 onnxruntime.dll 在 PATH 或 exe 旁边。
     target_link_libraries(stage4_ort_runner PRIVATE

@@ -20,7 +20,7 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
-from deploy.common import load_yaml, project_root
+from deploy.common import load_yaml, project_root, resolve_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,7 +76,7 @@ def main() -> None:
     out_dir = root / args.output_dir
     for row in rows:
         sample_id = row["id"]
-        noisy = Path(row["noisy_path"])
+        noisy = resolve_path(row["noisy_path"])
         save_ppm_from_png(noisy, out_dir / "ppm_inputs" / f"{sample_id}.ppm")
         save_ort_reference(session, noisy, out_dir / "ort_reference_png" / f"{sample_id}_ort_reference.png")
         save_ort_tensor_reference(session, noisy, out_dir / "ort_reference_f32" / f"{sample_id}_ort_reference.f32")

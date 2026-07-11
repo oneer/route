@@ -50,6 +50,14 @@ stage1_soft_isp/
 
 ## 快速验证
 
+真实 DNG 样本的 metadata contract 可通过以下命令重建：
+
+```powershell
+python scripts/19_generate_raw_metadata_manifest.py
+```
+
+生成的 `data/raw_metadata_manifest.json` 记录文件 hash、尺寸、Bayer 排列、黑白电平、方向、白平衡和色彩矩阵；rawpy 未暴露的 ISO/曝光时间保持为显式 unknown，不做猜测。
+
 ```powershell
 cd stage1_soft_isp
 python -m pip install -r requirements.txt

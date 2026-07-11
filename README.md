@@ -4,6 +4,15 @@
 
 A self-directed, project-driven learning repository for mastering the full Image Signal Processing (ISP) pipeline — from sensor physics and traditional ISP algorithms to AI-driven image restoration and eventual C++/CUDA deployment. Built for software engineers transitioning into AI-ISP algorithm roles.
 
+[Remediation report (Chinese)](REMEDIATION_REPORT_CN.md) · [Environment matrix](docs/ENVIRONMENT_MATRIX_CN.md) · [Dependency constraints](requirements/README_CN.md) · [Benchmark protocol](docs/BENCHMARK_PROTOCOL_CN.md) · [Asset policy](docs/REPOSITORY_ASSET_POLICY_CN.md) · [Third-party inventory](THIRD_PARTY_NOTICES.md)
+
+## Current Boundaries
+
+- Stage 2 is primarily evaluated on paired RGB restoration; pseudo RGGB is a RAW-like shape bridge, not real sensor RAW.
+- Stage 3 is a learning-oriented C++17 verification library, not a production realtime ISP, and is not yet connected to Stage 4.
+- Stage 4 has verified ONNX/ORT/TensorRT/INT8 experiments in the documented environment, but CUDA preprocessing is not wired into inference and ARM/Android has no device result.
+- The repository therefore demonstrates staged learning and deployment verification; it does not claim that a real RAW-to-device product pipeline is complete.
+
 ## Repository Map
 
 ```
@@ -39,7 +48,7 @@ See [stage2_ai_isp/README.md](stage2_ai_isp/README.md) for details.
 
 ### [stage3_cpp_isp/](stage3_cpp_isp/) — Stage 3: C++ High-Performance ISP Library
 
-The third stage ports key ISP algorithms from Python reference to production-style C++17, with a strict loop: Python reference → C++ implementation → alignment test → benchmark → report. Uses a custom `CPF32` binary tensor format for cross-language verification.
+The third stage ports key ISP algorithms from Python reference to a learning-oriented C++17 verification library, with a strict loop: Python reference → C++ implementation → alignment test → benchmark → report. Uses a custom `CPF32` binary tensor format for cross-language verification.
 
 **Status:** Complete (Week 0–8). Project skeleton, image layout, RAW noise modeling, basic denoise (Gaussian / box / bilateral / NLM), SIDD real-data bridge, denoise performance benchmarking, global tone mapping (Reinhard / Filmic / ACES / percentile), tone LUT with fixed-point quantization, local tone mapping + HDR merge, and full pipeline integration are complete with Python references, alignment tests, benchmarks, and weekly reports.
 
@@ -80,6 +89,14 @@ This project takes the opposite approach: every stage is explicit, inspectable, 
 - Eventually replace traditional modules with learned ones, knowing exactly what you're replacing
 
 ## Getting Started
+
+Run the Python-only repository regression first:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/verify_project.ps1 -SkipCpp
+```
+
+After installing CMake and Ninja, remove `-SkipCpp` to configure, build, and test Stage 3 as well. See the [remediation report](REMEDIATION_REPORT_CN.md) for verified and pending acceptance criteria.
 
 Start with [stage1_soft_isp/](stage1_soft_isp/) — the Python learning project. It requires no C++ toolchain and produces visual output immediately.
 
@@ -127,4 +144,4 @@ If you don't have RAW files yet, use the included download script:
 
 ## License
 
-This is a personal learning portfolio. All original code is available for reference and educational use.
+No root open-source license has been selected yet; “reference and educational use” is not a standard license grant. The repository owner must choose a license for original code, while third-party code, papers, datasets, tutorial-derived notes, and PDF exports remain subject to their respective upstream terms. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

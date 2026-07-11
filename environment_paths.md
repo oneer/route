@@ -1,5 +1,7 @@
 # Environment Paths
 
+> 本文件记录当前开发机的观测路径和已安装版本，不是可移植安装说明。公共复现入口见 `docs/ENVIRONMENT_MATRIX_CN.md`；脚本和配置应优先使用相对路径、环境变量或命令行参数。
+
 This file records local toolchain, dataset, model, and output paths for the
 Stage 4 AI-ISP deployment project. Update it whenever a tool is installed or
 moved.

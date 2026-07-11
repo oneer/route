@@ -121,6 +121,18 @@ stage3_cpp_isp/
 └── CMakeLists.txt
 ```
 
+## Portable Verification
+
+With CMake >= 3.20 and Ninja available:
+
+```bash
+cmake --preset verify
+cmake --build --preset verify
+ctest --preset verify
+```
+
+The preset uses the offline fallback tests and does not download GoogleTest or Google Benchmark.
+
 ## Core Library (`include/cpp_isp/`)
 
 | Module | Header | Description |
