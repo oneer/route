@@ -12,6 +12,7 @@
 4. [练习入口](exercises/README.md)
 5. [调试手册](materials/debugging_guide.md)
 6. [报告—代码—实验对应表](reports/stage1_tutorial_audit.md)
+7. [参考文献与外部资料](reports/references.md)
 
 如果前置自测不能独立完成，先补 Python/NumPy，不建议直接阅读 200 行以上实验脚本。
 
@@ -139,7 +140,10 @@ python -m unittest discover -s tests -v
 - Bayer 拆分与 pattern 推断；
 - per-position BLC 和无符号下溢；
 - DPC 人工 hot pixel；
+- LSC 径向 profile、identity gain、white-level clip 和 Bayer pattern 校验；
 - bilinear 常量图与真实采样值保留；
+- 显示方向旋转/翻转与 ROI 框同步变换；
+- clipping、SNR/DR proxy 和边缘锐度 proxy 的方向性 sanity checks；
 - Gray World、identity CCM、Gamma 边界；
 - IQA 指标和 YAML 配置。
 

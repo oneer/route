@@ -12,7 +12,7 @@ python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
 python scripts/17_run_pipeline.py data/raw/T01_a0006-IMG_2787.dng
 ```
 
-成功时应看到 15 项合成测试通过，并在 `outputs/pipeline/T01_a0006-IMG_2787/` 得到 `preview.png`、`metadata.json` 和逐阶段统计 JSON。若失败，先看 [环境搭建](environment_setup.md) 和 [调试手册](debugging_guide.md)。
+成功时应看到 30 项合成测试通过，并在 `outputs/pipeline/T01_a0006-IMG_2787/` 得到 `preview.png`、`metadata.json` 和逐阶段统计 JSON。若失败，先看 [环境搭建](environment_setup.md) 和 [调试手册](debugging_guide.md)。
 
 ## 先建立一张完整地图
 
@@ -31,6 +31,7 @@ RAW/DNG metadata
 - synthetic flat-field 和相对 rawpy 的 DeltaE 都不是产品级标定证据。
 
 完整的报告—代码—参数—脚本—产物—测试关系见 [教程化审查与证据对应表](../reports/stage1_tutorial_audit.md)。
+规范、论文、官方 API 和开源项目来源见 [参考文献与外部资料](../reports/references.md)。
 
 ## 六周学习闭环
 

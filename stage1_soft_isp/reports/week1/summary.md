@@ -1,5 +1,26 @@
 ﻿# Week 1 学习总结：RAW / Sensor 数据直觉
 
+## 本周学习闭环
+
+| 项目 | 要求 |
+|---|---|
+| 目标 | 说清陌生 DNG 的 shape、dtype、Bayer pattern、black/white level、曝光风险和 ROI 证据 |
+| 前置 | 完成 `materials/prerequisites.md` 前四题；知道 `uint16` 减法和 NumPy 切片风险 |
+| 运行前预测 | 先写下哪个 Bayer 通道均值最高、暗部/高光 ROI 可能在哪里、是否存在 clipping |
+| 最小实验 | 只分析 T01；全量 T01–T14 结果作为附录查证 |
+| 验收 | 输出一份 JSON、两张 ROI/直方图，并写一条“现有数据不能确认”的判断 |
+
+从 `stage1_soft_isp/` 运行，输出写入未跟踪的教程目录：
+
+```powershell
+python scripts/01_inspect_raw.py data/raw/T01_a0006-IMG_2787.dng
+python scripts/05_analyze_raw_roi.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week1 `
+  --report outputs/tutorial/week1/roi_analysis.md
+```
+
+随后完成[陌生 DNG 输入合同](../../exercises/week1_raw_contract.md)，再阅读本报告中的现成结论。规范和 API 来源见[参考文献](../references.md#week-1rawdng-与数据集)。
+
 Week1 的核心目标不是做图像增强，而是建立 RAW 数据直觉：知道一张 DNG 里有哪些 metadata，Bayer RAW 为什么是单通道，四个 Bayer 通道为什么统计值不同，以及 histogram / ROI 能告诉我们什么。
 
 ## 本周 Pipeline 位置
@@ -94,7 +115,7 @@ Gr 和 Gb 理论上应比较接近。如果 Gr/Gb 差异明显，可能要检查
 
 T01-T14 来自不同相机和不同场景。不同 sensor 的 black level、white level、ISO、CFA 响应和 ADC 位深可能不同，所以四通道均值不能简单横向比较。
 
-建议后续在 `raw_statistics.md` 增加一张 sensor 对比表：
+下面是需要额外 EXIF/设备审计才能完成的学习者模板，不属于当前实测结论。未知字段必须保留 unknown，不能从文件名或画面猜测：
 
 | 样张 | 相机/机型 | ISO | black level | white level | Bayer pattern | 分析备注 |
 |---|---|---:|---:|---:|---|---|

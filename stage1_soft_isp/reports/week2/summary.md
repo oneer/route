@@ -1,5 +1,27 @@
 ﻿# Week 2 学习总结：BLC / DPC
 
+## 本周学习闭环
+
+| 项目 | 要求 |
+|---|---|
+| 目标 | 解释 BLC、DPC、学习版 LSC 的物理来源、处理顺序、参数方向和失败传播 |
+| 前置 | 能从 Week 1 metadata 得到 Bayer pattern、逐通道 black level 和 white level |
+| 运行前预测 | 预测 black level 过扣/欠扣、DPC 阈值变大、LSC edge gain 变大分别会发生什么 |
+| 最小实验 | 对 T01 生成 BLC histogram 和 DPC mask/crop；再用合成坏点评价 recall/误检 |
+| 验收 | BLC 不发生无符号下溢；注入坏点 recall 可计算；能指出强边缘误检风险 |
+
+```powershell
+python scripts/06_apply_blc.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week2/blc `
+  --report outputs/tutorial/week2/blc_report.md
+python scripts/07_apply_dpc.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week2/dpc `
+  --report outputs/tutorial/week2/dpc_report.md
+python exercises/week2_dpc_injection.py
+```
+
+练习脚本故意保留 `NotImplementedError`，应先独立补全。仓库已有实测扫描见[RAW 质量审计的 DPC 参数扫描](../feasible_raw_quality_audit.md#dpc-参数扫描)，不要把下面的练习模板误认为实测结论。
+
 Week2 的目标是做 RAW 前端校正。前端校正发生在 Demosaic 之前，仍然工作在单通道 Bayer RAW 上。本周已经完成 BLC、DPC 和一个学习用径向 LSC baseline。LSC 不是产品标定版，但已经把镜头阴影校正放回了正确的数据域和 pipeline 位置。
 
 ## 本周 Pipeline 位置
@@ -117,7 +139,7 @@ BLC 不是孤立模块。black level 扣多或扣少，会影响后面的 DPC、
   -> 统计找回多少注入点，以及误检多少正常点
 ```
 
-参数扫描表：
+参数扫描练习模板（由学习者填写；当前仓库实测采用 `min_delta × mad_k` 更完整网格）：
 
 | `mad_k` | 检测点数 | 注入点召回率 | 误检风险 | 结论 |
 |---:|---:|---:|---|---|

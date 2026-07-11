@@ -11,6 +11,8 @@ Stage 1 builds practical understanding of RAW data, traditional ISP modules, ver
 3. [Learning route](materials/stage1_start_here.md)
 4. [Exercises](exercises/README.md)
 5. [Debugging guide](materials/debugging_guide.md)
+6. [Report navigation](reports/README.md)
+7. [References](reports/references.md)
 
 ## Verified Quick Start
 
@@ -51,7 +53,7 @@ Important boundaries:
 
 - `soft_isp/`: small algorithm implementations and the unified pipeline.
 - `scripts/`: historical per-module experiments plus `17_run_pipeline.py`.
-- `tests/`: synthetic unit tests.
+- `tests/`: 30 synthetic unit tests, including LSC gain/clip, orientation/ROI transforms, and IQ proxy sanity checks.
 - `exercises/`: answer-free tasks, debugging challenges, and final project.
 - `materials/`: prerequisites, setup, debugging, resources, and study templates.
 - `reports/`: completed experiment archive; consult it after attempting exercises.

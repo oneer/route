@@ -1,5 +1,27 @@
 ﻿# Week 3 学习总结：Demosaic / AWB
 
+## 本周学习闭环
+
+| 项目 | 要求 |
+|---|---|
+| 目标 | 从 Bayer 恢复 RGB，并能分别诊断插值伪影和 AWB 场景假设失败 |
+| 前置 | 确认 Bayer pattern、black level 和 DPC/LSC 输出仍在线性 RAW 域 |
+| 运行前预测 | 指出真实采样值应该保留在哪里；预测大面积绿色、蓝天或混合光对 Gray World 的影响 |
+| 最小实验 | 独立补全 8×8 bilinear；对 T01 做 Demosaic，对 T07 做 AWB 失败分析 |
+| 验收 | 常量 Bayer 输出常量 RGB；采样值不被覆盖；至少固定一个 edge/texture crop |
+
+```powershell
+python exercises/week3_demosaic_todo.py
+python scripts/08_apply_demosaic.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week3/demosaic `
+  --report outputs/tutorial/week3/demosaic_report.md
+python scripts/09_apply_awb.py data/raw/T07_a0020-jmac_MG_6225.dng `
+  --out-dir outputs/tutorial/week3/awb `
+  --report outputs/tutorial/week3/awb_report.md
+```
+
+先记录结构、假彩、拉链和 gain 预测，再查看参考结果。Malvar 与 OpenCV baseline 的来源见[参考文献](../references.md#week-3demosaic-与-awb)。
+
 Week3 的目标是把前面已经校正过的 Bayer RAW，推进到“第一版可观看 RGB”的阶段。本周不追求最终颜色完全准确，而是建立两个核心直觉：
 
 1. Demosaic 解决的是“每个像素缺两个颜色”的问题。

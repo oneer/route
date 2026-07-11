@@ -1,5 +1,23 @@
 # Week 5 IQA / 消融实验报告
 
+## 本周学习闭环
+
+| 项目 | 要求 |
+|---|---|
+| 目标 | 用全图指标、局部 ROI 和主观标签回答不同问题，不把“更像 rawpy”写成“颜色更准确” |
+| 前置 | 能解释 PSNR、SSIM、MAD 的输入域和 full-reference 前提 |
+| 运行前预测 | 先预测关闭 LSC/DPC/AWB/CCM/Tone 后，哪些指标和局部区域最敏感 |
+| 最小实验 | 先跑 T01 单样张消融，再挑一个 AWB 失败场景，不直接从 14 张平均值下结论 |
+| 验收 | 每个结论同时写“支持什么”和“没有证明什么”；至少分析一个指标与观感冲突 |
+
+```powershell
+python scripts/15_evaluate_pipeline.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week5 `
+  --report outputs/tutorial/week5/iqa_ablation_report.md
+```
+
+SSIM 原始论文和本项目实际调用的 API 见[参考文献](../references.md#week-56图像质量评价)。
+
 ## 1. 评价目标
 
 Week5 的目标不是证明学习版 pipeline 超过 rawpy，而是把“看起来差不多”变成可量化、可复盘的差异。前面 Week1-4 已经把 Soft-ISP 主链路跑通：
@@ -328,7 +346,7 @@ Week5 已经证明全图 PSNR/SSIM/MAD 可以帮助观察趋势，但它们对 I
 | sky | AWB、banding、色偏 |
 | edge | zipper、halo、锐化副作用 |
 
-每个 ROI 建议记录：
+每个 ROI 建议记录。下表是学习者练习模板，不是当前实测结果；现有自动 ROI 结果见 Week 6 报告：
 
 | ROI | PSNR | SSIM | MAD | DeltaE | 主观标签 | 备注 |
 |---|---:|---:|---:|---:|---|---|

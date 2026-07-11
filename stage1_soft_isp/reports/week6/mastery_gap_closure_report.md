@@ -1,5 +1,27 @@
 # Week 6 阶段毕业实验：综合验收与故障诊断
 
+## 本周学习闭环
+
+| 项目 | 要求 |
+|---|---|
+| 目标 | 把模块对比、局部诊断、证据边界和独立实现组织成一次阶段毕业验收 |
+| 前置 | Week 1–5 的预测、练习和单元测试已完成；不是第一次阅读现成答案 |
+| 运行前预测 | 为 DPC、Demosaic、AWB、CCM、Tone 各写一个最可能失败的场景和检查方法 |
+| 最小实验 | 先对 T01/T08/T13 运行补强实验，再在新目录完成独立毕业任务 |
+| 验收 | 30 项仓库测试通过；独立实现至少 6 项测试；有参数实验、失败案例和 Git 迭代 |
+
+```powershell
+python -m unittest discover -s tests -v
+python scripts/16_close_mastery_gaps.py `
+  data/raw/T01_a0006-IMG_2787.dng `
+  data/raw/T08_a0022-IMG_2380.dng `
+  data/raw/T13_a0035-dgw_048.dng `
+  --out-dir outputs/tutorial/week6 `
+  --report outputs/tutorial/week6/mastery_gap_closure_report.md
+```
+
+最后完成[独立毕业任务](../../exercises/final_project.md)。本报告是参考验收结果，不替代学习者自己的实现和失败记录。
+
 本报告把 `module_mastery_matrix.md` 中标记为“缺实验”的能力点集中补齐。它不替代 Week1-5 的主报告，而是作为补充验证层：每个缺口都对应一个可运行实验、一个结果表或一组可视化。
 
 为了让 DPC、多个 demosaic、DeltaE 和 ROI 指标能在 14 张样张上快速复现，本报告默认使用保持 Bayer 对齐的中心 RAW crop 进行实验。它用于学习和对比模块行为，不替代全分辨率产品评价。
@@ -343,7 +365,7 @@ Week6 的 DeltaE 是相对 rawpy reference 的学习版评价。它有价值，�
 
 产品级 ISP 还关心运行时间和内存。
 
-建议后续增加 per-module benchmark：
+建议后续增加 per-module benchmark。下表是尚未实测的计划模板，不属于当前完成证据：
 
 | 模块 | 运行时间 ms | 内存 MB | 是否易并行 | 备注 |
 |---|---:|---:|---|---|

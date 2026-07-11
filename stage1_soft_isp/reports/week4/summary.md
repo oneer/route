@@ -1,5 +1,29 @@
 # Week 4 总结：CCM / Gamma / Tone Mapping
 
+## 本周学习闭环
+
+| 项目 | 要求 |
+|---|---|
+| 目标 | 区分线性颜色校正、动态范围压缩和显示编码，并解释不可逆 clip 的位置 |
+| 前置 | 理解 AWB 后仍是线性 RGB；会手算一个 RGB 向量与 3×3 矩阵 |
+| 运行前预测 | 预测 `rgb @ ccm` 与 `rgb @ ccm.T` 的差异；画出 power gamma、sRGB OETF 和 Reinhard 趋势 |
+| 最小实验 | 对 T01 分别生成 CCM、Gamma、Tone 对比，不用全量 14 张起步 |
+| 验收 | 写出每一步的线性状态和值域；能解释 tone 与 gamma 不能互相替代 |
+
+```powershell
+python scripts/10_apply_ccm.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week4/ccm `
+  --report-path outputs/tutorial/week4/ccm_report.md
+python scripts/11_apply_gamma.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week4/gamma `
+  --report-path outputs/tutorial/week4/gamma_report.md
+python scripts/12_apply_tone_mapping.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week4/tone `
+  --report-path outputs/tutorial/week4/tone_report.md
+```
+
+完成[调试挑战](../../exercises/debug_challenges.md)第 4–5 题。CCM、Reinhard 与 sRGB 的来源见[参考文献](../references.md#week-4颜色tone-与显示编码)。
+
 Week4 的目标是把 Week3 的 AWB 后 RGB 继续推向可显示图像。三个模块分开理解：CCM 负责颜色空间/颜色混合，Gamma 负责显示编码，Tone Mapping 负责动态范围压缩。
 
 如果只记一句话：Week3 得到的是“线性相机 RGB”，Week4 开始把它变成“更接近人眼和显示器能正常观看的图像”。
