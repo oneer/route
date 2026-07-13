@@ -1,21 +1,21 @@
 # 阶段二最终项目报告：AI-ISP 图像恢复实验闭环
 
-这份报告用于阶段二收口。Week 10-12 的 held-out test、ONNX 和 C++ 推理验证已经补齐。
+这份报告用于阶段二收口；Week 10-12 工程证据已补齐。
 
-# Week 9：阶段二项目总结、简历和面试表达
+## Week 9：阶段二项目总结、简历和面试表达
 
 Week 9 的目标不是继续堆模型，而是把 Week 0-8 的训练、数据、评估、失败案例和工程化线索整理成一个能复述、能追问、能继续迭代的 AI-ISP restoration 项目。
 
-## 1. 是否需要增加内容
+### 1. 项目交付内容
 
-需要增加。原有 Week 9 已经有 leaderboard 和面试表达，但还缺少更清晰的项目交付包：
+Week 9 将前八周材料整理成以下可复查交付包：
 
 - 简历/面试可直接引用的证据链。
 - 质量指标、参数量、checkpoint 大小的工程视角汇总。
 - failure taxonomy 到下一步实验的闭环表达。
 - 可一键复现 Week 9 项目包的脚本和结果文件。
 
-## 2. 新增运行命令
+### 2. 复现命令
 
 ```bash
 python stage2_ai_isp/scripts/20_export_week9_project_pack.py
@@ -27,7 +27,7 @@ python stage2_ai_isp/scripts/20_export_week9_project_pack.py
 - `stage2_ai_isp/reports/week9_stage2_project_summary.md`
 - `stage2_ai_isp/reports/stage2_final_project_report.md`
 
-## 3. 阶段二 Leaderboard
+### 3. 阶段二 Leaderboard
 
 | Task | Run | Best PSNR | Best SSIM | Best Step |
 | --- | --- | --- | --- | --- |
@@ -36,12 +36,9 @@ python stage2_ai_isp/scripts/20_export_week9_project_pack.py
 | week4_sidd_tiny_standard_eval | paired_rgb_sidd_tiny_nafnet_lite_l1_1000 | 33.3269 | 0.86223 | 1000 |
 | week7_low_light_eval | low_light_sidd_tiny_unet_l1_300 | 24.7821 | 0.81468 | 300 |
 
-在这张三模型历史表中，`paired_rgb_sidd_tiny_dncnn_l2_2000` 的 validation
-PSNR 最高，为 35.5356 dB。DnCNN L1 消融曾记录 35.6334 dB，但它不在这张三模型表内；
-现有架构结果的 loss、steps 和 batch 也未完全统一，因此不能据此宣称普遍模型排名。
-当前新版协议下的 held-out test 只冻结评估了 DnCNN L2。
+在这张历史表收录的 SIDD tiny denoise 条目中，`paired_rgb_sidd_tiny_dncnn_l2_2000` 的 validation PSNR 最高，为 35.5356 dB。DnCNN L1 消融另有 35.6334 dB 的记录，但它不在这张表内；现有结果的 loss、steps 和 batch 并未完全统一，因此不能据此宣称普遍模型排名。当前新版协议下的 held-out test 只冻结评估了 DnCNN L2。
 
-## 4. 工程视角汇总
+### 4. 工程视角汇总
 
 | Run | Model | Ch | Params | Ckpt MB | PSNR | SSIM |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -52,28 +49,25 @@ PSNR 最高，为 35.5356 dB。DnCNN L1 消融曾记录 35.6334 dB，但它不�
 
 这张表用于回答社招面试里常见的工程追问：模型有多大、checkpoint 多大、RGB/RAW-like 输入通道怎么变化、后续是否能部署到 ONNX/C++。
 
-## 5. Failure Taxonomy 到下一步实验
+### 5. Failure Taxonomy 到下一步实验
 
 | Run | Failure Type | Next Step |
 | --- | --- | --- |
-| paired_rgb_sidd_tiny_dncnn_l2_2000 | baseline smoothing / residual local error | Compare against DnCNN L1 and crop-level visual details rather than relying only on PSNR. |
-| paired_rgb_sidd_tiny_dncnn_l1_2000 | strong baseline / residual local error | Use it as the current baseline; inspect error map before deciding whether Charbonnier or more data is worthwhile. |
-| paired_rgb_sidd_tiny_dncnn_l2_patch64_2000 | context-limited denoise | Use patch64 for quick ablation, but keep patch128 for final-quality runs. |
-| paired_rgb_sidd_tiny_unet_l1_1000 | local texture or color residual | Inspect texture/edge crops; compare residual-output UNet or add local/color-aware analysis. |
-| paired_rgb_sidd_tiny_nafnet_lite_l1_1000 | under-trained modern block / residual noise | Extend NAFNet-lite to 2000 steps or test Charbonnier loss before judging the architecture. |
+| paired_rgb_sidd_tiny_dncnn_l2_2000 | moderate local error | Inspect the ROI and label it as flat/edge/texture/dark/color/alignment before proposing a fix. |
+| paired_rgb_sidd_tiny_dncnn_l1_2000 | moderate local error | Inspect the ROI and label it as flat/edge/texture/dark/color/alignment before proposing a fix. |
+| paired_rgb_sidd_tiny_dncnn_l2_patch64_2000 | moderate local error | Inspect the ROI and label it as flat/edge/texture/dark/color/alignment before proposing a fix. |
+| paired_rgb_sidd_tiny_unet_l1_1000 | high local error | Inspect the exact ROI and full-image error map, assign a human failure label, then design one controlled experiment. |
+| paired_rgb_sidd_tiny_nafnet_lite_l1_1000 | moderate local error | Inspect the ROI and label it as flat/edge/texture/dark/color/alignment before proposing a fix. |
 | low_light_sidd_tiny_unet_l1_300 | dark-region enhancement / over-smoothing | Add exposure/noise-specific IQ metrics, inspect dark ROI, and compare brightness/color statistics before changing model size. |
 
 Week 8 的价值在 Week 9 里要表达成“诊断能力”：看到局部失败后，能判断是数据、loss、模型容量、训练步数还是任务定义的问题。
 
-## 6. 简历表述
+### 6. 简历表述
 
 简洁版：
 
 ```text
-基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、
-synthetic low-light enhancement、NAFNet-lite 复现、held-out test、error map 和
-failure crop 诊断；DnCNN 在 20 张 held-out test crop 上达到 37.00 dB / 0.9111，
-并完成 ONNX Runtime Python/C++ CPU 输出对齐和 latency 验证。
+基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、synthetic low-light enhancement、NAFNet-lite 复现、held-out test、error map 和 failure crop 诊断；DnCNN 在 20 张 held-out test pairs 上达到 37.00 dB / 0.9111，并完成 ONNX Runtime Python/C++ CPU 输出对齐和 latency 验证。
 ```
 
 详细版：
@@ -82,7 +76,7 @@ failure crop 诊断；DnCNN 在 20 张 held-out test crop 上达到 37.00 dB / 0
 构建 AI-ISP Stage2 图像恢复项目：从 toy RGB denoise sanity check 出发，整理 SIDD Small sRGB paired train/val 数据，建立 noisy input baseline，对比 DnCNN residual、UNet、NAFNet-lite，并扩展 pseudo RAW/RGGB bridge 和 synthetic low-light enhancement。项目包含训练脚本、评估脚本、leaderboard、triplet/error map/failure crop 可视化、failure taxonomy、工程化参数汇总和面试复述材料，可解释 residual denoise、PSNR/SSIM 差异、RAW pack 输入差异和现代 restoration block 在小数据下的训练不足问题。
 ```
 
-## 7. 面试讲述框架
+### 7. 面试讲述框架
 
 1. 先用 toy RGB denoise 跑通 Dataset -> Model -> Loss -> Metric -> Checkpoint -> Visualization。
 2. 再接入 SIDD paired RGB，先测 noisy input baseline，保证模型收益不是凭空判断。
@@ -91,7 +85,7 @@ failure crop 诊断；DnCNN 在 20 张 held-out test crop 上达到 37.00 dB / 0
 5. 用 pseudo RAW/RGGB 和 low-light enhancement 把 RGB restoration 连接到 AI-ISP 场景。
 6. 最后把 failure case 分类，决定下一步是扩数据、改 loss、改模型、加训练步数还是做部署验证。
 
-## 8. 高频追问
+### 8. 高频追问
 
 **Q1：为什么 DnCNN 比更复杂的结构还强？**
 
@@ -109,13 +103,11 @@ failure crop 诊断；DnCNN 在 20 张 held-out test crop 上达到 37.00 dB / 0
 
 不能证明真实量产 ISP tuning、AE/AWB/AF 联调、平台级 ISP 调试经验或 Imatest/iQ-Analyzer 实操经验；它证明的是 AI-ISP 图像恢复方向的实验闭环、评估诊断和工程化准备能力。
 
-## 9. Week 10-12 工程证据
+### 9. Week 10-12 工程证据
 
-详见 `reports/week12_onnx_cpp_deployment.md` 和
-`reports/deployment_evidence.json`。当前证据支持 ONNX Runtime CPU smoke test，
-不支持宣称端侧量产部署、TensorRT 优化或 OpenCV DNN 已验证。
+Week 10 已补 held-out test 和工程汇总；Week 11 已完成 ONNX 对齐；Week 12 已完成 C++ ONNX Runtime CPU 输出对齐与重复 latency。
 
-## 10. 自检问题
+### 10. 自检问题
 
 1. noisy、clean、output、loss、metric 的关系是什么？
 2. 为什么 paired 数据必须像素对齐？

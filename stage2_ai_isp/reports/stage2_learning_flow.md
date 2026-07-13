@@ -2,7 +2,8 @@
 
 阶段二的目标不是一上来追大模型或真实手机数据，而是先用一个小型 RGB 去噪任务，把深度学习图像恢复的训练闭环跑稳，再逐步接近真实相机数据。
 
-整理后，报告按自然学习顺序分成十周：
+整理后，正式学习路线为 Week 0-12；Quickstart 在 Week 0 前验证环境，Capstone 在
+Week 12 后验证个人独立实现能力：
 
 | 周次 | 主题 | 你要学会什么 | 报告 |
 |---|---|---|---|
@@ -16,6 +17,9 @@
 | Week 7 | Low-light RGB enhancement | 从去噪扩展到低光增亮、去噪、颜色恢复 | `week7_low_light_rgb_enhancement.md` |
 | Week 8 | Failure case analysis | 用局部 crop、error map 分析模型失败区域 | `week8_failure_case_analysis.md` |
 | Week 9 | Stage2 project summary | 整理项目成果、简历表达和面试复述 | `week9_stage2_project_summary.md` |
+| Week 10 | Engineering Summary | 汇总质量和模型成本，冻结设计并执行 held-out test | `week10_engineering_summary.md` |
+| Week 11 | ONNX Export | 导出冻结模型，完成 checker 和 PyTorch/ORT 对齐 | `week11_onnx_export.md` |
+| Week 12 | C++ Validation | 完成 C++ ORT float 对齐和多次 latency | `week12_onnx_cpp_deployment.md` |
 
 ## 总路线
 
@@ -30,11 +34,16 @@ Week 0: 看懂训练为什么能让模型变好
   -> Week 7: 做 synthetic low-light RGB enhancement 小实验
   -> Week 8: 放大局部 crop，分析 failure case
   -> Week 9: 整理阶段二项目、简历和面试表达
+  -> Week 10: 冻结设计，汇总质量、参数量、checkpoint 和 held-out test
+  -> Week 11: 导出 ONNX，完成 checker 和 Python ORT 数值对齐
+  -> Week 12: 完成 C++ ORT 数值对齐和 latency 验收
+  -> Capstone: 从空目录独立重建最小项目
 ```
 
 ![阶段二整体路线图](figures/stage2_overall_learning_flow.png)
 
-> 图说明：这张图是阶段二前半段学习地图。现在 Week6-9 已经继续补齐：从 RGB 去噪走向 pseudo RAW/ISP、低光增强、failure case 和项目总结。
+> 图说明：这张图展示 Week 0-9 的算法学习主线；Week 10-12 在此基础上完成冻结设计、
+> ONNX 和 C++ 部署验证，文字路线以本页表格为准。
 
 ## 现在学到哪
 
@@ -60,6 +69,9 @@ Week 0: 看懂训练为什么能让模型变好
 - Week 7 synthetic low-light enhancement：UNet 从 14.8932 PSNR baseline 提升到 24.7821 PSNR。
 - Week 8 failure case crop 分析。
 - Week 9 阶段二 leaderboard、简历表达和面试题库。
+- Week 10 engineering summary、冻结设计和 held-out test。
+- Week 11 ONNX checker、PyTorch/ONNX Runtime Python 数值对齐。
+- Week 12 ONNX Runtime C++ 数值对齐和重复 latency。
 
 也就是说，现在已经不是“刚开始学概念”，而是走到：
 
@@ -67,7 +79,8 @@ Week 0: 看懂训练为什么能让模型变好
 toy RGB 去噪已经跑通，真实 paired RGB 数据入口已经建立，
 真实 SIDD Tiny 标准版模型对比已经完成，
 pseudo RAW / low-light / failure case / project summary 也已经形成闭环。
-下一步可以进入更真实的 RAW/SID 或扩大数据规模。
+冻结设计、held-out test、ONNX 和 C++ ORT 验证也已完成。
+学习者下一步应先完成独立 Capstone，再进入真实 RAW/SID 或扩大数据规模。
 ```
 
 ## 推荐学习方式
@@ -86,11 +99,17 @@ pseudo RAW / low-light / failure case / project summary 也已经形成闭环。
 8. `week7_low_light_rgb_enhancement.md`
 9. `week8_failure_case_analysis.md`
 10. `week9_stage2_project_summary.md`
+11. `week10_engineering_summary.md`
+12. `week11_onnx_export.md`
+13. `week12_onnx_cpp_deployment.md`，同时使用 `../deployment/README.md`
+14. `../exercises/06_capstone_spec.md`
 
-每读完一周，只问自己三个问题：
+每读完一周，至少回答五个问题：
 
 - 我能不能说清楚这周的输入和输出？
 - 我能不能跑出这周对应的命令？
 - 我能不能解释指标和可视化为什么变成这样？
+- 我能不能说出这个结果证明什么、不证明什么？
+- 我能不能独立完成本周练习，而不是复制正式实现？
 
 如果能，就继续下一周；如果不能，就回到对应小节补。

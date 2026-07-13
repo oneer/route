@@ -4,6 +4,17 @@ Week 1 的目标是跑通一个完整但小型的 RGB 去噪任务。
 
 它原来被拆成很多 `week1a/week1b/...` 小报告，现在统一整理成一条学习路线。
 
+## 阅读导航
+
+本章较长，不要求第一遍逐字背诵：
+
+- 第一遍必读：第1～4、8～12、15～17节，跑通最小闭环并完成通过标准；
+- 第二遍深入：第3.1～3.7和第4.1，跟踪卷积 shape、padding、ReLU 和 residual；
+- 实验复盘：第13～14节，用结果表和图像解释单变量对比；
+- 遇到问题再查：具体命令、历史数值和详细参考回答。
+
+第一遍的完成标志是“能独立解释并跑通”，不是“逐字背完两千多行”。
+
 ## 0. 本次补充：Week1 核心实验总表
 
 对照阶段二学习路线，Week1 原有内容已经覆盖 toy RGB denoise 的主体学习目标：TinyCNN probe、DnCNN residual、direct clean、L1/L2、patch size、shot/read noise 和 paired RGB smoke。

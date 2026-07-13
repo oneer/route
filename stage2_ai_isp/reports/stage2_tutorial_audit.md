@@ -22,7 +22,7 @@ RAW-like/synthetic/smoke test 写成真实 RAW、真实低光和量产部署。
 | 类型 | 文件 | 职责 |
 |---|---|---|
 | 唯一入口 | `stage2_start_here.md` | 学习顺序、纪律、完成标准 |
-| 教程主线 | `reports/week0_*.md`～`week12_*.md` | 原理、shape、代码、实验和练习 |
+| 教程主线 | `reports/week0_foundation.md`～`week12_onnx_cpp_deployment.md` | 原理、shape、代码、实验和练习 |
 | 事实协议 | `evaluation_protocol.md`、`experiment_fairness_protocol.md` | split、指标和公平比较口径 |
 | 自动证据 | `metrics.csv`、评估 CSV/JSON、图像 | 保存脚本实际输出，不承担教学叙事 |
 | 总结 | `stage2_final_project_report.md`、`stage2_engineering_summary.md` | 跨周结论和工程边界 |
@@ -40,7 +40,7 @@ RAW-like/synthetic/smoke test 写成真实 RAW、真实低光和量产部署。
 | synthetic low-light 链路可训练 | low-light config/script | UNet 300-step run | Week 7 CSV | triplet、diagnostics | 合成退化，不是真实采集 |
 | failure ROI 可自动定位 | crop/taxonomy scripts | 读取已有 vis | crop/taxonomy CSV | crop sheet | 原因必须人工验证 |
 | ONNX/Python/C++ ORT 数值对齐 | export/validate/C++ runner | DnCNN checkpoint | `deployment_evidence.json` | float tensor comparison | CPU smoke test，不是量产部署 |
-| 单元测试通过 | `tests/` | 不适用 | unittest 输出 | 12 tests | 不替代大规模训练复现 |
+| 单元测试通过 | `tests/` | 不适用 | unittest 输出 | 当前基线 16 tests | 测试数可增加；不替代大规模训练复现 |
 
 ## 4. 不能混用的结果
 

@@ -1,5 +1,5 @@
 module,artifact,result,interview_value,next_action
 真实 paired RGB 去噪,week4_sidd_tiny_standard_eval + Week 9 leaderboard,paired_rgb_sidd_tiny_dncnn_l2_2000 reaches 35.5356 dB PSNR / 0.88367 SSIM,能解释为什么 residual DnCNN 是小数据 paired denoise 的强基线。,继续用它作为后续 loss、数据和部署实验的 reference baseline。
-工程可部署性,stage2_engineering_summary.csv,"DnCNN params=29507, checkpoint=0.351 MB; ONNX/C++ alignment completed",能把质量指标、参数量、模型大小、输出误差和 latency 一起讨论。,保持 held-out test 和 ONNX/C++ 证据可复现。
-低光增强扩展,week7_low_light_eval,low_light_sidd_tiny_unet_l1_300 reaches 24.7821 dB PSNR / 0.81468 SSIM,能说明 low-light enhancement 同时涉及亮度、颜色和噪声恢复。,补暗区 ROI、亮度统计和色偏分析。
-失败案例诊断,week8_failure_taxonomy.csv,6 failure types summarized,能把 crop/error map 转成 failure taxonomy 和下一步实验。,后续可做 error-map 自动挖掘高误差 ROI。
+工程可部署性,stage2_engineering_summary.csv,"DnCNN params=29507, checkpoint=0.351 MB; ONNX/C++ alignment completed",能把质量指标、参数量、模型大小、输出误差和 latency 一起讨论。,保持 held-out test 和 ONNX/C++ 对齐证据可复现。
+低光增强扩展,week7_low_light_eval,low_light_sidd_tiny_unet_l1_300 reaches 24.7821 dB PSNR / 0.81468 SSIM,能说明 low-light enhancement 同时涉及亮度、颜色和噪声恢复。,在多组曝光/噪声参数和真实采集数据上验证泛化。
+失败案例诊断,week8_failure_taxonomy.csv,6 failure types summarized,能把 crop/error map 转成 failure taxonomy 和下一步实验。,人工标注代表性 ROI，并用单变量对照实验验证推断原因。

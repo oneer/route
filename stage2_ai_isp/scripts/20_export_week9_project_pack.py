@@ -104,11 +104,12 @@ def write_evidence_csv(
             "module": "工程可部署性",
             "artifact": "stage2_engineering_summary.csv",
             "result": (
-                f"DnCNN params={dncnn_engineering['params']}, checkpoint={dncnn_engineering['checkpoint_mb']} MB"
+                f"DnCNN params={dncnn_engineering['params']}, checkpoint={dncnn_engineering['checkpoint_mb']} MB; "
+                "ONNX/C++ alignment completed"
                 if dncnn_engineering
                 else "missing"
             ),
-            "interview_value": "能把质量指标和参数量、checkpoint 大小一起讨论，而不是只报 PSNR。",
+            "interview_value": "能把质量指标、参数量、模型大小、输出误差和 latency 一起讨论。",
             "next_action": "保持 held-out test 和 ONNX/C++ 对齐证据可复现。",
         },
         {
@@ -121,14 +122,14 @@ def write_evidence_csv(
                 else "missing"
             ),
             "interview_value": "能说明 low-light enhancement 同时涉及亮度、颜色和噪声恢复。",
-            "next_action": "补暗区 ROI、亮度统计和色偏分析。",
+            "next_action": "在多组曝光/噪声参数和真实采集数据上验证泛化。",
         },
         {
             "module": "失败案例诊断",
             "artifact": "week8_failure_taxonomy.csv",
             "result": f"{len(failure_rows)} failure types summarized",
             "interview_value": "能把 crop/error map 转成 failure taxonomy 和下一步实验。",
-            "next_action": "后续可做 error-map 自动挖掘高误差 ROI。",
+            "next_action": "人工标注代表性 ROI，并用单变量对照实验验证推断原因。",
         },
     ]
 
@@ -210,8 +211,11 @@ def build_week9_report(
     )
 
     best_text = (
-        f"当前 SIDD tiny denoise 最强结果是 `{best['run']}`，PSNR "
-        f"{fmt_float(best['best_psnr'])} dB，SSIM {fmt_float(best['best_ssim'], 5)}。"
+        f"在这张历史表收录的 SIDD tiny denoise 条目中，`{best['run']}` 的 validation "
+        f"PSNR 最高，为 {fmt_float(best['best_psnr'])} dB。DnCNN L1 消融另有 "
+        "35.6334 dB 的记录，但它不在这张表内；现有结果的 loss、steps 和 batch "
+        "并未完全统一，因此不能据此宣称普遍模型排名。当前新版协议下的 held-out test "
+        "只冻结评估了 DnCNN L2。"
         if best
         else "当前 leaderboard 缺少 SIDD tiny denoise 结果。"
     )
@@ -221,16 +225,16 @@ def build_week9_report(
         "",
         "Week 9 的目标不是继续堆模型，而是把 Week 0-8 的训练、数据、评估、失败案例和工程化线索整理成一个能复述、能追问、能继续迭代的 AI-ISP restoration 项目。",
         "",
-        "## 1. 是否需要增加内容",
+        "## 1. 项目交付内容",
         "",
-        "需要增加。原有 Week 9 已经有 leaderboard 和面试表达，但还缺少更清晰的项目交付包：",
+        "Week 9 将前八周材料整理成以下可复查交付包：",
         "",
         "- 简历/面试可直接引用的证据链。",
         "- 质量指标、参数量、checkpoint 大小的工程视角汇总。",
         "- failure taxonomy 到下一步实验的闭环表达。",
         "- 可一键复现 Week 9 项目包的脚本和结果文件。",
         "",
-        "## 2. 新增运行命令",
+        "## 2. 复现命令",
         "",
         "```bash",
         "python stage2_ai_isp/scripts/20_export_week9_project_pack.py",
@@ -265,7 +269,7 @@ def build_week9_report(
         "简洁版：",
         "",
         "```text",
-        "基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、synthetic low-light enhancement、NAFNet-lite 复现、PSNR/SSIM 评估、error map 和 failure crop 诊断；在 SIDD tiny 上 DnCNN residual baseline 达到 35.54 dB PSNR / 0.8837 SSIM，并整理参数量、checkpoint 大小和后续 ONNX/C++ 部署路径。",
+        "基于 PyTorch 搭建 AI-ISP 图像恢复实验闭环，完成 SIDD paired RGB 去噪、synthetic low-light enhancement、NAFNet-lite 复现、held-out test、error map 和 failure crop 诊断；DnCNN 在 20 张 held-out test pairs 上达到 37.00 dB / 0.9111，并完成 ONNX Runtime Python/C++ CPU 输出对齐和 latency 验证。",
         "```",
         "",
         "详细版：",
@@ -329,6 +333,10 @@ def build_final_report(report: str) -> str:
     sections = report.split("## 6. 简历表述")
     body = sections[0].rstrip()
     resume_part = "## 6. 简历表述" + sections[1] if len(sections) > 1 else ""
+    body = "\n".join("#" + line if line.startswith("#") else line for line in body.splitlines())
+    resume_part = "\n".join(
+        "#" + line if line.startswith("#") else line for line in resume_part.splitlines()
+    )
     return "\n".join(
         [
             "# 阶段二最终项目报告：AI-ISP 图像恢复实验闭环",
@@ -339,7 +347,7 @@ def build_final_report(report: str) -> str:
             "",
             resume_part,
         ]
-    )
+    ).rstrip() + "\n"
 
 
 def main() -> None:

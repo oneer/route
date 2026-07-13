@@ -4,6 +4,10 @@ This folder turns the Stage 2 PyTorch restoration baseline into a verifiable
 deployment experiment. Source code alone is not completion evidence: ONNX,
 alignment JSON, C++ output, and latency logs must all exist.
 
+学习顺序先读 `reports/week11_onnx_export.md` 和
+`reports/week12_onnx_cpp_deployment.md`；本文件是配套命令手册。下面的反斜杠续行是 Bash
+写法；Windows PowerShell 请改用反引号，或把参数写成一行。所有命令从仓库根目录运行。
+
 ## Export ONNX
 
 ```bash
@@ -52,7 +56,7 @@ python stage2_ai_isp/deployment/prepare_cpp_tensor.py \
 
 cmake -S stage2_ai_isp/deployment/cpp_ort_infer \
   -B stage2_ai_isp/deployment/cpp_ort_infer/build \
-  -DONNXRUNTIME_ROOT=D:/Env/onnxruntime/cpu/onnxruntime-win-x64-1.26.0
+  -DONNXRUNTIME_ROOT=path/to/onnxruntime-sdk
 
 cmake --build stage2_ai_isp/deployment/cpp_ort_infer/build --config Release
 
@@ -72,7 +76,9 @@ python stage2_ai_isp/deployment/compare_cpp_tensor.py \
 
 On the current Windows workspace, `cpp_ort_infer/build_msvc.bat` initializes the
 documented Visual Studio Build Tools and ONNX Runtime SDK paths before running
-CMake/Ninja. Update those explicit paths if the toolchain moves.
+CMake/Ninja. Those are machine-local example paths, not portable defaults. A new learner must set
+`ONNXRUNTIME_ROOT` to an SDK root containing `include/` and `lib/`, then record the compiler, CMake
+and ONNX Runtime versions used.
 
 ## C++ OpenCV DNN Smoke Test
 

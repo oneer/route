@@ -70,6 +70,13 @@ y_linear = clip(x_dark + Normal(0, sqrt(variance)), 0, 1)
 y_srgb   = oetf(y_linear)
 ```
 
+变量含义：`x_srgb` 是 GT sRGB，`x_linear` 是近似逆 OETF 后的线性值，`exposure`
+控制欠曝比例，`shot_noise * x_dark` 是随信号变化的方差项，`read_noise` 是简化的读出
+噪声方差底，`Normal(0, sqrt(variance))` 采样零均值噪声。所有张量最终裁剪到 `[0,1]`。
+
+例如忽略噪声和 OETF 时，线性像素 `0.5` 乘 `exposure=0.28` 后变成 `0.14`。这个例子
+只说明曝光缩放，不代表真实相机曝光、黑电平、增益和色彩处理全过程。
+
 本次参数固定为 `exposure=0.28`、`shot_noise=0.025`、
 `read_noise=0.015`、`seed=123`。固定 seed 便于复现，但单一退化参数不能代表真实相机、
 不同 ISO、曝光时间、黑电平、色温和 ISP 的分布。

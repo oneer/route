@@ -20,6 +20,7 @@
 
 ## 必须遵循的学习顺序
 
+0. `quickstart.md`：先验证环境、测试和最小 smoke。
 1. `reports/week0_foundation.md`
 2. `reports/week1_toy_rgb_denoise.md`
 3. `exercises/01_foundation_questions.md`
@@ -34,10 +35,28 @@
 12. `reports/week7_low_light_rgb_enhancement.md`
 13. `reports/week8_failure_case_analysis.md`
 14. `exercises/05_debug_broken_training.md`
-15. `exercises/06_capstone_spec.md`
-16. `deployment/README.md`
+15. `reports/week9_stage2_project_summary.md`
+16. `reports/week10_engineering_summary.md`
+17. `reports/week11_onnx_export.md`
+18. `reports/week12_onnx_cpp_deployment.md`，操作手册配合 `deployment/README.md`。
+19. `exercises/06_capstone_spec.md`
+20. `reports/stage2_final_project_report.md`
 
-`study-roadmap/阶段2-AI-ISP图像恢复学习路线.md` 中的 Week 0-12 是正式路线。
+Capstone 放在 Week 12 之后，因为它要求学习者独立完成 ONNX 导出与输出对齐。没有完成
+Week 10-12 时，不应跳过部署知识直接做结项。
+
+## 学习优先级
+
+| 优先级 | 内容 | 要求 |
+|---|---|---|
+| 第一遍必须掌握 | Week 0-4、Week 8、Week 10-12、对应 skeleton | 能独立解释并完成最小实验 |
+| 第二遍深入 | Week 5 NAFNet、Week 6 pseudo RAW、Week 7 low-light | 完成主线后再分析结构和 domain gap |
+| 了解即可 | LPIPS、完整官方 NAFNet、OpenCV DNN 可选样例 | 知道用途和边界，不作为阶段二通过条件 |
+| 后续阶段再做 | 真实 RAW/SID、TensorRT/INT8、移动端功耗 | 阶段三/四或扩展项目 |
+
+优先级不是让学习者跳过报告，而是防止第一遍同时深挖所有模型、指标和部署后端。
+
+`../study-roadmap/阶段2-AI-ISP图像恢复学习路线.md` 中的 Week 0-12 是正式路线。
 其中“旧版 8 周路线”只用于查看历史规划，不作为执行入口。
 
 开始前先读 `reports/stage2_tutorial_audit.md`。它负责说明哪些结论有

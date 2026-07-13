@@ -118,11 +118,29 @@ L1 的结构友好性 + 更平滑的优化。
 
 ### 4.1 PSNR
 
-PSNR 来自 MSE：
+PSNR 来自 MSE。当前项目把 RGB float 值域固定为 `[0,1]`，因此峰值 `MAX=1`：
 
 ```text
-MSE 越小 -> PSNR 越高
+MSE  = mean((output - clean)^2)
+PSNR = 10 * log10(MAX^2 / MSE)
+     = 10 * log10(1 / MSE)     # MAX=1
 ```
+
+- `output`：模型输出；
+- `clean`：paired GT；
+- `MSE`：所有参与评估的像素/通道平方误差均值；
+- `MAX`：当前数值域可表示的峰值，`[0,1]` 时为1，8-bit `[0,255]` 时为255；
+- PSNR 单位是 dB，越高表示同一协议下像素误差越小。
+
+最小数值例子：若 `MSE=0.01`，则
+
+```text
+PSNR = 10 * log10(1 / 0.01) = 20 dB
+```
+
+若两张图完全相同，理论 MSE 为0、PSNR 为无穷大。代码通常用很小的 `eps` 防止除零；
+本项目练习取 `eps=1e-8` 时，上限接近80 dB。比较报告前必须确认 RGB/Y、值域、border
+crop、量化和平均方式一致。
 
 它主要衡量像素误差。
 
@@ -142,6 +160,18 @@ MSE 越小 -> PSNR 越高
 ### 4.2 SSIM
 
 SSIM 更关注结构相似度。
+
+一个局部窗口中的常见形式是：
+
+```text
+SSIM(x,y) = ((2*mu_x*mu_y + C1) * (2*sigma_xy + C2))
+            / ((mu_x^2 + mu_y^2 + C1) * (sigma_x^2 + sigma_y^2 + C2))
+```
+
+其中 `mu` 是局部均值，`sigma_x^2/sigma_y^2` 是局部方差，`sigma_xy` 是协方差，
+`C1/C2` 防止分母在平坦区域接近0。工程实现还必须固定窗口大小、Gaussian 权重、通道、
+值域和边界处理。本项目最终 held-out test 使用11×11 Gaussian window；历史早期 SSIM
+实现不同，因此不能直接拼表。
 
 它比 PSNR 更接近“结构有没有保住”，但仍然不是主观画质的完整答案。
 

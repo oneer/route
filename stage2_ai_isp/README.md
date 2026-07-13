@@ -10,6 +10,9 @@ ONNX/PyTorch 对齐以及 ONNX Runtime C++ CPU 推理与 latency。学习者仍�
 第一次学习请从 [`stage2_start_here.md`](stage2_start_here.md) 开始。该文件是唯一执行入口，
 并包含自动化测试、独立练习和能力边界。
 
+全新环境先运行 [`quickstart.md`](quickstart.md)。它提供不依赖外部数据的 smoke 路径，
+用于在正式学习前验证安装、测试、训练、checkpoint 和可视化。
+
 实验事实、教程文本和待运行计划的边界见
 [`reports/stage2_tutorial_audit.md`](reports/stage2_tutorial_audit.md)。
 
@@ -20,24 +23,21 @@ ONNX/PyTorch 对齐以及 ONNX Runtime C++ CPU 推理与 latency。学习者仍�
 | 顺序 | 报告 | 作用 |
 |---:|---|---|
 | 0 | `stage2_start_here.md` | 唯一学习入口、真实状态和验收纪律 |
-| 1 | `reports/week0_foundation.md` | 神经网络训练基础 |
-| 2 | `reports/week1_toy_rgb_denoise.md` | Toy RGB 去噪完整闭环 |
-| 3 | `reports/week2_real_paired_rgb.md` | 真实成对 RGB 数据入口 |
-| 4 | `reports/week3_real_rgb_experiments.md` | 真实 RGB 去噪小规模实验 |
-| 5 | `reports/week4_loss_metric_visualization.md` | Loss / Metric / 可视化评估体系 |
-| 6 | `reports/week5_nafnet_reproduction.md` | NAFNet / 轻量图像恢复模型复现 |
-| 7 | `reports/week6_pseudo_raw_isp_bridge.md` | Pseudo RAW / ISP bridge |
-| 8 | `reports/week7_low_light_rgb_enhancement.md` | 低光 RGB 增强小实验 |
-| 9 | `reports/week8_failure_case_analysis.md` | Failure case 和局部 crop 分析 |
-| 10 | `reports/week9_stage2_project_summary.md` | 阶段二项目总结、简历和面试表达 |
-| 11 | `reports/evaluation_protocol.md` | train/val/test 与标准指标协议 |
-| 12 | `deployment/README.md` | ONNX、C++ 输出对齐和 latency |
-| 13 | `reports/stage2_tutorial_audit.md` | 证据链、范围边界和剩余缺口 |
+| 1 | `quickstart.md` | 全新环境、无外部数据 smoke 和 SIDD 数据入口 |
+| 2 | `reports/week0_foundation.md`～`week9_stage2_project_summary.md` | 从训练基础到项目总结 |
+| 3 | `reports/week10_engineering_summary.md` | 工程汇总、冻结设计和 held-out test |
+| 4 | `reports/week11_onnx_export.md` | ONNX 导出、checker 和 Python ORT 对齐 |
+| 5 | `reports/week12_onnx_cpp_deployment.md` | C++ ORT 对齐和 latency 验收 |
+| 6 | `deployment/README.md` | Week 11-12 的命令操作手册 |
+| 7 | `exercises/06_capstone_spec.md` | 完成全部教学后的独立结项 |
+| 8 | `reports/evaluation_protocol.md` | train/val/test 与标准指标协议 |
+| 9 | `reports/stage2_tutorial_audit.md` | 证据链、范围边界和剩余缺口 |
 
 推荐阅读顺序：
 
 ```text
 stage2_start_here.md
+  -> quickstart.md
   -> stage2_learning_flow.md
   -> week0_foundation.md
   -> week1_toy_rgb_denoise.md
@@ -48,9 +48,12 @@ stage2_start_here.md
   -> week6_pseudo_raw_isp_bridge.md
   -> week7_low_light_rgb_enhancement.md
   -> week8_failure_case_analysis.md
-  -> exercises/06_capstone_spec.md
   -> week9_stage2_project_summary.md
-  -> deployment/README.md
+  -> week10_engineering_summary.md
+  -> week11_onnx_export.md
+  -> week12_onnx_cpp_deployment.md + deployment/README.md
+  -> exercises/06_capstone_spec.md
+  -> stage2_final_project_report.md
 ```
 
 ## 当前进度
@@ -86,8 +89,11 @@ toy RGB denoise
 
 ## 环境
 
-```bash
-pip install -r requirements.txt
+所有命令默认从仓库根目录运行。完整的环境检查、Windows UTF-8 设置、smoke 训练、
+SIDD 数据入口和停止条件见 [`quickstart.md`](quickstart.md)。最小安装命令：
+
+```powershell
+python -m pip install -r stage2_ai_isp/requirements.txt
 ```
 
 自动化测试：
