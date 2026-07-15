@@ -33,16 +33,29 @@ RAW 更接近传感器读数。常见 Bayer RAW 是二维单通道数组，每�
 
 **答案：**
 
-至少要读：
+处理陌生 DNG 时，不应先调用 `postprocess()` 看最终图，而应先建立一份 RAW 输入合同。严格地说，`raw_image_visible` 是像素数组，不是 metadata；但它和 metadata 必须一起检查，因为后续算法既依赖像素，也依赖像素的解释方式。
 
-- `raw_image_visible` 的 shape 和 dtype
-- `raw_pattern` / `color_desc`，用于推断 Bayer pattern
-- `black_level_per_channel`
-- `white_level` 或 `camera_white_level_per_channel`
-- active area / visible area
-- color matrix / camera white balance，如果后续要做颜色校正
+建议按“像素缓冲区 → 几何区域 → CFA 排列 → 数值基线 → 方向 → 颜色信息”的顺序读取：
 
-这些 metadata 决定了后续处理的数值范围和空间排列。例如 Bayer pattern 错了，Demosaic 会直接串色；black level 错了，暗部和 AWB 都会带偏。
+| 字段 | 它代表什么 | 为什么必须读 | 读错或忽略的后果 | 最小检查 |
+|---|---|---|---|---|
+| `raw_image_visible.shape` | 可见 RAW 区域的高和宽 | 决定数组、mask、gain map 和 ROI 的尺寸 | mask 错位、数组广播失败、ROI 落到错误位置 | 确认是二维 `(H, W)`，并和 `raw.sizes.height/width` 对照 |
+| `raw_image_visible.dtype` 与 min/max | 像素的存储类型和当前值域 | 决定减法、乘 gain 和中间精度 | 在 `uint16` 上直接减 black level 可能下溢；把 `uint16` 误当 16-bit 有效信号会估错动态范围 | 打印 `dtype/min/max`；运算前转 `int32` 或 `float32` |
+| `raw_pattern` + `color_desc` | 2×2 CFA 位置保存的通道索引，以及索引对应的颜色字符 | 二者合起来才能得到 RGGB、BGGR、GRBG、GBRG 等排列 | Demosaic 整图串色；per-channel BLC、DPC、LSC 和 WB gain 作用到错误像素 | 展开一个 4×4 位置图，检查四个 Bayer 平面的坐标 |
+| `black_level_per_channel` | 无光时读出链路仍保留的基线偏置 | BLC 要先扣掉它，后续统计才接近真实光信号 | 欠扣会让暗部发灰并污染 AWB；过扣会把暗部纹理 clip 成 0 | 检查数量能覆盖 `raw_pattern` 中的通道索引，并分别统计 BLC 前后暗部 |
+| `white_level` / `camera_white_level_per_channel` | RAW 的有效饱和上限，可能是统一值，也可能按通道给出 | 用于归一化、clamp、clipping 统计和有效动态范围估计 | 上限设小会误截高光，设大会让归一化偏暗并漏报饱和 | 比较 p99/max 与白电平；若 per-channel 值存在，确认映射方式 |
+| `raw.sizes`、active/visible area 和 margins | 传感器完整区域、有效成像区域、裁剪边界和边距 | RAW 全幅坐标、visible RAW 坐标和最终显示坐标可能不同 | 坏点表、LSC mesh、ROI、reference 对齐发生固定偏移 | 记录 raw/visible 尺寸及 `top_margin/left_margin`，不要混用两套坐标 |
+| `raw.sizes.flip` 或对应 orientation | 图像应怎样旋转或翻转后显示 | 数值处理通常在传感器坐标进行，而可视化和标注常在显示坐标进行 | 候选图与 reference 朝向不同，ROI 框和伪影位置对不上 | 对同一角点做方向变换，确认图像和 ROI 使用相同变换 |
+| `camera_whitebalance` / `daylight_whitebalance` | 相机或 LibRaw 暴露的白平衡增益参考 | 可作为 WB baseline 或 sanity check，但不是所有场景的真值 | 把缺失、0/NaN 或机内增益直接当 ground truth，会得到异常色偏 | 检查长度、有限性和正值；同时保留 Gray World 等独立估计作对照 |
+| `color_matrix` | 相机颜色响应与标准颜色空间之间的矩阵关系，具体方向和形状受 API 约定影响 | 后续 CCM 需要明确矩阵方向、输入空间和白点 | 直接截取或转置错误会造成系统性色偏、负值和大量 clipping | 先打印 shape，查 API 约定，再用 identity 和单像素手算验证 `rgb @ ccm.T` |
+
+这里还有三个容易混淆的点：
+
+1. `dtype == uint16` 只说明容器类型，不说明传感器一定有 16 个有效 bit；有效码值主要由 black/white level 和文件 metadata 决定。
+2. `raw_pattern` 中保存的通常是通道索引，必须结合 `color_desc` 才能解释成颜色，不能看到数字就直接假定 0/1/2/3 等于 R/Gr/Gb/B。
+3. metadata 缺失时要保留为 unknown，并明确选择了什么 fallback；不能从文件名、画面亮暗或经验猜 ISO、曝光时间和色温。
+
+一句话总结：这些信息共同定义了“数组中每个数位于哪里、代表哪种颜色、0 在哪里、上限在哪里、最终朝向哪里”。任何一个约定出错，后续算法即使公式正确，也会在错误的数据解释上运行。
 
 ### 3. 为什么 RAW 四个通道 R / Gr / Gb / B 均值通常不同？
 

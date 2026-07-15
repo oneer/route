@@ -7,7 +7,7 @@ DPC 用来检测并修复 sensor 中异常偏亮或偏暗的孤立像素，避�
 
 ### 2. Pipeline 位置
 ```text
-RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA -> CCM -> Tone/Gamma
+RAW -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone/Gamma
 ```
 DPC 通常放在 BLC 后、CFA 前。BLC 后数值基线更干净；CFA 前处理可以避免一个坏点被插值扩散成一片彩色伪影。
 
@@ -81,7 +81,7 @@ def dpc_pixel(p, neigh, threshold):
 ### 16. 小结
 DPC 的本质是 RAW 域异常点检测与替换。它要在坏点残留和纹理误杀之间平衡，核心参数是阈值和修复模式；它影响 CFA、降噪和锐化，是前端清洁度非常关键的一步。
 
-本次在 BLC 后继续做 DPC，也就是 Dead Pixel Correction，坏点检测与修复。这里先做一个保守版本：只寻找和同色邻域明显不一致的孤立异常点。
+本次在 BLC 后继续做 DPC，也就是 Defective Pixel Correction，坏点检测与修复。坏点不只包括不响应的 dead pixel，也包括过亮的 hot pixel、固定码值的 stuck pixel 和响应异常像素。这里先做一个保守版本：只寻找和同色邻域明显不一致的孤立异常点。
 
 ## 为什么 DPC 要在 BLC 后做
 

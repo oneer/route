@@ -7,7 +7,7 @@ Tone Mapping 用来把线性高动态范围压缩到显示或图片文件能表�
 
 ### 2. Pipeline 位置
 ```text
-RAW -> BLC -> DPC -> LSC -> AWB -> CFA -> CCM -> Tone Mapping -> Gamma -> 输出
+RAW -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone Mapping -> Gamma -> 输出
 ```
 Tone Mapping 通常在 CCM 后、Gamma 前。它应该处理线性亮度关系；如果先 Gamma，再做 tone curve，亮度压缩会失去物理直觉。
 

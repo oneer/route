@@ -55,9 +55,11 @@ corrected = clip(corrected, 0, white_level - black_level)
 
 如果 black level 为 0，BLC 前后应该基本不变；如果 black level 不为 0，暗部会整体向 0 移动。BLC 后有效白电平也要同步变成 `white_level - black_level`。
 
+这里的“基本不变”只指减黑位部分是 identity；实现仍可能按 `white_level` 截断高于有效白电平的码值。因此验证 BLC 不能只比较 p50，还要分别检查低端归零比例、高端 clipping 比例和每个 Bayer 位置的变化。
+
 ## DPC 学到了什么
 
-DPC 的全称是 Dead Pixel Correction，坏点检测与修复。它的目标不是让图马上变好看，而是避免孤立异常点在后续 Demosaic 中扩散成彩色伪影。
+DPC 通常指 Defective Pixel Correction，坏点检测与修复；坏点既可能是 dead pixel，也可能是 hot、stuck 或响应异常像素。它的目标不是让图马上变好看，而是避免孤立异常点在后续 Demosaic 中扩散成彩色伪影。
 
 Bayer RAW 中相邻像素不是同色，所以 DPC 不能直接拿上下左右像素比较。本周做法是：
 
@@ -96,6 +98,16 @@ raw_lsc      = raw * gain_map
 ```
 
 这能帮助理解 LSC 应放在 Demosaic 前，但它不能替代积分球或均匀白场标定。
+
+三个模块可以用同一组问题检查：
+
+| 模块 | 它修正的来源 | 为什么放在这里 | 参数或 metadata 错误时 | 最小验证 |
+|---|---|---|---|---|
+| BLC | 传感器、ADC 和读出链路的黑位偏置 | 先建立正确零点，避免污染 DPC、LSC 和 AWB | 欠扣使暗部发灰，过扣造成暗部 clip 和颜色偏移 | per-position 小数组测试；比较暗部 histogram 和 clipping |
+| DPC | 稀疏 hot/dead pixel 或异常读出点 | 必须在 Demosaic 前处理，避免单点扩散到 RGB 邻域 | 阈值太低误伤纹理，太高漏掉坏点 | 注入已知坏点，计算 precision/recall，再检查强边缘 crop |
+| LSC | 镜头和像素角度响应导致的中心—边缘亮度/颜色不均匀 | Bayer RAW 域仍能对四个位置独立补偿 | gain 太大放大边缘噪声，错误场景估计会把真实光照当暗角 | identity gain、合成 flat-field、四通道中心/边缘残差 |
+
+这张表区分了“算法有没有运行”和“算法有没有修对问题”。最终图变亮或候选点变少都不是充分证据；验证必须针对模块原本要修正的物理来源。
 
 ## 本周局限
 

@@ -7,7 +7,7 @@ Gamma/OETF 把线性亮度编码成更适合人眼感知和普通显示链路的
 
 ### 2. Pipeline 位置
 ```text
-RAW -> BLC -> DPC -> LSC -> AWB -> CFA -> CCM -> Tone Mapping -> Gamma -> 8-bit 输出/YUV
+RAW -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone Mapping -> Gamma -> 8-bit 输出/YUV
 ```
 Gamma 通常靠近显示输出，不能太早做。大多数 ISP 校正和颜色矩阵应在线性空间执行，Gamma 后再做这些操作会破坏物理亮度关系。
 

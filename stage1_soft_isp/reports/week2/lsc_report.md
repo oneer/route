@@ -7,7 +7,7 @@ LSC 用来补偿镜头和 sensor 组合造成的边缘亮度或颜色衰减，�
 
 ### 2. Pipeline 位置
 ```text
-RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA -> CCM -> Tone/Gamma
+RAW -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone/Gamma
 ```
 LSC 通常在 RAW 域、AWB 前执行，因为暗角会影响 AWB 统计；如果放到 CFA 后再做，已经混色，per-channel gain map 的意义会变弱。
 

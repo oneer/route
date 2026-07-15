@@ -9,6 +9,15 @@
 3. 用[教程化审查表](stage1_tutorial_audit.md)追踪代码、配置、命令、产物和测试。
 4. 遇到指标或实验边界问题时查[参考文献与外部资料](references.md)。
 
+阅读每个概念时，不要只记“要做什么”，至少要回答下面四个问题：
+
+1. **它是什么：** 这个字段、数据域或算法在物理上代表什么。
+2. **为什么需要：** 它为哪一个后续步骤提供输入、尺度或空间约定。
+3. **错了会怎样：** 错误会表现为偏色、截断、伪影，还是坐标错位。
+4. **如何验证：** 用什么断言、统计量、局部 crop 或对照实验确认理解和实现正确。
+
+主线 summary 用于建立这四层认识；模块详解给出公式、代码和完整实验；全量图表只用于查证，不替代原因分析。
+
 ## 文档类型
 
 | 标记 | 用途 | 阅读方式 |
@@ -66,6 +75,13 @@
 
 ## 面试材料
 
+- [分周面试题导航](interview/README.md)
+- [Week 1：RAW、DNG Metadata 与 Sensor 数据直觉](interview/week1_raw_sensor_questions.md)
+- [Week 2：BLC、DPC、LSC 与 RAW 前端校正](interview/week2_frontend_correction_questions.md)
+- [Week 3：Demosaic、AWB 与线性 RGB](interview/week3_demosaic_awb_questions.md)
+- [Week 4：CCM、Tone Mapping、Gamma 与显示编码](interview/week4_color_tone_questions.md)
+- [Week 5：IQA、消融、ROI 与参数评价](interview/week5_iqa_ablation_questions.md)
+- [Week 6：综合验收、故障诊断与产品级差距](interview/week6_system_debug_questions.md)
 - [Week 1–3 算法问答](interview/isp_algorithm_questions_week1_3.md)
 - [Week 1–4 深度笔记](interview/isp_interview_deep_notes_week1_4.md)
 

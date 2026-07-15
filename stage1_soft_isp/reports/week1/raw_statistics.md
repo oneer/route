@@ -27,6 +27,16 @@
 
 ## Metadata 摘要
 
+先按下面的顺序读表，不要直接从 mean/std 判断画质：
+
+1. **确认几何和存储：** `shape` 是可见 RAW 的尺寸，`dtype` 是存储容器。`uint16` 不代表文件一定有 16-bit 有效信号。
+2. **确认空间排列：** Bayer 列必须由 `raw_pattern` 和 `color_desc` 联合推断；它决定四个通道位于哪些行列。
+3. **确认有效码值：** black level 定义暗部基线，white level 定义可靠上限。真正可用的信号跨度近似是 `white - black`，不能简单使用 `0..65535`。
+4. **检查数据是否自洽：** min 可以低于 metadata black level，max 也可能高于 white level；这不应被静默忽略，而要统计低端/高端 clipping，并检查相机 metadata、坏点和边界像素。
+5. **最后看统计：** mean/std 只描述全图分布，会受场景内容和曝光影响，不能单独证明噪声、动态范围或颜色准确性。
+
+表中尚未展开但处理链必须记录的字段还包括 active/visible area、margins、orientation、相机 WB gain 和 color matrix。它们分别影响坐标对齐、显示方向、AWB baseline 和 CCM；详细含义见 [Week 1 总结](summary.md#2-metadata-是处理-raw-的入口)。
+
 | 编号 | shape | dtype | Bayer | black level | white level | raw min/max | mean/std |
 |---|---|---|---|---:|---:|---|---|
 | T01 | 2856 x 4290 | uint16 | RGGB | 1024 / 1024 / 1023 / 1024 | 16000 | 1044 / 16383 | 2954.50 / 1530.56 |

@@ -7,7 +7,8 @@ AWB 用来估计并应用颜色通道增益，让不同色温光源下的白色�
 
 ### 2. Pipeline 位置
 ```text
-RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA -> CCM -> Tone/Gamma
+当前学习链路：RAW -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone/Gamma
+OpenISP 对照： RAW -> BLC -> DPC -> LSC -> RAW-domain WB gain -> CFA/Demosaic -> CCM -> Tone/Gamma
 ```
 当前项目在 CFA 后 RGB 域做 Gray World；OpenISP 展示的是 CFA 前 Bayer RAW 域 WB gain。两者位置不同，但都应发生在线性数据上，不能在 gamma 后再做白平衡估计。
 

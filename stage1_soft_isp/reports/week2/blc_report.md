@@ -7,7 +7,7 @@ BLC 用来把 RAW 里的黑电平偏置扣掉，让“没有光”的位置回�
 
 ### 2. Pipeline 位置
 ```text
-RAW metadata -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA -> CCM -> Tone/Gamma
+RAW metadata -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone/Gamma
 ```
 BLC 应尽量靠前，因为 DPC、LSC、AWB、CFA 都默认输入已经是有效光信号。如果 BLC 放晚了，暗部统计、坏点阈值和 AWB gain 都会被 black level 偏置影响。
 

@@ -7,7 +7,7 @@ Demosaic/CFA 插值用来把单通道 Bayer RAW 重建成每个像素都有 R/G/
 
 ### 2. Pipeline 位置
 ```text
-RAW -> BLC -> DPC -> LSC -> AWB/WB gain -> CFA/Demosaic -> CCM -> Tone/Gamma
+RAW -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone/Gamma
 ```
 CFA 前应尽量完成 BLC、DPC、LSC 和 RAW 域 WB gain，因为 CFA 会把单点和单通道问题扩散到三通道 RGB。CFA 后再修坏点或黑位，代价会更高。
 

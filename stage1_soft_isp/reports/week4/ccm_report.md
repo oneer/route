@@ -7,7 +7,7 @@ CCM 用一个颜色校正矩阵把相机设备相关 RGB 映射到更接近目�
 
 ### 2. Pipeline 位置
 ```text
-RAW -> BLC -> DPC -> LSC -> AWB -> CFA -> CCM -> Tone Mapping -> Gamma/CSC/YUV
+RAW -> BLC -> DPC -> LSC -> Demosaic -> RGB-domain AWB -> CCM -> Tone Mapping -> Gamma/CSC/YUV
 ```
 CCM 应在线性 RGB 上执行，通常放在 AWB 和 CFA 后、Gamma 前。如果先做 Gamma，矩阵混色就不再对应线性光强关系。
 

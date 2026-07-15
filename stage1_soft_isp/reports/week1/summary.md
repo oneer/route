@@ -54,15 +54,22 @@ RAW 是传感器采样值，通常仍然是 Bayer 马赛克排列。每个像素
 
 ### 2. metadata 是处理 RAW 的入口
 
-要正确处理 RAW，至少要知道：
+RAW 像素本身只是一组数字，metadata 决定这些数字应怎样解释。第一次读取陌生 DNG 时，建议建立下面的输入合同：
 
-- `shape`：可见 RAW 图像尺寸
-- `dtype`：像素存储类型
-- `black_level_per_channel`：黑电平
-- `white_level`：白电平 / 饱和上限
-- `raw_pattern` / `color_desc`：Bayer 排列
+| 信息 | 代表什么 | 为什么后续需要 | 典型错误表现 |
+|---|---|---|---|
+| `raw_image_visible.shape` | 可见 RAW 的 `(H, W)` | 决定 Bayer mask、LSC gain map 和 ROI 尺寸 | mask、ROI 或 reference 固定错位 |
+| `dtype`、min/max | 存储类型和实际码值范围 | 决定中间计算类型、clip 和归一化 | 无符号下溢、溢出或整体亮度尺度错误 |
+| `raw_pattern` + `color_desc` | CFA 位置索引及其颜色含义 | BLC、DPC、Demosaic、RAW 域 WB 都按 Bayer 位置工作 | 整图串色，R/B 对调，Gr/Gb 位置错误 |
+| `black_level_per_channel` | 无光时的读出基线 | BLC 要先扣掉它，暗部和 AWB 统计才可信 | 暗部发灰、死黑或偏色 |
+| `white_level` / per-channel white | 有效饱和上限 | 用于 clamp、归一化和 clipping 判断 | 高光被误截或饱和风险被漏判 |
+| active/visible area 与 margins | 完整传感器区域和有效成像区域的坐标关系 | 坏点表、LSC、ROI 和输出必须使用同一坐标系 | 所有空间标注出现固定平移 |
+| orientation / `sizes.flip` | 传感器坐标到显示方向的变换 | 数值结果、预览和 ROI 要同步旋转/翻转 | 图像方向对了，但框和参考图对不上 |
+| WB gain / color matrix | 白平衡参考和颜色空间转换信息 | 为 AWB/CCM 提供参考或初始值 | 系统性色偏、矩阵方向错误、大量 clipping |
 
-没有这些信息，后面的 BLC、Demosaic、AWB 都可能走错。
+读取顺序应是：先确认数组和几何区域，再解释 CFA，然后确定 black/white 数值尺度，最后读取方向与颜色信息。这样一旦失败，可以判断问题来自“像素内容”还是“解释像素的 metadata”。
+
+还要注意：`uint16` 是存储容器，不等于 16-bit 有效信号；`raw_pattern` 必须结合 `color_desc`；相机白平衡和 color matrix 是参考信息，不自动等于当前场景的 ground truth。缺失字段应记录为 unknown，不做猜测。
 
 ### 3. 四个 Bayer 通道均值不同是正常的
 
