@@ -99,32 +99,53 @@ int main(int argc, char** argv) {
     try {
         const PpmImage image = load_ppm_hwc(input_path);
         std::vector<float> cpu_output;
-        std::vector<float> gpu_output(image.hwc.size(), 0.0f);
-        // 先跑 CPU 参考，再跑 GPU kernel，最后比较二者输出是否一致。
+        std::vector<float> pageable_output(image.hwc.size(), 0.0f);
+        std::vector<float> pinned_output(image.hwc.size(), 0.0f);
         const double cpu_ms = cpu_normalize(image, cpu_output, runs);
-        const float gpu_kernel_ms = stage4::cuda_normalize_u8_to_float_nchw(
+        const auto pageable = stage4::profile_cuda_normalize_u8_to_float_nchw(
             image.hwc.data(),
-            gpu_output.data(),
+            pageable_output.data(),
             image.width,
             image.height,
             image.channels,
-            runs);
-        const auto [max_abs, mean_abs] = compare_outputs(cpu_output, gpu_output);
+            runs,
+            false);
+        const auto pinned = stage4::profile_cuda_normalize_u8_to_float_nchw(
+            image.hwc.data(),
+            pinned_output.data(),
+            image.width,
+            image.height,
+            image.channels,
+            runs,
+            true);
+        const auto [pageable_max_abs, pageable_mean_abs] = compare_outputs(cpu_output, pageable_output);
+        const auto [pinned_max_abs, pinned_mean_abs] = compare_outputs(cpu_output, pinned_output);
 
         std::ofstream out(output_path);
         if (!out) {
             throw std::runtime_error("Failed to open output csv: " + output_path);
         }
-        out << "input,width,height,channels,runs,cpu_preprocess_mean_ms,cuda_kernel_mean_ms,"
+        out << "input,width,height,channels,runs,memory_kind,host_staging_included,cpu_preprocess_mean_ms,"
+               "h2d_mean_ms,cuda_kernel_mean_ms,d2h_mean_ms,e2e_mean_ms,h2d_count,d2h_count,"
                "max_abs_error,mean_abs_error\n";
-        // CSV 只记录单行摘要，便于 11_generate_audit_matrices.py 汇总。
-        out << input_path << "," << image.width << "," << image.height << "," << image.channels << "," << runs
-            << "," << cpu_ms << "," << gpu_kernel_ms << "," << max_abs << "," << mean_abs << "\n";
+        auto write_row = [&](const char* memory_kind,
+                             const stage4::CudaPreprocessTimings& timings,
+                             float max_abs,
+                             float mean_abs) {
+            out << input_path << "," << image.width << "," << image.height << "," << image.channels << "," << runs
+                << "," << memory_kind << ",no," << cpu_ms << "," << timings.h2d_mean_ms << ","
+                << timings.kernel_mean_ms << "," << timings.d2h_mean_ms << "," << timings.e2e_mean_ms
+                << "," << timings.h2d_count_per_run << "," << timings.d2h_count_per_run
+                << "," << max_abs << "," << mean_abs << "\n";
+        };
+        write_row("pageable", pageable, pageable_max_abs, pageable_mean_abs);
+        write_row("pinned", pinned, pinned_max_abs, pinned_mean_abs);
 
         std::cout << "cpu_preprocess_mean_ms=" << cpu_ms << "\n";
-        std::cout << "cuda_kernel_mean_ms=" << gpu_kernel_ms << "\n";
-        std::cout << "max_abs_error=" << max_abs << "\n";
-        std::cout << "mean_abs_error=" << mean_abs << "\n";
+        std::cout << "pageable_e2e_mean_ms=" << pageable.e2e_mean_ms << "\n";
+        std::cout << "pinned_e2e_mean_ms=" << pinned.e2e_mean_ms << "\n";
+        std::cout << "pageable_max_abs_error=" << pageable_max_abs << "\n";
+        std::cout << "pinned_max_abs_error=" << pinned_max_abs << "\n";
     } catch (const std::exception& ex) {
         std::cerr << ex.what() << "\n";
         return 1;

@@ -228,3 +228,98 @@ OpenISP 还补充了几个 Week4 之后才会出现的传统模块：`gac.py` �
 | `bcc.py` / `hsc.py` | 当前未实现 | 亮度、对比度、色相、饱和度属于最终风格控制，不应和物理校正混在一起 |
 
 所以 Week4 的结论应改成：当前完成的是显示基础链路；OpenISP 展示的是完整后端 IQ 链路。下一步如果想让项目更像传统 ISP，而不是只做 RAW 转 RGB，应优先增加 `CSC -> FCS/EE -> BCC/HSC` 的概念实验。
+
+## 关键词与参数验收表
+
+| 关键词/参数 | 定义与数据域 | 调节方向/风险 | 验证方式 |
+|---|---|---|---|
+| CCM | 线性 Camera RGB 到目标线性 RGB 的 3×3 变换 | 矩阵方向或白点错误会系统偏色；负值/超范围需要策略 | ColorChecker 才能做标准 DeltaE；当前仅对 rawpy proxy |
+| gamut handling | CCM 后对负值和超色域值的处理 | 直接逐通道 clip 会改变色相 | 统计 clip 比例并看高饱和 ROI |
+| percentile `99.5` | Tone normalization 的显示白点百分位 | 越低整体更亮但高光更易压平；越高保高光但主体偏暗 | sweep 曝光、p99 和 highlight clip |
+| Reinhard/S-curve | 动态范围压缩曲线 | 强度过大导致局部反差/高光层次损失 | 看曲线、亮度 ROI 与高光 crop |
+| gamma `2.2` | 学习版 power-law 显示编码参数 | 数值越大通常抬升中暗调；不等于精确 sRGB OETF | 对照 sRGB 分段曲线和灰阶 ramp |
+| OETF | 线性场景值到非线性显示码值的编码 | 过早应用会破坏线性 CCM/融合假设 | 在数据流中显式标出线性/非线性边界 |
+
+推荐主线顺序是 `linear RGB -> CCM -> gamut/tone -> OETF -> display`。某些产品实现会因颜色管理和硬件约束调整，但报告必须写明每一步的数据域。
+
+## 从输入到结论：可复现教程
+
+### 数据契约与公式逐项解释
+
+| 阶段 | 输入 → 输出 | 数值/颜色域 | 不可逆风险 |
+|---|---|---|---|
+| CCM | `(H,W,3)` `float32` Linear Camera RGB → Linear target RGB | 仍为线性；矩阵后可 `<0` 或 `>white` | 过早 hard clip 会丢颜色方向与高光比例 |
+| Tone | 线性 target RGB → `0..1` 显示亮度范围 | 动态范围被压缩，曲线可能全局或局部 | 高光/暗部局部对比被压平后无法靠 Gamma 恢复 |
+| OETF/Gamma | `0..1` linear display RGB → encoded RGB | 非线性显示编码 | 重复编码、错误解码会改变中间调和后续指标 |
+| Preview | encoded float → `uint8` PNG | `0..255` sRGB-like display | 量化与 clipping 丢失浮点信息 |
+
+若像素按列向量表示，颜色矩阵为：
+
+```text
+y = M x
+y_i = sum_j M_ij x_j
+```
+
+`x` 是 Linear Camera RGB，`M` 是 3×3 CCM，`y` 是目标线性 RGB；NumPy 批量行向量常写成 `rgb @ M.T`。矩阵方向必须通过 identity 和单像素手算确认，不能凭“画面更自然”判断。
+
+全局白点归一化可抽象为 `u=clip(y/P_q(y),0,∞)`，其中 `P_q` 是亮度或通道样本的第 `q` 百分位；Reinhard 基线为 `t=u/(1+u)`。Power Gamma 为 `v=t^(1/gamma)`；标准 sRGB OETF 是低亮度线性、高亮度近幂函数的分段映射。Gamma/OETF 编码的是显示码值，不是恢复曝光。
+
+标准颜色评价还必须说明转换链：ColorChecker 的线性目标值不能直接当 sRGB 编码值送入面向 sRGB 的 Lab 转换；应先明确目标 RGB primaries、白点和是否已应用 OETF，再转 XYZ/Lab。当前相对 rawpy 的 DeltaE 只作 proxy。
+
+### 参数、选择理由和耦合
+
+| 参数/策略 | 默认 | 增大/切换后的影响 | 关键耦合 | 失败现象 |
+|---|---:|---|---|---|
+| CCM coefficients | DNG metadata 简化矩阵 | 非对角项更大时通道混合更强 | AWB 白点、矩阵方向、目标 primaries | 系统偏色、负值、某些颜色过饱和 |
+| gamut hard clip | 当前学习版按范围限制 | 简单稳定但 hue shift/层次损失 | CCM、tone headroom | 高饱和区域色块化、色相改变 |
+| `tone_percentile` | 99.5% | 越高白点更靠近极亮样本，主体常更暗、高光余量更多 | 场景高光占比、AWB/CCM clip | 彩灯支配白点或主体曝光不稳 |
+| Reinhard strength/form | 全局 baseline | 压缩增强可保范围但降低对比 | normalization、local contrast | 发灰、暗部噪声显眼、局部层次平 |
+| `gamma` | 2.2，无量纲 | 数值增大时 `1/gamma` 变小，中暗调更亮 | Tone 输出、是否重复 OETF | 漏编码偏暗；重复编码泛白 |
+| output bit depth | 8 bit | 提高位深减小量化但增大存储/带宽 | dithering、显示链 | 暗部 banding 或文件/性能成本上升 |
+
+### 代码导航、调试路径和 trade-off
+
+```text
+scripts/10_apply_ccm.py          -> soft_isp/ccm.py  -> CCM report/compare
+scripts/12_apply_tone_mapping.py -> soft_isp/tone.py -> Tone report/curve/compare
+scripts/11_apply_gamma.py        -> soft_isp/tone.py -> Gamma report/compare
+scripts/13_write_week4_summary.py -> Week4 综合对比
+tests/test_color_tone.py + tests/test_calibration.py
+```
+
+| 现象 | 第一检查点 | 隔离方法 | 修复取舍 |
+|---|---|---|---|
+| 全图颜色方向错误 | CCM transpose/通道顺序 | identity + 单色 unit vectors，关闭 Tone/Gamma | 修矩阵合同；不要靠 saturation/hue 补偿 |
+| 高饱和物体 hue shift | CCM 后 `<0/>1` 与 clip | 保存 clip 前浮点值和色域外比例 | soft/hue-preserving compression 更保色，但实现复杂 |
+| 主体暗、高光仍平 | percentile 与 Tone 曲线 | 固定 CCM/OETF，画曲线和 highlight ROI | 提亮主体会消耗高光余量 |
+| 线性图偏暗 | OETF 是否执行 | 用灰阶 ramp 检查 0/中灰/1 | OETF 改善显示，不恢复已 clip 细节 |
+| 输出泛白 | OETF 是否重复 | 记录每个中间文件的 linear/encoded 标签 | 去掉重复编码；不能只降低曝光掩盖 |
+
+CCM 的颜色准确性、Tone 的局部对比与 OETF 的标准兼容性是不同目标。工程选择通常是：更强动态范围压缩换取更低局部对比；hard clip 换取简单和速度；标准 OETF 换取显示一致性；风格化 LUT 换取观感但增加调参和跨场景稳定性成本。
+
+### 证据边界、跨周连接和学习验收
+
+| 内容 | 证据等级 | 能证明 | 不能证明 |
+|---|---|---|---|
+| 公开 DNG 的 metadata CCM/Tone/Gamma | `verified_public` | 线性到显示域的流程和参数方向 | 标准色彩准确性、HDR 显示或量产 tuning |
+| rawpy reference/DeltaE | `verified_proxy` | 与指定成熟渲染的差异趋势 | ColorChecker ground truth |
+| sRGB OETF/S-curve 对照 | `verified_public` baseline | 曲线实现和输出差异 | 某曲线在所有场景主观更好 |
+| 实拍 ColorChecker、标准光源/显示 | `not_run` | 当前无 | CCM 标定、CCT 泛化、显示一致性 |
+
+Week4 接收 Week3 的线性 Camera RGB，输出显示编码图交给 Week5 IQA。Week5 若直接在 sRGB 图上比较，会同时混入 CCM、Tone、OETF 和 reference 风格差异，不能把全图 PSNR 变化归因于单一颜色模块。
+
+- [ ] 能手算一个 RGB 向量的 `M x`，并证明代码转置方向
+- [ ] 能在数据流上标出 linear/encoded 边界和每次 clip
+- [ ] 能画出 Reinhard、power gamma、sRGB OETF 的方向差异
+- [ ] 能解释 percentile 与主体亮度/高光 headroom 的耦合
+- [ ] 能说明 proxy DeltaE 与标准 ColorChecker DeltaE 的转换链差异
+
+## 本周面试闭环
+
+完整参考答案见[Week 4：颜色与 Tone 面试题](../interview/week4_color_tone_questions.md)。
+
+1. **概念题：** CCM、Tone Mapping、Gamma/OETF 分别解决什么问题？
+2. **原理题：** 为什么 CCM 通常在 Gamma/OETF 前执行，`rgb @ M.T` 从何而来？
+3. **参数题：** percentile 与 gamma 如何分别影响主体亮度、高光余量和中间调？
+4. **调试题：** CCM 后出现负值或超色域值时，为什么不能无条件逐通道硬截断？
+5. **系统题：** 如何设计 ColorChecker 标定、色域处理和显示验证闭环，而不把 rawpy 当 ground truth？

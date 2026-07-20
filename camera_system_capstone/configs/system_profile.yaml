@@ -1,0 +1,20 @@
+contract_version: "1.0"
+source_latency_matrix: stage4_deploy_isp/outputs/audit/latency_matrix.csv
+device_pipeline_profile: stage4_deploy_isp/outputs/device_pipeline/device_pipeline_profile.csv
+algorithm_owner: stage4_deploy_isp
+include_backends:
+  - ORT cpu
+  - ORT cuda
+  - ORT trt_fp32
+  - ORT trt_fp16
+  - trtexec fp32
+  - trtexec fp16
+  - NVRTC CUDA normalize
+required_metrics:
+  - p50_ms
+  - p90_ms
+  - peak_ram_mib
+  - peak_vram_mib
+  - h2d_d2h_count
+missing_metric_policy: keep_blank_and_mark_verified_partial
+platform_boundary: desktop_results_are_not_snapdragon_or_mobile_power_results

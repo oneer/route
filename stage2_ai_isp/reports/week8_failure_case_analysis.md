@@ -2,6 +2,20 @@
 
 Week8 的目标是从“看整体指标”升级到“看失败细节”。
 
+## 0. 输入输出合同与前后依赖
+
+Week 4/7 先交付冻结 run 的 `vis/step_XXXX.png` 三联图，本周只做诊断，不重新训练模型。脚本按宽度三等分读取：
+
+```text
+输入：RGB uint8 PNG，HWC，[0,255]，水平排列 noisy/low | output | clean
+处理：转 RGB -> 三等分 -> output/clean 转 float32 [0,1]
+      -> 按局部 mean(|output-clean|) 选 top-error ROI 或 center ROI
+输出：四列 crop sheet（input/output/clean/error×6）
+      + CSV（run、图片、模式、x/y、roi_size、crop_mae）
+```
+
+三列必须同高、每列等宽且像素对齐；`crop_size` 不得大于单个 panel，超出时当前实现会缩到可用尺寸并在 CSV 记录实际大小。这里的 MAE 来自已保存的 8-bit 可视化，不是未量化 float tensor 的严格后端对齐指标；它适合选取 failure 候选，不能替代 Week 4 的正式 evaluation。Week 9 接收本周经人工确认并完成对照实验的 regression case，而不是直接接收“模型名 = 根因”的猜测。
+
 前面已经有：
 
 ```text
@@ -231,3 +245,56 @@ low-light enhancement 不能直接和普通 denoise 比，需要单独建立暗�
 | 结论 | 实验支持、反驳，还是证据不足 |
 
 没有人工语义标签和对照实验时，只能写“高误差 ROI”，不能把模型名直接翻译成失败原因。
+
+## 9. Failure 分析关键词验收表
+
+| 关键词 | 含义 | 正确用法 | 常见误判 |
+|---|---|---|---|
+| top-error crop | 按局部误差排序选出的 ROI | 快速找到模型最不一致区域 | 高误差不自动等于某种 artifact |
+| failure taxonomy | 预先声明的失败类别和判据 | 统一记录、统计和决定下一实验 | 用模型名或主观印象代替判据 |
+| symptom vs cause | 可见/可测现象与根因假设 | 先记录 symptom，再设计对照验证 cause | 一看到平滑就断言模型容量不足 |
+| threshold | 触发诊断的量化门限 | 由 baseline、噪声和业务容忍度确定 | 为了凑案例事后移动阈值 |
+| local metric | ROI 上的误差、纹理、颜色或 clipping | 补充全图平均值 | 自动 ROI 可能选中不相关内容 |
+| regression test | 固定失败样本与判据 | 防止修一个问题又引入旧问题 | 只保存截图、不保存输入和参数 |
+
+## 10. Week 8 面试五问
+
+1. 为什么 top-error ROI 只能定位“哪里错”，不能直接解释“为什么错”？
+2. 怎样把 over-smoothing、color shift、edge loss 和 residual noise 写成可执行判据？
+3. 阈值应怎样从 baseline 和任务容忍度得到，而不是看完结果后决定？
+4. 如何用单变量实验验证“模型容量不足”这一根因假设？
+5. failure case 怎样转化为固定回归集和下一轮训练决策？
+
+## 11. Failure 分析流程与边界
+
+```text
+固定 evaluation 输出
+  -> 计算 per-pixel/local error
+  -> 选择 top-error ROI
+  -> 人工记录 symptom
+  -> 提出 cause 假设
+  -> 单变量对照实验
+  -> 证据支持后才写入 taxonomy
+  -> 固定为 regression case
+```
+
+自动 crop 和阈值只能定位候选失败区域；没有人工语义确认和对照实验时，报告边界仍是“高误差 ROI”，不能把它写成已证明的纹理、颜色或模型结构根因。
+
+## 12. 教程闭环卡：从可见现象走到可证伪根因
+
+Week 4/7 交付冻结评估输出，本周不训练新模型，而是把 error map 转为可操作的回归样本；
+Week 9 再使用这些证据决定项目结论和下一实验。完整 RCA 链是：
+
+```text
+symptom（看见什么） -> metric/ROI（量化哪里） -> hypothesis（可能原因）
+-> controlled experiment（只改一项） -> result（支持/反驳/不确定）
+-> regression case（固定输入、阈值、预期）
+```
+
+例如“纹理区域 output MAE 高”只是现象；对比提高容量与更换 loss 两个独立实验后，才可能
+区分欠拟合和目标函数偏向。阈值应在看最终结果前，依据 noisy baseline、历史波动和业务
+容忍度确定。自动 top-error 容易偏向高对比边缘，需同时保留语义 ROI 或分层采样。
+
+自动 top-error 的效率与语义 ROI 的覆盖之间存在权衡。本周自动化证据为
+`verified_partial`：定位/数值已执行，语义根因仍需人工与对照验证。独立
+验收是完成一张 failure card，包含坐标、现象、数值、两个竞争假设、单变量实验和回归门限。

@@ -288,3 +288,96 @@ input_max
 3. S-curve 为什么更容易从 LUT 获得 speedup？
 4. Python/C++ 完全对齐，为什么仍可能 banding？
 5. fixed-point multiply 为什么需要更宽 accumulator？
+
+## 16. LUT/定点参数与面试答案
+
+| 关键词/参数 | 定义 | 误差来源 | 验证方式 |
+|---|---|---|---|
+| LUT size | 曲线采样点数量 | 输入量化与插值误差 | 以 dense ramp 扫 max error/banding |
+| nearest/linear | 最近点查表 / 相邻点线性插值 | nearest 更快但阶梯明显，linear 多算术 | 同尺寸 LUT 的质量/速度消融 |
+| Qm.n | 固定总位宽中整数/小数位分配 | range 与精度互相制约 | 最小/最大/半 LSB 手算 |
+| round/truncate | 舍入到最近值 / 直接截断 | truncate 产生系统负 bias | 误差均值、灰阶 ramp 和单元测试 |
+| saturate/clamp | 超范围时限制到合法端点 | 避免 wrap-around | 全 0/全 1/越界输入 |
+| accumulator width | 乘加中间值位宽 | 太窄会溢出，即使输出位宽足够 | 最坏值上界推导 + 测试 |
+
+面试题“为何完全对齐仍有 banding”：对齐只说明 Python 与 C++ 实现同一量化；banding 是离散表示本身的视觉误差，需要更大 LUT、插值、dither 或重新分配位宽解决。
+
+## 17. 从 float golden 到量化部署思维
+
+### 17.1 前后依赖、输入输出数据契约、数据流与内存合同
+
+Week 5 的 float curve 是独立 golden；本周先在构造 `ToneCurveLut` 时分配并冻结表，
+运行时对 caller-owned planar input/output 做量化、查表、反量化。输出虽然是
+`float32`，有效值已受 output code 限制，不能据此声称完成了整数硬件 kernel。
+
+```text
+Week 5 float curve
+  ├─ dense ramp -> approximation error / monotonicity
+  └─ same LUT semantics in Python and C++ -> implementation alignment
+linear input -> exposure -> index round+clamp -> lookup -> dequantize
+-> optional luma RGB reconstruction -> quality/banding/latency
+```
+
+表生命周期应覆盖所有 apply 调用；input/output view 的 storage 仍由调用者持有。当前
+没有无锁热更新、硬件寄存器编程、DMA 或端侧 table upload 证据。
+
+### 17.2 从零运行与代码导航
+
+```powershell
+python .\stage3_cpp_isp\python_ref\run_week6_tone_lut_fixed.py
+ctest --test-dir .\stage3_cpp_isp\out\build\verify --output-on-failure
+.\stage3_cpp_isp\out\build\verify\bench_tone_lut.exe
+```
+
+先读 `tone_lut.hpp` 的 `ToneLutParams`，再读 `tone_lut.cpp` 的构表、index、saturate；
+`fixed_point.cpp` 只提供 Q arithmetic helper；主脚本分别生成 dense curve error、shadow
+banding、Python/C++ alignment。`test_tone_lut.cpp` 和 `test_fixed_point.cpp` 用于验证端点、
+round、saturate 和 odd shape。
+
+### 17.3 参数空间和误差预算
+
+| 参数 | 控制什么 | 增大/改变后的趋势 | 必查边界 |
+|---|---|---|---|
+| `input_bits` | index 数量 `2^b` | 量化步长减小，table memory 指数增加 | 0、半 step、`input_max` |
+| `output_bits` | 可表示输出 code | banding 风险降低，输出/硬件位宽增加 | 最小/最大/相邻 code |
+| `input_max` | LUT 线性 domain 上限 | 大 domain 覆盖高光但同 bits 下步长变粗 | 超上限 clamp 比例 |
+| lookup rule | nearest 或未来 interpolation | linear 可减小误差但增加计算 | Python/C++ 必须同 round rule |
+| Q `m.n` | 整数 range 与小数精度 | 整数位和小数位在固定位宽下竞争 | 最坏乘加与 accumulator |
+
+最小误差预算至少拆成 `input quantization + curve sampling + output quantization + float
+reconstruction`；若走 luma-preserving，还要加 division、epsilon 和 RGB clamp。只报告一个
+总 PSNR 无法知道该增加哪一类位宽。
+
+### 17.4 Failure、trade-off 与 benchmark 边界
+
+- 均值误差长期为负：优先检查 truncate 代替 round；
+- 只有 `input_max` 附近失败：检查最高 index clamp 与 float-to-code 舍入；
+- 高光大片同值：domain 太小或 exposure 过高，implementation alignment 仍可能通过；
+- 暗部台阶：查看 output bits、lookup step 与 gamma 后放大，不要用 blur 掩盖根因；
+- LUT 比 float 更慢：曲线本身便宜、表访问/转换成本占主导或 benchmark scope 不同。
+
+LUT 对 S-curve 获益大不等于所有 tone curve 都应查表。质量、表内存、启动构表时间和
+steady-state latency 要分开报告。本周无 interpolation、dither、SIMD、ARM/ISP block
+实测；性能表中的 legacy 绝对时间必须按当前工具链重跑。
+
+### 17.5 面试五问、证据与学习验收
+
+1. **概念：input bits 与 output bits 分别量化什么？** 前者决定采样哪个表项，后者决定
+   表项值的离散精度。
+2. **原理：为什么 Q 乘法要更宽 accumulator？** 两个整数乘积位数相加，round-shift 前
+   中间值范围大于目标 Q 格式。
+3. **参数：固定 12 bits 时 input_max 变大有什么代价？** 覆盖范围增加但步长变粗，
+   暗部/中间调采样精度下降。
+4. **调试：Python/C++ 对齐但画面 banding 怎么办？** 先测 float-vs-LUT；增加 bits、
+   interpolation/dither 或非均匀采样，而不是调 alignment tolerance。
+5. **系统：LUT 何时不值得？** 原公式便宜、表访问受限、构表/更新频繁或精度成本超过
+   算力收益时；必须以目标平台测量。
+
+证据为 `verified_synthetic` 的 float-vs-LUT、Python-C++ 和 legacy benchmark；不代表
+硬件 fixed-point pipeline。完成标准：
+
+- [ ] 手算 10→8 bit 的 index/code/反量化；
+- [ ] 分开画 implementation error 和 approximation error；
+- [ ] sweep input/output bits 并解释内存、banding和 latency；
+- [ ] 注入 truncate、漏 clamp、错误 domain 并定位；
+- [ ] 说明 Week 7 为什么仍可能复用 float curve，而不是所有模块强制 LUT。

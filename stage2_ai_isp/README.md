@@ -16,7 +16,36 @@ ONNX/PyTorch 对齐以及 ONNX Runtime C++ CPU 推理与 latency。学习者仍�
 实验事实、教程文本和待运行计划的边界见
 [`reports/stage2_tutorial_audit.md`](reports/stage2_tutorial_audit.md)。
 
+## 高通岗位面试入口
+
+- [Job ID 3083325 面试就绪与差距审计](../study-roadmap/高通3083325-Camera-ISP-Algorithm-System-Engineer定向提升报告.md#十四2026-07-19-面试就绪审计与二次补强)
+- [Week 10：Camera Feature 准入、fallback、时序与发布门槛](reports/week10_engineering_summary.md#12-高通岗位补强从离线模型到-camera-feature)
+- [跨阶段 Camera Systems Capstone](../camera_system_capstone/reports/qualcomm_3083325_capstone_report.md)
+
+这部分用于把模型指标转成 Camera feature 决策；真实 Sensor RAW、连续视频、肤色专项、Snapdragon runtime 和线上客户闭环仍为 `not_run`。
+
 ## 学习报告
+
+建议不要按“脚本列表”阅读本阶段。统一入口是
+[`stage2_start_here.md`](stage2_start_here.md)，事实与证据边界先看
+[`reports/stage2_tutorial_audit.md`](reports/stage2_tutorial_audit.md)。每一周都按下面的闭环学习：
+
+```text
+问题背景 -> 数据合同 -> 模型/公式 -> 单变量实验 -> 指标与图像
+-> failure 定位 -> 结论边界 -> 面试复述 -> 独立练习
+```
+
+| 学习段 | 周次 | 学完后应能独立完成 |
+|---|---|---|
+| 训练闭环 | Week 0-1 | 手写最小训练循环，解释 residual、loss、patch 和 baseline |
+| 真实 paired RGB | Week 2-4 | 审计配对/split，设计公平实验，并联合解读 PSNR、SSIM、crop 和 error map |
+| AI-ISP 扩展 | Week 5-8 | 解释轻量恢复块、pseudo RAW、合成低光和 failure taxonomy 的作用与边界 |
+| 冻结与部署 | Week 9-12 | 冻结模型与合同，完成 ONNX/Python/C++ CPU 数值对齐并报告测量口径 |
+
+报告中的 `verified_*` 只描述证据类型，不代表量产成熟度：`verified_public`
+是公开真实数据，`verified_synthetic` 是合成任务，`verified_partial` 是局部链路实测，
+`not_run` 是计划。尤其不得把 SIDD tiny、pseudo RGGB、synthetic low-light 或 x64 CPU
+ORT smoke test改写为真实 RAW、自采低光或 Snapdragon 量产结果。
 
 报告已经按周整理，不再使用 `week1a/week1b/week1c` 这种碎片编号。
 
@@ -390,3 +419,19 @@ stage2_ai_isp/
 
 如果 1-6 还不清楚，先回到 `reports/week1_toy_rgb_denoise.md`。
 如果 7-8 还不清楚，先回到 `reports/week2_real_paired_rgb.md`。
+
+## Camera scene evaluation backfill
+
+`scripts/24_evaluate_camera_scenes.py` evaluates frozen scene/method rows and
+reports PSNR gain, noise RMSE reduction, texture retention, edge loss, color
+bias, and a deterministic failure label. `scripts/25_export_scene_failure_matrix.py`
+aggregates those labels.
+
+Run `scripts/23_prepare_camera_scene_comparison.py` first. It consumes the
+frozen SIDD evaluation split, reuses the Stage 1 bilateral implementation, and
+records the existing aligned DnCNN ORT FP32 outputs. Then run scripts 24 and 25
+to regenerate the device-group summaries, failure matrix, and trade-off report.
+
+This evidence is paired public sRGB restoration, not self-captured Camera data
+or Sensor RAW AI-ISP. FP16 is not included in the image-quality comparison until
+a complete frozen-split FP16 output set is available.

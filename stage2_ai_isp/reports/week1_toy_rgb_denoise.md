@@ -2130,3 +2130,44 @@ Toy RGB denoise
 你知道每个产物有什么用；
 你知道下一步为什么该进入真实 paired RGB 数据。
 ```
+
+## 18. 关键词与核心参数验收表
+
+| 关键词/参数 | 本周含义 | 调节方向与风险 | 公平验证方法 |
+|---|---|---|---|
+| direct clean | 网络直接预测干净图 | 任务直观，但需要同时学习低频内容与噪声修正 | 与 residual 使用相同数据、预算和 loss |
+| residual denoise | 网络预测噪声/残差，再由输入减去 | 更聚焦高频修正，但 residual 符号写反会彻底错误 | 用 identity/零残差小样例验证语义 |
+| `patch_size=64/128` | 训练 crop 的空间尺寸，单位 pixel | 大 patch 上下文多但显存/算力高；小 patch 样本多但上下文有限 | batch/step 不同时需说明总像素预算变化 |
+| `depth=5` / `features=32` | DnCNN 层数 / 中间特征通道数 | 增大提升容量也增加参数、激活和 latency | 先 overfit 小样本，再做同协议消融 |
+| L1 / MSE | 绝对误差 / 平方误差 | MSE 更重罚大误差，L1 对离群值更稳健 | 同 checkpoint 选择规则并看 PSNR、SSIM、纹理 |
+| Gaussian sigma | 与信号无关的噪声标准差 | 越大任务越难；必须声明输入 `[0,1]` 或 `[0,255]` | 先测 noisy baseline，再评价模型 gain |
+| shot/read noise | 随信号变化 / 近似信号无关的噪声项 | 更接近 Sensor 直觉，但本周仍是合成 RGB | 扫描亮度分桶的 variance/mean 关系 |
+
+## 19. Week 1 面试五问
+
+1. 为什么第一个实验选 TinyCNN/toy data，而不是直接上大模型和真实 RAW？
+2. residual learning 在去噪中学什么，若残差符号弄反会怎样？
+3. patch 变大为什么不等于结果必然更好，怎样控制总训练预算？
+4. L1 与 MSE 对大误差、平滑和 PSNR 倾向有何差异？
+5. 为什么必须先保存 noisy baseline、checkpoint、metrics.csv 和三联图？
+
+参考回答应落到本周实际链路：toy 数据只证明训练闭环；它不证明 SIDD、RAW 或真实手机噪声上的泛化。
+
+## 20. 教程闭环卡：先学任务表达，再学模型名字
+
+本周输入、GT 和输出都是 `float32` RGB tensor，训练布局为 NCHW、数值范围为
+`[0,1]`。toy noisy 由 clean 人工加噪得到，因此 GT 对齐是构造保证；它不是相机实拍
+噪声。模型输出语义必须与配置一致：direct 模式预测 `clean`，residual 模式若预测噪声
+`n_hat`，最终输出为 `clip(noisy-n_hat,0,1)`。
+
+公平消融固定：数据/split、seed、训练 step、验证样本、metric 实现和 checkpoint 规则；
+每次只改 model、loss、patch 或 noise 中一个因素。patch 从64增至128时，每样本像素变为4倍，
+不能只固定 step 就声称算力预算相同；还要报告 batch、总像素和耗时。
+
+调试顺序：先让1～5张图 overfit，再看 output/range，再查 residual 符号，最后才调容量。
+关键权衡（trade-off）是：更强去噪通常会损失纹理；大 patch 提供上下文但增加显存；MSE 重罚大
+误差但更可能趋向平均。本周证据为 `verified_synthetic`/toy smoke，paired 文件夹 smoke
+只证明数据接口，Week 2 才进入公开真实 paired sRGB。
+
+独立验收：手算一个2×2 residual 例子；预测 sigma、patch 和 loss 改变的方向；故意写反
+residual 符号并解释图像/metric；最后用“背景—合同—实验—结果—边界”两分钟复述。

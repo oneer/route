@@ -784,3 +784,44 @@ paired_rgb_sidd_tiny_nafnet_lite_charbonnier_1000.yaml
 ```
 
 但这不是进入 Week 6 的阻塞项。当前 Week 5 已经足够支撑“现代轻量 restoration block 复现与分析”的学习目标。
+
+## 19. 结构关键词与参数验收表
+
+| 关键词/参数 | 当前实现含义 | 调节方向与成本 | 验证方式 |
+|---|---|---|---|
+| SimpleGate | 沿通道拆成两半后逐元素相乘 | 提供非线性交互，要求通道可正确二分 | 用小 tensor 手算 shape 和乘法 |
+| channel attention | 用全局统计重标定通道 | 强化/抑制特征，增加少量算子和激活 | 比较关闭前后质量，不凭论文名称判断 |
+| residual block | 输入与变换结果相加 | 改善优化并保留 identity 路径 | 零初始化/identity 测试检查语义 |
+| `width=8/16` | 主干基础特征通道数 | 增大通常提高容量，也近似平方增加部分卷积成本 | 同 steps/loss/split 比质量、params 和 latency |
+| encoder/middle/decoder blocks | 各尺度 block 数量 | 增大 receptive field/capacity 和内存 | 逐项消融，避免同时改 width 和 block 数 |
+| NAFNet-lite | 为学习缩小的复现版本 | 不能代表官方完整 NAFNet 能力 | 报告实际 config，不用模型家族名替代实验事实 |
+
+## 20. Week 5 面试五问
+
+1. NAFNet 为什么可以在不使用传统 ReLU/GELU 的情况下形成非线性交互？
+2. SimpleGate 对通道维有什么要求，shape 错误如何暴露？
+3. width 和 block 数分别怎样影响参数、激活内存与感受野？
+4. 为什么当前 NAFNet-lite 没赢不能推出“NAFNet 不适合去噪”？
+5. 复现论文时如何区分公式理解、最小复现、官方配置和公平 benchmark？
+
+## 21. 本周边界
+
+本仓库实现的是缩小宽度和 block 数的 `NAFNet-lite` 学习版本。当前结果只适用于记录的 tiny split、loss、steps 和 seed；不能代表官方完整 NAFNet、论文 benchmark 或模型家族的普遍优劣。
+
+## 22. 教程闭环卡：从 block 复现到公平判断
+
+SimpleGate 将通道维拆为 `x1,x2` 并计算 `x1⊙x2`；若输入为
+`[B,2C,H,W]`，输出为 `[B,C,H,W]`。乘法使输出对输入呈非线性关系，但不代表整个官方
+NAFNet 已被完整复现。残差缩放可写为 `y=x+βF(x)`，小/可学习的 `β` 让初始网络更接近
+identity，通常有利于深块稳定优化。
+
+代码阅读顺序应是：入口 config → model factory → NAFBlock → encoder/middle/decoder →
+skip/shape → output residual/direct 语义。先用奇偶尺寸和小 tensor 做 shape test，再用1～5图
+overfit，最后才跑 width/blocks 消融。width 增大通常使部分卷积参数/FLOPs近似平方增长，
+同时扩大 activation；不能只报告 checkpoint MB。容量、质量、显存和 latency 是本周必须同时
+记录的工程权衡。
+
+公平复现需要区分四层证据：论文公式、官方配置、本仓库 NAFNet-lite 实现、当前 tiny run。
+本周为 `verified_public` tiny sRGB 上的缩小复现实验，不是官方 benchmark。独立验收需画出
+一个 NAFBlock shape 流、手算 SimpleGate、故意给奇数通道观察失败，并写出一次只改 width
+的质量/成本实验。

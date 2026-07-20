@@ -11,6 +11,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(STAGE4_BUILD_ORT "Build ONNX Runtime C++ runner" ON)
 option(STAGE4_BUILD_CUDA_PREPROCESS "Build CUDA preprocess benchmark" OFF)
 
+add_library(stage4_device_pipeline_contract cpp/src/device_pipeline.cpp)
+target_include_directories(stage4_device_pipeline_contract PUBLIC cpp/include)
+if(MSVC)
+  target_compile_options(stage4_device_pipeline_contract PRIVATE /W4 /permissive- /utf-8)
+else()
+  target_compile_options(stage4_device_pipeline_contract PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+enable_testing()
+add_executable(test_device_pipeline_cpp cpp/tests/test_device_pipeline.cpp)
+target_link_libraries(test_device_pipeline_cpp PRIVATE stage4_device_pipeline_contract)
+add_test(NAME test_device_pipeline_cpp COMMAND test_device_pipeline_cpp)
+
 if(STAGE4_BUILD_ORT AND NOT DEFINED ONNXRUNTIME_ROOT)
   # ONNX Runtime 不从系统路径猜测，显式传入根目录可以避免链接到错误版本。
   message(FATAL_ERROR "Please pass -DONNXRUNTIME_ROOT=/path/to/onnxruntime-win-x64-*")

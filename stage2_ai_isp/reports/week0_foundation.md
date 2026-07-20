@@ -622,3 +622,50 @@ Week 0 还要建立一个基本调试习惯：看到异常结果时，先定位�
 8. 能解释为什么 Week 1 先做 toy denoise，而不是直接上 NAFNet、Restormer 或真实 RAW。
 
 如果这些都能讲清楚，Week 0 就不只是“神经网络基础”，而是阶段二所有训练实验的共同地基。
+
+## 20. 关键词与训练参数验收表
+
+| 关键词/参数 | 定义 | 为什么需要 | 调节或验证要点 |
+|---|---|---|---|
+| forward | 当前参数下从输入计算输出 | 建立可微的预测链路 | 检查输入/输出 shape、range 和有限性 |
+| loss | 用于反向传播的标量目标 | 把“输出哪里错”转换为优化方向 | loss 下降不保证主观画质；需配 validation |
+| gradient/backward | loss 对每个可训练参数的偏导 | 告诉 optimizer 参数应怎样变化 | 忘记清梯度会累积；NaN 先查输入、loss 和学习率 |
+| learning rate | 每次更新的步长比例 | 控制收敛速度和稳定性 | 太大震荡/发散，太小学不动；不能脱离 optimizer 讨论 |
+| batch size | 一次更新使用的样本数 | 影响梯度方差、吞吐和显存 | 改 batch 可能改变优化轨迹，公平实验需记录 |
+| step / epoch | 一次参数更新 / 遍历一轮数据 | 定义训练预算 | 小数据随机采 patch 时二者不能随意等同 |
+| seed | 随机数生成初始状态 | 提高数据采样和初始化的可复查性 | 单 seed 可复现不代表统计稳定，最终比较需多 seed |
+| train/eval mode | 训练行为 / 推理行为 | Dropout、BatchNorm 等行为可能不同 | validation/export 前显式 `eval()` |
+
+## 21. Week 0 面试五问
+
+1. **Loss 与 metric 有何区别？** Loss 必须可用于优化；metric 服务评价，可能不可微。两者都不能单独替代视觉检查。
+2. **为什么每步先清梯度？** PyTorch 默认累积梯度；若非有意做 gradient accumulation，会改变有效更新量。
+3. **学习率过大/过小各有什么现象？** 过大表现为震荡、NaN 或质量倒退；过小表现为 loss/metric 长期几乎不动，应在相同数据和初始化下验证。
+4. **为什么 validation 不参与更新？** 它用于估计未参与拟合的数据表现；若反向传播或反复按 validation 过度调参，会产生选择偏差。
+5. **训练可复现需要记录什么？** 数据 manifest/split、config、seed、代码版本、环境、checkpoint 和指标实现；只记录最终 PSNR 不够。
+
+## 22. 本周边界
+
+Week 0 解释并验证最小训练机制，不产生真实 Camera 质量结论。Toy loss 下降只能证明代码可优化；模型泛化、SIDD 表现、RAW 物理真实性和部署性能由后续 Week 分别验收。
+
+## 23. 从零复述卡：训练闭环为何按这个顺序
+
+```text
+Dataset 产出 noisy/clean batch
+  -> model(noisy) 得到 output
+  -> loss(output, clean) 把像素误差压成标量
+  -> zero_grad 清除上一轮梯度
+  -> backward 用链式法则求 d(loss)/d(parameter)
+  -> optimizer.step 按 learning rate 更新参数
+  -> validation 在 eval/no_grad 下产生独立指标与图像
+```
+
+设参数为 `θ`、学习率为 `η`，最简单的梯度下降写作
+`θ_(t+1)=θ_t-η∇θL(θ_t)`。`η` 太大可能跨过低谷而震荡，太小则在固定 step
+预算内几乎不动；因此 learning rate 必须与 optimizer、batch、loss 尺度一起记录。
+
+本周建议的最小故障注入是故意删除 `zero_grad`。预期现象是梯度跨 step 累积、更新量改变；
+若结果没有明显变化，继续打印 gradient norm，而不是直接断言“zero_grad 不重要”。完成后保存：
+伪代码、一次正常曲线、一次故障曲线、排查结论。证据等级为
+`verified_synthetic`（学习机制），不涉及 Camera 数据质量。学习权衡是更大的 batch 可降低
+梯度方差却增加内存，并会改变相同 step 下看到的样本量。

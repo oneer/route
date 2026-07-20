@@ -244,3 +244,41 @@ PSNR/SSIM 只能说明整体像素误差和结构相似度。Diagnostics 能说�
 补完 diagnostics 后，Week 7 更接近三年 ISP 算法社招的表达要求：不仅能跑一个 low-light enhancement baseline，还能把低光任务拆成曝光、噪声、颜色、暗区和 clipping 几类问题，并用数字说明模型改善了什么、还剩什么。
 
 下一步如果继续增强，优先做真实 SID RAW low-light 或至少加入更真实的曝光 ratio、黑电平、white balance 和 RAW pack 流程；但这可以放到后续阶段，不阻塞 Week 7 进入 Week 8 failure case。
+
+## 9. 退化参数与评价验收表
+
+| 参数/指标 | 当前值或定义 | 调节方向与含义 | 限制 |
+|---|---|---|---|
+| `exposure=0.28` | 近似线性域信号乘数 | 越小越暗、恢复难度越高；曝光比约为 `1/0.28` | 不等同于真实快门/ISO metadata |
+| `read_noise=0.015` | 加性噪声基项，输入范围 `[0,1]` | 增大主要恶化暗区 | 是合成参数，不是 Sensor 标定值 |
+| `shot_noise=0.025` | 与 `sqrt(signal)` 相关的噪声项 | 增大使亮度相关噪声更强 | 公式是简化模型 |
+| `seed=123` | 合成退化随机种子 | 固定后便于同输入比较 | 单 seed 不代表所有噪声 realization |
+| dark-ROI error | 暗区局部恢复误差 | 能补充全图 PSNR 对暗区不敏感的问题 | ROI 语义需人工确认 |
+| clipping/color error | 饱和比例与通道/颜色偏差 | 曝光恢复不能以高光截断和偏色为代价 | sRGB 域颜色指标不是 RAW 色彩标定 |
+
+## 10. Week 7 面试五问
+
+1. 低光增强为什么不只是“把图变亮”，而是曝光、噪声、颜色和 clipping 的联合问题？
+2. read noise 与 shot noise 的信号依赖关系有何不同？
+3. `exposure=0.28` 如何解释，为什么不能直接称为真实曝光比标定？
+4. PSNR 提升但 dark-ROI error 仍高时，下一步应改模型还是先改退化/指标？
+5. synthetic low-light 到 SID RAW 还缺哪些数据合同和物理因素？
+
+## 11. 教程闭环卡：低光是联合目标，不是单一亮度指标
+
+Week 6 强调输入域，本周强调任务域：输入是由 clean sRGB 合成的暗噪图，GT仍是原 clean
+sRGB，shape/layout/range 为 `[B,3,H,W]`/NCHW/`float32 [0,1]`。概念噪声模型可写为：
+
+```text
+x_dark = exposure * y
+x = clip(x_dark + sqrt(max(x_dark,0))*shot*z1 + read*z2, 0, 1)
+```
+
+其中 `z1,z2` 是零均值随机量。该公式只提供受控退化直觉，不是从真实 Sensor 标定出的
+Poisson-Gaussian 参数。exposure 变小会同时降低信号和有效 SNR；shot/read 增大则增加恢复
+难度，三者耦合，因此单变量 sweep 才能解释结果。
+
+结果按全图、暗区、颜色通道、欠/过增强和 clipping 五层检查。输出更亮但高光截断，体现
+亮度恢复与高光保留的权衡，不能简单称“增强更好”。失败调试先确认 GT/退化顺序和随机
+seed，再做小样本 overfit，最后分析模型。证据等级为 `verified_synthetic`；不能外推真实
+SID、曝光 metadata、RAW 色彩或手机夜景时序。

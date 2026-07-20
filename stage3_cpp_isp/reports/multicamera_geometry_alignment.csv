@@ -1,0 +1,6 @@
+key,value
+max_homography_abs_error,3.2464991406300214e-07
+cpp_mean_reprojection_error_px,9.200870931172048e-14
+opencv_mean_reprojection_error_px,1.9076140537997077e-06
+threshold,1e-06
+passed,1.0

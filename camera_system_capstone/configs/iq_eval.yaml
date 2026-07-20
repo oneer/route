@@ -1,0 +1,15 @@
+contract_version: "1.0"
+manifest: camera_system_capstone/data/manifests/iq_eval_manifest.csv
+algorithm_owner: stage1_soft_isp
+metrics:
+  - near_black_fraction
+  - near_white_fraction
+  - roi_snr_db_proxy
+  - approximate_dynamic_range_db_proxy
+  - mtf50_proxy_cyc_per_px
+reference_boundary: natural_image_proxies_are_not_absolute_lab_iq
+required_future_metrics:
+  - colorchecker_delta_e_2000
+  - flat_field_luma_chroma_noise
+  - slanted_edge_mtf50
+

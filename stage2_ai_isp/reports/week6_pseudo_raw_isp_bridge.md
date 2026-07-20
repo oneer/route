@@ -384,3 +384,42 @@ Week 6 是 RAW-like 输入形态训练；
 3. 只取 1～5 对图片 overfit；若 loss 不下降，先查 pair、pack 和 residual 语义。
 4. 写出当前 pseudo RAW 与真实 RAW 至少五项 domain gap。
 5. 设计一个单变量实验：只增加 inverse OETF，保持 split、seed、模型和训练步数不变。
+
+## 8. RAW Bridge 关键词与参数验收表
+
+| 关键词/参数 | 本周实际含义 | 为什么需要 | 证据边界 |
+|---|---|---|---|
+| mosaic | 从 RGB 每个位置只采对应 CFA 通道 | 模拟 Bayer 空间采样结构 | 输入源仍是 ISP 后 sRGB |
+| RGGB pack | 将 2×2 Bayer block 打包成 4 通道 | 降低空间尺寸并保留四种 CFA 位置 | shape bridge，不自动恢复真实 RAW 物理属性 |
+| `in/out_channels=4` | DnCNN 接收并输出 packed RGGB | 网络接口必须与 pack 合同一致 | 不能拿 RGB 3 通道 checkpoint 直接加载 |
+| inverse OETF | 尝试从显示编码回到近似线性域 | 真实 RAW 接近线性，sRGB 不是 | clipping、tone 和 CCM 不可被精确逆转 |
+| black/white level | RAW 零点和饱和上限 | 影响 normalize、噪声和 clipping | pseudo RAW 当前没有真实 metadata |
+| unprocessing | 近似逆转 ISP 以合成 RAW-like 数据 | 缩小 RGB→RAW domain gap | 仍需与真实 RAW 验证，不是 ground truth |
+
+## 9. Week 6 面试五问
+
+1. Bayer mosaic 与 4-channel RAW pack 的 shape 如何变化？
+2. 为什么从 sRGB 抽样得到 RGGB 仍不是真实 RAW？
+3. black level、white level、linearization 和 WB 在真实 RAW 训练中如何进入合同？
+4. inverse OETF 能逆转什么，不能恢复哪些已经丢失的信息？
+5. 怎样用真实 RAW 与 pseudo RAW 设计 domain-gap 对照实验？
+
+## 10. 教程闭环卡：shape bridge 不等于物理反演
+
+本周从 Week 5 接收 `[B,3,H,W]` sRGB，输出 `[B,4,H/2,W/2]` pseudo RGGB 和可训练
+checkpoint；它为后续真实 RAW 学习准备接口，不提供 Sensor 物理证据。固定 RGGB pack 为：
+
+```text
+R=x[...,0::2,0::2]  Gr=x[...,0::2,1::2]
+Gb=x[...,1::2,0::2] B=x[...,1::2,1::2]
+```
+
+H/W 必须为偶数；crop、flip、rotate 需要同步更新 CFA 语义，否则通道标签会错。真实 RAW
+还需要 black/white level、线性化、WB/CCM、曝光/ISO 与 shot/read noise metadata。由于 tone
+mapping、clipping 和局部 ISP 可能不可逆，从 sRGB 反推 RAW 只能近似。
+
+失败调试顺序：先用4×4手算 pack/unpack，再查 CFA、shape、range，最后看训练。故障注入可交换
+Gr/Gb 或从奇数坐标裁剪，观察颜色/合同错误。trade-off 是 pack 降低空间尺寸、增加通道，
+便于卷积处理却改变内存布局和 receptive field 解释；这是接口便利性与空间语义之间的工程
+权衡。本周证据为 `verified_partial` 加
+`verified_public` 源图；不可写成真实 RAW 去噪。

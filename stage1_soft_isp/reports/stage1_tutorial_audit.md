@@ -5,7 +5,7 @@
 ## 1. 审查结论
 
 - 已完成：14 张 DNG 的 metadata/统计、BLC、动态 DPC、学习版径向 LSC、bilinear demosaic、Gray World AWB、metadata 简化 CCM、Tone/Gamma、rawpy 参考对比、Week 5 消融、Week 6 局部对比和统一配置驱动 Pipeline。
-- 已验证：`python -m unittest discover -s tests -v` 运行 30 项测试并通过；`scripts/17_run_pipeline.py` 可对 T01 生成最终预览、metadata 和各阶段统计 JSON。
+- 已验证：`python -m unittest discover -s tests -v` 运行 35 项测试并通过；`scripts/17_run_pipeline.py` 可对 T01 生成最终预览、metadata 和各阶段统计 JSON。
 - 重复内容：`reports/week3_demosaic_report.md` 是早期根目录版本，主线应阅读 `reports/week3/demosaic_report.md`；前者保留归档，不再作为导航主入口。
 - 已补实验：`feasible_raw_quality_audit.md` 已包含 DPC 人工坏点注入、recall/额外检测和 `min_delta × mad_k` 参数扫描，以及多种 AWB baseline 对比。
 - 只有方案、尚无实验闭环：BLC `black_level + (-10, 0, +10)` 误差传播、真实 flat-field LSC、ColorChecker CCM、dark-frame 噪声标定、时序稳定性和 per-module 性能基准。
@@ -24,7 +24,7 @@
 | Week 4 CCM | `soft_isp/ccm.py` | DNG/rawpy 暴露矩阵的简化使用 | `10_apply_ccm.py`、`16_close_mastery_gaps.py` | CCM 对比图、相对 rawpy 的 DeltaE | identity CCM、矩阵 shape 校验 |
 | Week 4 Tone/OETF | `soft_isp/tone.py`；sRGB/S-curve 对比在 `16_close_mastery_gaps.py` | `parameters.tone.method/percentile/gamma` | `11_apply_gamma.py`、`12_apply_tone_mapping.py`、`16_close_mastery_gaps.py` | 曲线图、Tone 对比、Week 5/6 JSON | Gamma 参数与 uint8 边界 |
 | Week 5 IQA/消融 | `soft_isp/metrics.py`、`iq_metrics.py` | 各模块开关 | `15_evaluate_pipeline.py`、`18_feasible_raw_quality_audit.py` | 消融 JSON/图、RAW/IQ proxy 表 | 相同图像指标；clipping、SNR/DR 和边缘 proxy 方向性 sanity checks |
-| Week 6 综合验收 | `soft_isp/pipeline.py` | `configs/default.yaml` | `17_run_pipeline.py` | `preview.png`、`metadata.json`、逐阶段 JSON | `tests/` 30 项合成测试；真实 DNG Pipeline 由文档命令单独复现 |
+| Week 6 综合验收 | `soft_isp/pipeline.py` | `configs/default.yaml` | `17_run_pipeline.py` | `preview.png`、`metadata.json`、逐阶段 JSON | `tests/` 35 项合成测试；真实 DNG Pipeline 由文档命令单独复现 |
 
 ## 3. 数据域总表
 
@@ -64,3 +64,33 @@
 ## 5. 学习者如何使用证据
 
 先运行测试和一张样张的统一 Pipeline，再阅读周总结。模块报告里的全量 14 张结果用于查证，不要求逐张背诵；深入分析优先选 T01（常规样张）、T08（结构/颜色差异明显）、T13（AWB/颜色挑战）和 T14（高光与局部差异）。每个结论都应同时写出“证据支持什么”和“没有证明什么”。
+
+## 6. 主线报告教程要素审查
+
+下表审查的是主线教程是否提供学习入口，不代表所有产品级实验已经完成。`已覆盖` 表示报告中有定义、命令、导航或验收；具体证据等级仍以各周表格和本审计第 4 节为准。
+
+| 教程要素 | Week1 | Week2 | Week3 | Week4 | Week5 | Week6 |
+|---|---|---|---|---|---|---|
+| 定位、前置与下游连接 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| 背景、关键词、典型误解 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| shape/dtype/range/颜色域合同 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| 公式符号、单位、假设 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| 代码导航、最小命令、产物 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| 参数方向、耦合、选择理由 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| 实验设计与结果解释 | 统计/ROI | BLC/DPC/LSC | 插值/AWB | 颜色/曲线 | 消融/IQA | 综合/RCA |
+| failure/debug/trade-off | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| 证据等级与不可外推项 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+| 五类面试题与动手验收 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 | 已覆盖 |
+
+仍未闭环的内容不是教程文本缺失，而是现实证据缺失：自采 dark/flat/ColorChecker/slanted-edge/连续 RAW、标准实验室协议、目标平台延迟/内存/功耗。它们必须保持 `not_run`，直到真实采集与运行产物进入仓库。
+
+## 7. 教程完成判定
+
+学习者只有同时满足以下条件，才可把 Stage 1 标记为完成：
+
+1. 在陌生 DNG 上独立建立数据合同，不复制现成 JSON。
+2. 对一个模块先写参数预测，再执行单变量实验并解释副作用。
+3. 用中间产物定位一次第一发散点，而不是只调最终 PNG。
+4. 区分 `verified_public`、`verified_synthetic`、`verified_proxy` 与 `not_run`。
+5. 完成 `exercises/final_project.md`，并保留测试、失败案例和版本迭代证据。
+6. 能按“结论→原理→本项目证据→边界→追问”回答各周面试题。

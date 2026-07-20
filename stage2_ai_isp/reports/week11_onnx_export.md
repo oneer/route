@@ -11,6 +11,10 @@ Week 11 的目标不是“得到一个 `.onnx` 文件”，而是证明冻结模
 输出：ONNX、alignment.json、两端输出图和 latency 记录
 ```
 
+Week 10 提供冻结 checkpoint 和 tensor contract，本周输出后端无关的 ONNX 图及 Python ORT
+参考证据，交给 Week 12 C++。ONNX 是算子图交换格式，不会自动携带项目中所有图片解码、
+颜色、归一化和后处理语义；这些必须由合同明确。
+
 当前协议：
 
 ```text
@@ -116,3 +120,57 @@ ONNX/PyTorch 对齐通过只证明导出图和 Python ORT backend 的数值一�
 
 通过标准：ONNX checker 通过，alignment JSON 与输出图存在，误差在事先声明的阈值内，
 并能解释任何未通过项是模型质量问题、数据协议问题还是 backend 问题。
+
+## 8. ONNX 关键词与参数表
+
+| 关键词/参数 | 定义 | 当前选择理由 | 验证方式 |
+|---|---|---|---|
+| opset 17 | ONNX 算子语义版本 | 当前导出器/ORT 支持的明确协议 | checker + 实际 ORT 推理；不是越新越快 |
+| dummy input | tracing/export 时的示例 tensor | 提供 shape 和 dtype | 不代表动态 shape 一定可运行 |
+| dynamic axes | batch/height/width 可变声明 | 全卷积模型希望支持不同空间尺寸 | 至少用 128 与 512 实测 |
+| graph checker | 检查图结构与 schema 合法性 | 先排除格式错误 | 通过不等于数值对齐 |
+| max/mean abs error | 后端输出逐元素绝对误差统计 | 捕捉局部最大偏差与整体偏差 | 对原始 float tensor，不比较 PNG |
+| warm-up/repeats | 不计时预热 / 正式重复次数 | 避免一次性初始化污染 latency | 同时报告设备、线程、shape 和 I/O 范围 |
+
+## 9. Week 11 面试五问
+
+1. ONNX checker 通过与 PyTorch/ORT 数值对齐通过有什么区别？
+2. opset 是什么，为什么不是数字越大性能越好？
+3. 声明 dynamic axes 后为什么仍必须实测不同尺寸？
+4. 为什么 8-bit PNG 不适合作为严格后端对齐证据？
+5. max error 很大时，你如何依次排查 RGB/BGR、range、layout、checkpoint 和算子差异？
+
+## 10. 本周执行流程速记
+
+```text
+frozen checkpoint -> eval model -> dummy tensor -> ONNX export
+-> checker -> ORT load -> same float input -> raw tensor alignment
+-> output image/JSON -> handoff to C++
+```
+
+## 11. 参数方向、耦合与工程取舍
+
+| 参数/概念 | 改变后的影响 | 与什么耦合 | 常见失败 |
+|---|---|---|---|
+| opset | 改变算子语义/可用算子集合，不保证更快 | exporter、ORT/目标 backend 版本 | checker 或目标端不支持 |
+| dynamic H/W | 一个图可接多尺寸 | 模型 stride、reshape、目标 backend 优化 | 声明成功但某尺寸运行失败 |
+| dummy H/W | 决定跟踪示例和可能的常量折叠路径 | dynamic axes 与模型控制流 | 被误当成唯一可运行尺寸 |
+| tolerance | 决定对齐是否通过 | dtype、backend、输出量级 | 太松掩盖 bug，太严拒绝正常舍入 |
+| warm-up/repeats | 影响 latency 稳定性与统计成本 | 线程、shape、缓存、后台负载 | 首轮初始化污染均值 |
+
+工程权衡包括：动态 shape 提高复用性，却可能减少编译器针对固定尺寸的优化；opset 提高兼容能力与新算子
+表达，但目标平台支持可能滞后。阈值必须在看结果前声明，并同时记录 max 和 mean：max 捕捉
+局部异常，mean 描述整体偏差。
+
+## 12. 从零调试实验与证据边界
+
+推荐故障注入顺序：①漏 `/255`；②RGB/BGR互换；③NCHW/HWC误传；④加载错误 checkpoint；
+⑤用不满足 stride 的尺寸。每次保存输入 tensor、两端 raw output、误差统计和修复后回归。
+若 checker 通过但误差大，优先比较进入两后端的**同一 float tensor**，而不是先怀疑 ONNX。
+
+本周证据为 `verified_partial`：冻结 DnCNN 在 Python ORT CPU 上完成图合法性和数值对齐。
+它不证明 C++ 图片 I/O、GPU/HTP/NPU、INT8、峰值内存、功耗或生产稳定性。
+
+学习者独立验收：用128与512尺寸复验；解释一个 max/mean 冲突样例；画出 config→model
+factory→export→checker→ORT→alignment JSON 的调用链；用自己的 checkpoint 重复一次，不能
+仅引用现有 `2.38419e-7`。

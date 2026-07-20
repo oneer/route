@@ -235,3 +235,103 @@ LSC 不干净 -> AWB 会受到位置相关亮度/色偏影响
 ```
 
 一句话总结：Week2 是在给 Demosaic 准备更干净的 RAW 输入。
+
+## 关键词与参数验收表
+
+| 关键词/参数 | 当前学习版含义 | 调节方向与风险 | 验证方式 |
+|---|---|---|---|
+| per-position BLC | 按 R/Gr/Gb/B 位置扣 metadata black level | 欠扣会发灰，过扣会让暗部大量归零 | 比较四平面 p01、0 附近比例和暗部 ROI |
+| `min_delta=1024` | DPC 最低残差门限，单位是当前 RAW code value | 增大更保守但漏检；减小更敏感但误伤纹理 | 注入坏点后统计 precision/recall |
+| `mad_k=12` | residual 的 robust 离散倍数 | 增大减少 false positive，也可能降低 recall | 与 `min_delta` 做二维 sweep，不能单独调 |
+| local median | 同色 Bayer 邻域的局部稳健参考 | 邻域过大会跨结构，过小会受噪声影响 | 强边缘 crop 与平坦注入同时检查 |
+| `edge_gains` | R/Gr/Gb/B 的学习版角落增益 | 太大使角落过亮并放大噪声，太小残留 shading | 看 gain map、中心/边缘均值和 clipping |
+| `power=2.0` | 径向 profile 从中心到边缘的曲率 | 越大增益更集中在边缘；不是实机 mesh 标定 | synthetic flat-field 只验流程，不验产品效果 |
+
+默认值服务于可复现实验，不是跨 Sensor 通用参数。尤其 `1024` 离开 black/white level 和有效位深就没有独立意义。
+
+## 从输入到结论：可复现教程
+
+### 数据契约与公式假设
+
+| 模块 | 输入 | 输出 | 线性/范围约定 |
+|---|---|---|---|
+| BLC | `(H,W)` Bayer，通常 `uint16`，RAW code value | `(H,W)` Bayer，`uint16` | 线性；按 Bayer 位置扣黑并 clip 到有效白电平 |
+| DPC | BLC 后 Bayer、pattern、有效白电平 | 修复后 Bayer + boolean mask | 线性；只替换候选点，不做显示归一化 |
+| 学习版 LSC | DPC 后 Bayer + R/Gr/Gb/B gain 参数 | `(H,W)` `float32` Bayer | 线性；乘 gain 后可能超范围，必须记录 clipping |
+
+对 Bayer 位置 `p`，BLC 可写为：
+
+```text
+y_p = clip(float(x_p) - b_c(p), 0, w - b_c(p))
+```
+
+`x_p/y_p` 是校正前后 RAW code value，`c(p)` 是位置所属的 R/Gr/Gb/B，`b_c` 是该位置黑电平，`w` 是 white level。先转浮点/有符号类型是为了避免 `uint16` 下溢绕回大正数。
+
+DPC 对同色平面的残差为 `r_p=|y_p-median(N_p)|`，robust 阈值为：
+
+```text
+T = max(min_delta, median(r) + mad_k * median(|r - median(r)|))
+```
+
+`N_p` 是同 CFA 色的局部邻域；这个全局 robust threshold 是学习 baseline，不代表产品按亮度、ISO、温度分段的阈值。径向 LSC 可抽象为 `z_p=clip(y_p*g_c(r_p),0,w')`；这里的 `r_p` 指归一化半径，不要与 DPC residual 同名混用。
+
+### 参数完整地图
+
+| 参数 | 默认/单位 | 增大 | 减小 | 耦合与选择理由 | 失败现象 |
+|---|---:|---|---|---|---|
+| BLC `black_level` | metadata / RAW code | 暗部更黑、归零更多 | 暗部残留偏置 | 与 Bayer 位置、white level、温度/ISO 耦合 | 过扣死黑/色偏；欠扣发灰 |
+| DPC `min_delta` | 1024 / RAW code | 更保守、漏检增加 | 更敏感、误检增加 | 必须按有效信号跨度归一理解，并与 `mad_k` 二维扫描 | 强边缘被修或热像素残留 |
+| DPC `mad_k` | 12 / 无量纲 | 阈值随残差离散度提高 | 更易触发 | 噪声、纹理、ISO；不能脱离 `min_delta` 单调比较 | 大面积 mask 或 mask 为空 |
+| `crop_size` | 100 / pixel | 上下文更多、局部点更小 | 更聚焦、缺少邻域语义 | 输出分辨率 | 修复点看不清或无法判断是否处于边缘 |
+| LSC `edge_gains` | R1.18/Gr1.12/Gb1.12/B1.22 | 角落更亮且噪声/clip 增多 | shading 残留 | 与每通道 shading、AWB、white headroom 耦合 | 四角偏色、噪声增强 |
+| LSC `power` | 2.0 / 无量纲 | 补偿更集中到边缘 | 增益更平缓铺开 | `edge_gains` 和半径定义 | 环状亮度过渡或中心被错误补偿 |
+
+### 运行、产物和代码导航
+
+```text
+scripts/06_apply_blc.py -> soft_isp/blc.py -> *_blc.json / histogram / visual
+scripts/07_apply_dpc.py -> soft_isp/dpc.py -> *_dpc.json / mask / crop
+scripts/14_apply_lsc.py -> soft_isp/lsc.py -> *_lsc.json / gain map / compare
+tests/test_stats_blc.py + test_dpc_demosaic.py + test_lsc_orientation.py
+```
+
+命令必须从 `stage1_soft_isp/` 执行。先运行 T01，再运行 `python exercises/week2_dpc_injection.py` 补全练习；最后运行 `python -m unittest discover -s tests -v`。正常证据至少包括模块 JSON、mask/gain map、固定 crop 和测试结果；只有最终 PNG 不算完成。
+
+### Failure case、调试顺序与 trade-off
+
+| 现象 | 第一发散点 | 验证实验 | 可能修复及代价 |
+|---|---|---|---|
+| 暗部出现大码值亮点 | BLC dtype | 用 `x<black` 小数组检查减法 | 转浮点/有符号；增加一次类型转换 |
+| 强边缘被抹掉 | DPC mask | 同时看注入平坦区和真实强边缘 crop | 提高阈值会减少误检，但降低 recall |
+| 坏点变成彩色十字 | DPC 是否在 Demosaic 前 | 对比 no-DPC 与 full 局部 crop | 更强检测会增加纹理损失风险 |
+| 四角亮但噪声明显 | LSC gain map | 比较中心/角落 mean、std、clip | 限制 gain 保噪声，但残留 shading |
+| Gr/Gb 角落差异异常 | pattern/每通道 gain | 画四平面中心—角落残差 | 修正 pattern/gain，不能用全局 AWB 掩盖 |
+
+### 证据等级、跨周连接与学习验收
+
+| 结论 | 证据等级 | 支持范围 | 边界 |
+|---|---|---|---|
+| BLC/DPC 对公开 DNG 的流程与图表 | `verified_public` | 代码可处理公开真实 RAW | 没有实机 factory calibration |
+| 人工坏点注入与参数扫描 | `verified_synthetic` | recall/额外检测及参数方向 | 不能代表真实 hot/dead pixel 分布 |
+| 径向 LSC、synthetic mesh | `verified_synthetic` | gain/mesh 流程和边界处理 | 不能证明真实镜头 shading 被校准 |
+| 真实 flat-field/暗帧 | `not_run` | 无 | 需要新增标准采集 |
+
+Week2 输出应仍是干净的线性 Bayer RAW，交给 Week3 Demosaic；若此处黑位、坏点或位置增益错误，插值会扩散错误，AWB 又会把它们当作场景颜色统计。
+
+动手验收：
+
+- [ ] 能手算一个 R/Gr/Gb/B 小数组的 BLC，并解释下溢风险
+- [ ] 能固定输入，完成 `min_delta × mad_k` 二维扫描而非同时改多个模块
+- [ ] 能在 mask 中区分注入坏点、额外检测和强边缘误检
+- [ ] 能解释为何 LSC gain 同时放大信号与噪声
+- [ ] 能把 synthetic、public 和 `not_run` 证据分别标注
+
+## 本周面试闭环
+
+完整参考答案见[Week 2：BLC/DPC/LSC 面试题](../interview/week2_frontend_correction_questions.md)。
+
+1. **概念题：** BLC、DPC、LSC 各修正什么物理来源，为什么都在 Demosaic 前？
+2. **原理题：** DPC 为什么比较同色 Bayer 邻域，而不是直接比较四邻域？
+3. **参数题：** `min_delta` 与 `mad_k` 各解决什么问题，怎样设计公平参数扫描？
+4. **调试题：** 为什么 DPC 同时需要 precision、recall 和强边缘视觉检查？
+5. **系统题：** synthetic flat-field 验证了什么，怎样升级为真实 LSC 标定并控制角落噪声？

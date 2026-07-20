@@ -1,0 +1,29 @@
+contract_version: "1.0"
+image_spaces:
+  bayer_raw:
+    layout: HW
+    channels: CFA
+    value_range: metadata_black_to_white_level
+    color_boundary: sensor_native_not_srgb
+  linear_rgb:
+    layout: HWC
+    channels: RGB
+    value_range: [0.0, 1.0]
+    color_boundary: linear_scene_referred
+  srgb:
+    layout: HWC
+    channels: RGB
+    value_range: [0.0, 1.0]
+    color_boundary: display_referred_srgb
+path_rules:
+  repository_relative: true
+  separator: forward_slash
+  absolute_paths_forbidden: true
+splits: [calibration, validation, evaluation, none]
+roi_contract:
+  format: xywh
+  coordinate_origin: top_left
+  fixed_before_parameter_selection: true
+status_values: [available, planned, not_available]
+unknown_metadata_policy: preserve_empty_never_guess
+

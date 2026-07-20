@@ -1,5 +1,7 @@
 # 阶段二唯一学习入口
 
+四阶段统一教程标准见[`../study-roadmap/四阶段周报告教程化要求大纲.md`](../study-roadmap/四阶段周报告教程化要求大纲.md)。Week 0–12 每篇主线周报均包含数据/参数概念、执行与验证逻辑以及本周面试五问。
+
 阶段二的目标不是“把现有命令全部运行一遍”，而是逐步达到四个能力层级：
 
 ```text
@@ -78,6 +80,29 @@ config/run/checkpoint/CSV/图像证据，哪些只是教程、历史记录或待
 - 证据：保存配置、指标、图像和一段自己的结论。
 
 只完成运行命令，不算完成该周。
+
+### 周报的统一阅读顺序
+
+每篇周报虽然保留了实验演进历史，但学习时固定按以下顺序提炼一页自己的笔记：
+
+1. 用一句话写清本周问题，以及它接收上周什么输入、向下周交付什么；
+2. 抄写数据合同：source、GT、shape、layout、dtype、range、color/domain；
+3. 画出从 Dataset 到输出证据的数据流，并在每条箭头旁标出关键参数；
+4. 手算一个最小样例或公式，随后只改变一个变量做实验；
+5. 同时检查 baseline、metric、triplet/error map/crop，不用单个分数替代结论；
+6. 保留一个失败案例，按“现象—假设—验证—结论—副作用”记录；
+7. 标记证据等级并口头回答该周五问；最后完成至少一项不复制正式代码的练习。
+
+统一数据合同模板：
+
+| 字段 | 必填内容 |
+|---|---|
+| source / GT | 数据从哪里来，GT 如何产生，是否真实配对 |
+| shape / layout | 如 `[B,3,H,W]` / NCHW；crop/pack 后如何变化 |
+| dtype / range | 如 `float32` / `[0,1]`；在哪一步从 uint8 转换 |
+| color / domain | RGB、sRGB、pseudo RGGB 或真实 RAW；是否线性 |
+| split / identity | train/val/test 如何隔离，文件名怎样配对 |
+| evidence | `verified_public`、`verified_synthetic`、`verified_partial` 或 `not_run` |
 
 每周复盘统一回答以下问题：
 

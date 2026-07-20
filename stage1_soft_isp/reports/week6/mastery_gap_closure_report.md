@@ -8,7 +8,7 @@
 | 前置 | Week 1–5 的预测、练习和单元测试已完成；不是第一次阅读现成答案 |
 | 运行前预测 | 为 DPC、Demosaic、AWB、CCM、Tone 各写一个最可能失败的场景和检查方法 |
 | 最小实验 | 先对 T01/T08/T13 运行补强实验，再在新目录完成独立毕业任务 |
-| 验收 | 30 项仓库测试通过；独立实现至少 6 项测试；有参数实验、失败案例和 Git 迭代 |
+| 验收 | 35 项仓库测试通过；独立实现至少 6 项测试；有参数实验、失败案例和 Git 迭代 |
 
 ```powershell
 python -m unittest discover -s tests -v
@@ -385,3 +385,208 @@ Week6 的 DeltaE 是相对 rawpy reference 的学习版评价。它有价值，�
 3. **语义 ROI IQA。** 手工固定 skin / sky / dark / highlight / texture crop，替代完全自动 ROI。
 
 ColorChecker 和真实 flat-field 也非常重要，但它们需要额外标准数据。没有数据时，报告应写清楚流程和需求，不要把 synthetic 或 rawpy reference 包装成产品级 ground truth。
+
+## 13. 综合调试参数地图
+
+| 现象 | 首查数据/参数 | 原因 | 不应直接做的事 |
+|---|---|---|---|
+| 暗部整体发灰或死黑 | per-channel black level、0 附近比例 | BLC 是后续所有暗部统计的零点 | 先调 Tone 掩盖错误 |
+| 孤立彩点或小十字 | DPC mask、`min_delta`、`mad_k` | 坏点经 Demosaic 会跨像素/通道扩散 | 只在最终 RGB 模糊 |
+| 角落偏色且噪声更强 | LSC 四通道 gain、edge gain | gain 同时补偿信号并放大噪声 | 用 AWB 全局 gain 修位置问题 |
+| 斜边 zipper/false color | CFA、border、Demosaic crop | 插值方向或 pattern 解释错误 | 只看全图 PSNR |
+| 全局偏色 | neutral ROI、AWB gain、CCM 方向 | 统计假设或颜色空间约定错误 | 同时乱调 AWB 与 CCM |
+| 高光平、主体暗 | Tone percentile/curve、per-channel clip | 动态范围分配不合适 | 只改 Gamma 期待恢复已丢细节 |
+
+调试遵循第一发散点原则：保存每个阶段的 shape、dtype、range、直方图和固定 ROI；从第一个与预期不一致的阶段开始，而不是从最终 PNG 反向猜测。
+
+## 14. 毕业实验执行手册
+
+### 14.1 从哪里开始、怎样结束
+
+Week6 不是再增加一个算法，而是把整个 Stage 1 组织成可审计的工程闭环：
+
+```text
+确认环境与测试
+  -> 选 T01 做单样张 smoke test
+  -> 逐阶段保存 shape/dtype/range/linear 状态
+  -> 对 T01/T08/T13 做代表性模块对照
+  -> 对异常样张执行第一发散点诊断
+  -> 冻结输入与参数做单变量 sweep
+  -> 记录接受方案、拒绝方案及副作用
+  -> 在干净目录完成独立毕业任务
+```
+
+从 `stage1_soft_isp/` 运行：
+
+```powershell
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python scripts/17_run_pipeline.py data/raw/T01_a0006-IMG_2787.dng `
+  --config configs/default.yaml `
+  --output-dir outputs/tutorial/week6/pipeline
+python scripts/16_close_mastery_gaps.py `
+  data/raw/T01_a0006-IMG_2787.dng `
+  data/raw/T08_a0022-IMG_2380.dng `
+  data/raw/T13_a0035-dgw_048.dng `
+  --max-size 1200 `
+  --out-dir outputs/tutorial/week6/gaps `
+  --report outputs/tutorial/week6/gaps/mastery_gap_closure_report.md
+```
+
+成功产物不只是 Markdown：还应有统一 Pipeline 的 `preview.png`、metadata/逐阶段 JSON、各对照图和可复述的失败记录。`--max-size=1200` 是保持 Bayer 对齐的中心 crop 加速协议；`0` 表示全尺寸。crop 结果不能直接冒充全分辨率延迟或角落 IQ，因为中心裁剪可能排除真实四角。
+
+### 14.2 关键输入输出合同
+
+| 检查点 | 必须记录 | 失败时影响 |
+|---|---|---|
+| DNG/RAW | hash、shape、CFA、black/white、orientation、未知 metadata | 输入变更后旧结果不可追溯 |
+| RAW stages | `(H,W)`、dtype、有效范围、per-CFA statistics | BLC/DPC/LSC 的错误会传播至所有 RGB 模块 |
+| RGB stages | `(H,W,3)`、Camera/target primaries、linear/encoded 标志 | AWB/CCM/Tone 责任边界混乱 |
+| reference | rawpy 生成设置、尺寸/方向、文件身份 | 指标变化可能只是 reference 协议变化 |
+| result | 参数快照、软件版本、输入集合、输出路径 | 无法复现或公平比较 |
+
+独立复现需要额外记录 Python、NumPy、OpenCV、scikit-image/rawpy 版本、CPU/OS、随机种子（如使用随机注入）和命令行。当前历史数表是仓库已有执行证据；若环境版本不同，应重新生成并记录差异，不能默认末位数字完全一致。
+
+### 14.3 综合参数百科
+
+| 参数 | 默认/单位 | 增大后的方向 | 关键耦合 | 验收/失败现象 |
+|---|---:|---|---|---|
+| DPC `min_delta` | 1024 RAW code | 检测更保守 | `mad_k`、bit depth、ISO | 注入 recall 下降，强边缘误检减少 |
+| DPC `mad_k` | 12，无量纲 | 对残差离散更宽容 | `min_delta`、纹理 | mask 过密/过稀都需双指标解释 |
+| LSC edge gains/power | 每通道约 1.12–1.22 / 2.0 | 角落补偿/边缘集中度增强 | 噪声、clip、AWB | center/corner residual 与噪声同时检查 |
+| AWB low/high percentile | 5/95% | 收紧时样本更纯但覆盖更低 | 曝光、场景颜色、max gain | gain 触顶或灰点覆盖率过低 |
+| AWB `max_gain` | 8× | 允许极端校正但放大噪声/clip | Sensor 响应、统计过滤 | 暗部彩噪、高光通道截断 |
+| Tone percentile | 99.5% | 主体通常更暗、高光余量增大 | 场景高光、曲线 | 主体/高光 ROI 与曲线一起判断 |
+| Gamma | 2.2 | 中暗调通常更亮 | 是否已 OETF、Tone 输出 | 重复编码泛白，漏编码偏暗 |
+| `max_size` | 1200 pixel | 更多空间内容、计算/内存增加 | Bayer 偶数对齐、角落覆盖 | 速度与代表性取舍，不是 IQ 参数 |
+
+### 14.4 一个完整 RCA 应怎样写
+
+以“T08 动态 DPC 候选过多”为例，报告只能确认候选数异常，不能直接断言真实坏点很多。合格 RCA 依次包含：
+
+1. **现象：** T08 动态候选 7907，明显高于多数样张。
+2. **第一发散点：** BLC 后 DPC residual/mask，而不是最终 PNG。
+3. **假设：** 纹理/高光、不同有效位深、噪声或阈值尺度造成误检。
+4. **隔离：** 检查 metadata 和 mask 空间分布；与注入平坦区的 recall/额外检测分开评价；扫描 `min_delta × mad_k`。
+5. **结果：** 只陈述重新运行得到的表和 crop；本报告现有数量不足以区分上述根因。
+6. **决策：** 若候选集中在真实边缘，优先提高保护/改方向修复；代价是 hot pixel recall 可能下降。
+7. **回归：** 固定 T01/T08/T13、注入集、强边缘 crop 和单元测试，防止只修一张图。
+
+这套“现象—第一发散点—假设—隔离—结果—决策—回归”模板也适用于 AWB gain 跳变、CCM 色偏和 Tone 高光发灰。
+
+### 14.5 证据总账与工程取舍
+
+| 证据 | 等级 | 当前可下结论 | 明确不能外推 |
+|---|---|---|---|
+| 35 项合成/边界单元测试 | `verified_synthetic` | 核心数学合同和已覆盖边界通过 | 真实 Camera IQ、性能和时序 |
+| 14 张公开 DNG 图表 | `verified_public` | 不同真实 RAW 文件上流程可运行 | 自采 Sensor、实验室 chart 和量产 tuning |
+| rawpy/自动 ROI/DeltaE | `verified_proxy` | 相对指定 reference 的趋势与问题候选 | 绝对颜色、主观质量、标准 IQ |
+| synthetic flat/坏点 | `verified_synthetic` | mesh、注入和调参方法有效 | 真实 shading/坏点分布 |
+| ColorChecker、dark/flat、slanted-edge、连续序列 | `not_run` | 当前无 | DeltaE2000、PTC/DR、标准 MTF、时序稳定性 |
+| per-module latency/memory/target device | `not_run` | 当前无 | 实时性、功耗、Snapdragon 性能 |
+
+最终工程决策不能只优化一个数：更强 LSC/AWB gain 会放大噪声或 clipping；更复杂 Demosaic 可能降低伪影但增加延迟；更强 Tone 可保护范围却降低局部对比；更小 mesh/tile 更贴合 shading 也更敏感于噪声和块状边界。每次接受参数都要留下被拒方案和副作用。
+
+### 14.6 跨阶段连接与毕业验收
+
+Stage 1 的输出不是“最好看的 PNG”，而是三类资产：可解释的 RAW→RGB 数据合同、针对模块的验证方法、可复盘的 failure/RCA。它们分别交给后续 AI 数据准备、C++ 重写和部署数值对齐；若没有中间值和证据边界，后续只能对最终图猜错因。
+
+- [ ] 能在干净输出目录完成 T01 的统一 Pipeline 和三张代表样张补强实验
+- [ ] 能画出 Week1–6 数据流并标注 shape、dtype、range、linear/encoded
+- [ ] 能独立实现至少一个模块及其 identity/边界/failure 测试
+- [ ] 能完成一次单变量 sweep，保存最佳与至少一个拒绝方案
+- [ ] 能按七步 RCA 模板解释一个真实失败样张
+- [ ] 能把 `verified_public/proxy/synthetic/not_run` 用于每条结论
+- [ ] 能回答本周五类面试题，并说明 Snapdragon/量产证据仍缺什么
+
+## 15. 本周面试闭环
+
+完整参考答案见[Week 6：系统调试面试题](../interview/week6_system_debug_questions.md)。
+
+1. **概念题：** Stage 1 的输入合同、模块验证和最终 IQ 评价为什么是三种不同证据？
+2. **原理题：** 第一发散点原则为何比从最终 PNG 反向调参更可靠？
+3. **参数题：** sweep 如何冻结输入、指标和其他模块，并处理耦合参数？
+4. **调试题：** 指标改善但局部纹理变差时，如何做 RCA、回退和回归？
+5. **系统题：** 怎样设计 ColorChecker、flat-field、slanted-edge、dark-frame 和连续序列的完整采集协议？
+
+## 16. 高通岗位补强：从单帧 Soft ISP 到连续 Camera 系统
+
+Stage 1 已覆盖单帧 RAW→RGB 的主要数学模块，但 Camera ISP System 面试通常还会追问 3A、连续帧、新型 Sensor 和时序稳定性。下面内容用于建立可回答的系统模型；当前仓库没有把这些设计实现为量产算法，证据均保持 `not_run/concept_only`。
+
+### 16.1 AE/AWB/AF 为什么不是三个独立函数
+
+3A 是跨帧闭环：第 `n` 帧生成统计，算法经过处理延迟后把 exposure、gain、WB 或 lens position 应用到第 `n+k` 帧。场景在这段时间内可能已经变化，所以只在单张图上得到“正确参数”并不保证视频稳定。
+
+```text
+frame n RAW
+  -> grid/histogram/face/focus statistics
+  -> filter + scene/ROI decision
+  -> AE/AWB/AF controller
+  -> metadata request with delay k
+  -> sensor/lens applies on frame n+k
+  -> observe response and close loop
+```
+
+曝光的一阶近似可以写成：
+
+```text
+exposure_value ∝ exposure_time * analog_gain * digital_gain
+```
+
+相同总增益并不等价：更长曝光可能降低相对 read noise，却增加运动模糊；analog gain 改变 Sensor 信号和噪声分布；digital gain 只放大已量化信号与噪声并增加 clipping 风险。AE 需要在亮度目标、帧率、运动、噪声和防闪烁量化之间取舍。
+
+常见时域平滑为：
+
+```text
+u_t = (1 - alpha) * u_(t-1) + alpha * u_target
+```
+
+`alpha` 大则响应快但更容易闪烁/振荡，小则稳定但场景切换拖尾。hysteresis/dead band 在误差较小时保持上一状态，避免统计噪声造成来回跳变。调试时必须把 stats frame id、decision、applied frame id 和实际 metadata 对齐，否则会把控制延迟误判为算法错误。
+
+AWB 还要排除过暗、饱和和强色物体 ROI，并处理 CCT/illuminant 置信度；单帧 Gray World 不等于视频 AWB。AF 至少要理解 contrast AF 的 focus-value 曲线、lens sweep、峰值搜索、hysteresis 和 scene change；PDAF 还会引入相位差、置信度、遮挡与标定问题。本仓库没有 AF/PDAF 实现。
+
+### 16.2 Staggered HDR、Quad Bayer 与融合误差
+
+Staggered HDR 在相邻或交错时序获取不同曝光。若先把各曝光换算到共同线性辐照度域，可写成简化融合：
+
+```text
+radiance_i = max(raw_i - black_i, 0) / (exposure_i * gain_i)
+Y = sum(w_i * radiance_i) / max(sum(w_i), epsilon)
+```
+
+权重 `w_i` 应降低黑位附近 read-noise 主导像素、饱和像素、运动不一致像素和坏点的贡献。只按亮度做权重会在运动边缘产生 ghost；black/white level、gain 或行曝光时序不一致会形成条带与颜色错位。真实系统还需要理解 rolling-shutter row timing，而不只是两张静态图的全局 exposure ratio。
+
+Quad Bayer 同一颜色通常以 `2×2` 子阵列排列，可用于低照度 binning，也可 remosaic 到高分辨率 Bayer。关键问题是 CFA 语义、相位、坏点/串扰、binning 与 remosaic 的分辨率—噪声权衡；不能把普通 RGGB pack 直接称为 Quad Bayer 支持。
+
+### 16.3 TNR/MFNR 的时序质量问题
+
+最简时域融合可以写成：
+
+```text
+Y_t = w_t * X_t + (1 - w_t) * warp(Y_(t-1))
+```
+
+静态平坦区可减小 `w_t` 以获得更多历史降噪；运动、遮挡、scene cut 和配准低置信区域应增大 `w_t`，减少 ghost/trail。需要联合关注 temporal noise、detail retention、motion ghost、flicker 和恢复时间。单帧 PSNR 提高不能证明 TNR 可用，必须使用连续序列和时域指标。
+
+### 16.4 参数—现象—首查表
+
+| 现象 | 首查参数/状态 | 机制与权衡 |
+|---|---|---|
+| 亮度来回跳 | stats delay、`alpha`、dead band | 延迟闭环和过大响应增益可能振荡 |
+| AWB 色温闪烁 | ROI filter、illuminant confidence、temporal smooth | 强色物体或低置信统计驱动错误切换 |
+| 低光拖影 | exposure time、motion score、TNR history weight | 更长曝光/更强历史融合换噪声但损失运动 |
+| HDR ghost | exposure timing、registration、motion weight | 不同曝光没有在同一场景位置表达同一辐照度 |
+| 高光偏色 | channel saturation、white level、WB-before-merge | 通道饱和状态不同，简单比值失效 |
+| Quad Bayer 伪色 | CFA phase、remosaic kernel、边界 | 相位/邻域错误把颜色采样当空间纹理 |
+| AF hunting | focus confidence、step、hysteresis、scene change | 峰值不稳定或控制器反复越过峰值 |
+
+### 16.5 面试练习与证据边界
+
+1. 画出 frame `n` stats 到 frame `n+k` 生效的 3A 时序，解释为什么日志必须带 frame id。
+2. 比较 exposure time、analog gain、digital gain 对亮度、噪声、模糊和 clipping 的不同影响。
+3. 设计一个 AE 场景切换实验，给出响应时间、overshoot、flicker 和稳态误差指标。
+4. 说明 Staggered HDR 中 black level、exposure normalization、motion mask 和 saturation mask 的顺序。
+5. 解释 Quad Bayer binning/remosaic 与当前 pseudo RGGB pack 的本质差别。
+6. 设计 TNR 的静态、平移、遮挡、scene cut 四类序列，并给出 artifact reject 条件。
+
+当前可迁移证据是单帧 ISP 合同、AWB/曝光参数方向、Toy HDR 和 failure/RCA 方法；AE/AF state machine、真实 Staggered HDR、Quad Bayer、TNR/MFNR、连续帧 metadata 时序均未实测。面试时可讲设计和验证方案，不能讲成“已在高通 Camera pipeline 完成”。

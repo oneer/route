@@ -2,6 +2,17 @@
 
 这是阶段四唯一入口。项目从固定的阶段二 DnCNN checkpoint 出发，依次完成 PyTorch baseline、ONNX、ONNX Runtime Python/C++、TensorRT FP32/FP16、ORT CPU QDQ INT8、CUDA 前处理与端到端 profiling。
 
+四阶段统一教程标准见[`../study-roadmap/四阶段周报告教程化要求大纲.md`](../study-roadmap/四阶段周报告教程化要求大纲.md)。Week 0–6 已按“背景 → tensor contract → 参数 → 执行 → 结果 → 故障 → 边界 → 面试题”补全。
+
+## 高通岗位面试入口
+
+- [Job ID 3083325 面试就绪与差距审计](../study-roadmap/高通3083325-Camera-ISP-Algorithm-System-Engineer定向提升报告.md#十四2026-07-19-面试就绪审计与二次补强)
+- [Week 5：Camera request、CAMX/CHI、QNN/HTP、buffer/fence](reports/week5_mobile_inference.md#22-高通岗位补强camera-requestcamxchi-与-qnnhtp-白板模型)
+- [Week 6：实时 deadline、队列、功耗/温度与 PPA](reports/week6_pipeline_profile.md#23-高通岗位补强实时-deadline队列与-ppa)
+- [跨阶段 Camera Systems Capstone](../camera_system_capstone/reports/qualcomm_3083325_capstone_report.md)
+
+以上内容提高的是系统面试知识就绪度；CAMX/CHI 接入、Snapdragon QAIRT/QNN/HTP、移动功耗和 Camera buffer 真机证据仍为 `not_run`。
+
 ## 先看结论
 
 | 环节 | 当前状态 | 证据 |
@@ -12,6 +23,7 @@
 | TensorRT FP32/FP16 | 已复验 | RTX 4060 Ti、TensorRT 10.8；engine/log/画质/失败样本 |
 | ORT QDQ INT8 | 已复验 | 10 张校准、10 张独立评价；无 split overlap |
 | CUDA normalize | 已复验但未接入推理 | NVRTC kernel、H2D/kernel/D2H 拆时和 CPU 对齐 |
+| ORT CUDA I/O Binding | 部分直连已复验 | device input/output、0 intermediate D2H、p50/p90、RAM 和拷贝合同 |
 | Android/ARM 移动端 | 未完成 | 无设备、`adb`、NCNN/MNN 工具链；仅保留设计章节 |
 | 阶段三 C++ ISP 串联 | 已复验 | 固定 20 张 manifest；Stage 3 global Reinhard → Stage 4 C++ ORT；C++/Python max error `0` |
 
@@ -129,6 +141,7 @@ C++、GPU 和 CUDA 的完整命令见复现清单。不同脚本的 latency 不�
 | ORT TensorRT EP | FP32 | quality PSNR `32.9825 dB` | session mean `7.89 ms` |
 | ORT TensorRT EP | FP16 | quality PSNR `32.9820 dB` | session mean `7.46 ms` |
 | ORT CPU QDQ | INT8 | 独立评价集平均 drop `0.0833 dB` | session p50 `121.25 ms` |
+| ORT CUDA I/O Binding | FP32 | vs ORT CPU max `2.68e-7`；quality `32.98396 dB` | inference p50/p90 `3.296/3.754 ms`；e2e `10.477/11.047 ms` |
 
 `trtexec` 本次 FP32/FP16 compute mean 分别为 `1.968/0.979 ms`；这不是上述 ORT session latency。
 
@@ -164,5 +177,25 @@ C++、GPU 和 CUDA 的完整命令见复现清单。不同脚本的 latency 不�
 - [Nsight Compute](https://docs.nvidia.com/nsight-compute/NsightCompute/)
 - [NCNN](https://github.com/Tencent/ncnn)
 - [MNN](https://github.com/alibaba/MNN)
+- [Qualcomm AI Hub](https://app.aihub.qualcomm.com/docs/index.html)
+- [Qualcomm QAIRT/QNN documentation](https://docs.qualcomm.com/bundle/publicresource/topics/80-63442-4/developing-apps-qualcomm-neural-processing-sdk.html)
+- [QAIRT Converter](https://docs.qualcomm.com/bundle/publicresource/topics/80-63442-10/qairt_converter.html)
 
 Polygraphy、GraphSurgeon、TensorRT Model Optimizer 和 Nsight 在本仓库中尚未形成实测产物，因此只列为后续工具，不写入“已完成成果”。
+
+## CUDA transfer profiling backfill
+
+The optional C++ CUDA benchmark now compares pageable and pinned host memory and
+uses CUDA Events to report H2D, kernel, D2H, device-side E2E, and copy counts.
+Host staging into pinned buffers is explicitly excluded from those timings.
+
+The implementation is not published as measured evidence in this checkout:
+CUDA 12.6 rejects the installed Visual Studio 2026 host compiler as unsupported.
+CUDA preprocessing also remains separate from ORT/TensorRT device input binding.
+
+`scripts/13_profile_device_pipeline.py` runs in the existing `stage4-cuda`
+environment and profiles ORT CUDA I/O Binding with device input/output values,
+zero intermediate D2H, and one final copy. `scripts/14_generate_quality_latency_memory_matrix.py`
+combines that row with audited CPU/TensorRT evidence while preserving blank
+unmeasured fields. CPU NumPy preprocessing still performs one H2D; the custom
+CUDA preprocess is not yet bound to inference and remains explicitly `not_run`.

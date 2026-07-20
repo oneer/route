@@ -410,3 +410,106 @@ rawpy 可以作为成熟 pipeline 参考，但不能被写成 ground truth。
 ```text
 更接近真实世界
 ```
+
+## 13. 关键词、指标与参数验收表
+
+| 指标/参数 | 回答的问题 | 越大是否越好 | 关键限制 |
+|---|---|---|---|
+| PSNR | 与声明 reference 的平均像素误差多大 | 通常是，但只在相同 data range/协议下 | 对结构、颜色语义和主观纹理不敏感 |
+| SSIM | 局部亮度、对比度和结构是否相似 | 通常是 | window、边界和实现版本必须一致 |
+| DeltaE proxy | 输出 Lab 与 rawpy 渲染差多少 | 越小越接近该 reference | rawpy 不是 ColorChecker ground truth |
+| texture retention | 处理后梯度/纹理相对 reference 的保留 | 接近 1 较合理，不是越大越好 | 大于 1 可能是噪声或过锐化 |
+| clipping fraction | 近黑/近白像素占比 | 不是越小越好，需结合场景 | 真实饱和高光与错误截断要分开 |
+| ablation | 关闭一个模块观察边际变化 | 不适用 | 输入、其余参数和 reference 必须冻结 |
+
+## 14. 从输入到结论：评价协议教程
+
+### 14.1 输入输出与复现协议
+
+| 项目 | 固定合同 |
+|---|---|
+| candidate | 学习版 Pipeline 生成的 `(H,W,3)` 显示域 RGB，计算前转 `float` `0..1` |
+| reference | `data/references/*_rawpy_srgb.png`，对齐到同尺寸；它是 baseline，不是 ground truth |
+| 对齐 | 相同 orientation、相同空间尺寸和通道顺序；禁止用错位图直接计算指标 |
+| variant | 每次只改变一个模块开关；输入 DNG、其余参数、reference、指标实现全部冻结 |
+| 输出 | per-image/per-variant JSON、ablation grid、均值表和失败解释 |
+
+从 `stage1_soft_isp/` 执行：
+
+```powershell
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python scripts/15_evaluate_pipeline.py data/raw/T01_a0006-IMG_2787.dng `
+  --out-dir outputs/tutorial/week5 `
+  --report outputs/tutorial/week5/iqa_ablation_report.md
+```
+
+正常情况下应同时出现 Markdown、JSON/指标记录和对比图。若只保存最终图而没有 variant 配置、reference 身份和指标协议，该实验无法审计。全量复现时再传入 T01–T14；先跑一张是为了能人工确认对齐和数据域。
+
+代码路径：`scripts/15_evaluate_pipeline.py::run_variant/evaluate_one/write_report` 调用 `soft_isp/pipeline.py` 与 `soft_isp/metrics.py`；指标方向性由 `tests/test_iq_proxies.py` 等合成测试约束。
+
+### 14.2 公式、符号和假设
+
+设 candidate/reference 的同位置样本为 `x_i/y_i`，总样本数 `N=H*W*C`，数据范围 `L=1`：
+
+```text
+MSE  = (1/N) * sum((x_i-y_i)^2)
+PSNR = 10 * log10(L^2/MSE)
+MAD  = (1/N) * sum(|x_i-y_i|)
+SSIM = ((2*mu_x*mu_y+C1)*(2*sigma_xy+C2)) /
+       ((mu_x^2+mu_y^2+C1)*(sigma_x^2+sigma_y^2+C2))
+```
+
+`mu` 是局部窗口均值，`sigma` 是局部方差/协方差，`C1/C2` 防止分母在暗平坦区不稳定。PSNR 使用 `10log10`，因为比值建立在功率/均方误差上；若写成 RMSE 比值才会出现等价的 `20log10`。所有数字只有在相同 resize、data range、颜色域、窗口和库版本下才可比较。
+
+均值表默认对 14 张公开 DNG 等权平均，它不是置信区间，也未按 Sensor/场景分层；少数极端样张可能被平均掩盖。后续应同时报告 median、worst case 和分场景统计。
+
+### 14.3 参数、混杂变量和选择理由
+
+| 参数/选择 | 当前值 | 变化方向 | 耦合/风险 | 为什么这样做 |
+|---|---:|---|---|---|
+| `min_delta` | 1024 RAW code | 增大使 DPC 更保守 | `mad_k`、bit depth、ISO | 冻结现有学习 baseline，避免消融混杂 |
+| `mad_k` | 12 | 增大降低检测量 | `min_delta`、纹理 | 同上；DPC 质量另用注入实验评价 |
+| `gamma` | 2.2 | 增大通常抬高中暗调 | Tone、reference OETF | 用统一显示编码对比，不代表标准 sRGB |
+| `tone_percentile` | 99.5% | 增大常使主体更暗、保更多高光余量 | 场景高光比例 | 固定白点协议；另做 sweep 才归因于该参数 |
+| resize/alignment | 同尺寸 | 任意插值都会改变纹理/SSIM | orientation、crop、reference | 指标前先人工看叠图，防止比较错位数据 |
+| aggregation | 14 张等权均值 | 分组会改变总体结论 | Sensor/场景构成 | 同时报单样张，避免平均值代替 failure case |
+
+### 14.4 失败诊断和决策 trade-off
+
+| 结果冲突 | 可能原因 | 追加实验 | 决策原则 |
+|---|---|---|---|
+| PSNR 上升但纹理变塑料 | 平滑更像 reference，局部细节丢失 | texture ROI、梯度保留、100% crop | 质量目标优先于单一全图指标 |
+| no-DPC 与 full 几乎相同 | 稀疏坏点被全图平均淹没 | 注入 precision/recall、坏点 crop | 不据此删除 DPC |
+| no-LSC 分数更高 | 径向 proxy 与真实 shading 不符 | corner ROI、真实 flat-field | 把结果写成 baseline 失配，不写“LSC 有害” |
+| no-AWB 在个别样张更高 | Gray World 场景假设失败 | 中性 ROI、gain、单色/混合光 failure | 回退或改估计器，不能以平均值掩盖 |
+| gamma_only 更像 rawpy | Tone 曲线风格不同 | 画曲线、highlight/midtone ROI | “更像 reference”不等于动态范围更优 |
+
+IQA 的核心取舍是：全图指标可自动批量比较，但局部解释力弱；语义 ROI 更贴近问题，但选择可能主观；rawpy reference 易获得，但自带未知渲染策略；标准实验更可信，但需要标定数据和采集成本。报告结论必须与证据等级匹配。
+
+### 14.5 证据边界、跨周连接和学习验收
+
+| 内容 | 证据等级 | 支持的结论 | 不支持的结论 |
+|---|---|---|---|
+| T01–T14 ablation 数表/图 | `verified_public` | 在公开 DNG 和冻结协议上的实际输出差异 | 自采手机、视频或总体用户场景表现 |
+| rawpy PSNR/SSIM/MAD/DeltaE | `verified_proxy` | 对指定 rawpy 渲染的相似度 | 绝对颜色/主观 IQ ground truth |
+| 自动 ROI/主观标签规则 | `verified_proxy` | 可重复筛查问题候选 | 受控双盲主观实验 |
+| ColorChecker/flat-field/实验室 chart | `not_run` | 当前无 | 标准颜色、LSC、MTF 结论 |
+
+Week5 汇总 Week1–4 的误差，但不能代替模块级验证；它把最值得复查的 failure case 和参数交给 Week6 综合诊断。学习者应完成：
+
+- [ ] 能从零生成一张图的 full/no-module 对照和 JSON
+- [ ] 能解释公式中 `N/L/C1/C2` 及其协议依赖
+- [ ] 能找到一个平均指标与局部观感冲突的样张
+- [ ] 能写出“支持什么/不支持什么”，并标记证据等级
+- [ ] 能设计一次只改变一个变量的参数 sweep，保存被拒方案
+
+## 15. 本周面试闭环
+
+完整参考答案见[Week 5：IQA/消融面试题](../interview/week5_iqa_ablation_questions.md)。
+
+1. **概念题：** PSNR、SSIM、MAD、DeltaE proxy 各回答什么问题？
+2. **原理题：** PSNR 为什么使用 `10log10`，SSIM 为什么仍需局部窗口？
+3. **参数题：** percentile、ROI 尺寸和 aggregation 协议怎样改变结论？
+4. **调试题：** 指标提高但纹理变差时，如何定位并决定是否回退？
+5. **系统题：** 如何把全图指标、语义 ROI、主观量表、failure case 和证据等级组成发布门槛？

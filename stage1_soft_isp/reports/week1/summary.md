@@ -205,3 +205,88 @@ Week1 ROI -> 后续做模块前后对比
 ```
 
 一句话总结：Week1 是在建立 RAW 数据坐标系。没有这个坐标系，后面写出来的 ISP 可能能跑，但很难判断对不对。
+
+## 关键词与参数验收表
+
+| 关键词/参数 | 含义与量纲 | 为什么重要 | 错误症状或验证方法 |
+|---|---|---|---|
+| `raw_image_visible` | 有效成像区域的二维 Bayer 数组 | 后续 mask、ROI 和空间校正必须使用同一坐标系 | 与完整 RAW/margin 混用会产生固定偏移 |
+| `dtype` / bit depth | 存储容器类型 / 有效信号位数 | `uint16` 不代表有效信号一定是 16 bit | 对照 white level；减法前转有符号或浮点 |
+| `raw_pattern` + `color_desc` | 2×2 CFA 索引及颜色映射 | 共同决定 RGGB/BGGR/GRBG/GBRG | 在 4×4 小数组打印位置标签 |
+| black / white level | 无光基线 / 有效饱和上限，单位为 RAW code value | 定义零点、可用信号跨度和归一化尺度 | 检查 black/white 附近像素比例 |
+| ROI | 固定坐标系中的局部评价区域 | 避免全图内容比例掩盖局部问题 | 保存带框预览并人工确认语义 |
+| clipping fraction | 接近黑位或白位的像素比例 | 量化欠曝和不可恢复饱和风险 | 分 Bayer 通道和 ROI 统计，不能只看全图 |
+
+## 从输入到结论：可复现教程
+
+### 输入输出合同
+
+| 项目 | 输入 | 输出 | 不能混淆的边界 |
+|---|---|---|---|
+| 数据 | `data/raw/*.dng` 中的 visible Bayer RAW | metadata JSON、四平面统计、histogram、带框 ROI 预览 | DNG 容器不是 sRGB；`uint16` 只是存储类型 |
+| shape/layout | `(H,W)`，单平面 CFA | 统计值为标量/字典，预览为 `(H,W,3)` `uint8` | 预览 RGB 只为观察坐标，不是 Week1 的算法输出 |
+| 数值域 | RAW code value，零点在 black level、饱和点在 white level | 统计继续保留 RAW code value；展示图才缩放到 `0..255` | 不同 Sensor 未归一化的码值不能直接横比 |
+| 坐标 | visible sensor coordinates | ROI JSON/框必须使用同一坐标；显示时同步 orientation | sensor 坐标和旋正后的 display 坐标不可直接互换 |
+
+核心量的定义如下。设某 ROI 中第 `i` 个 RAW 样本为 `x_i`，样本数为 `N`：
+
+```text
+mean = (1/N) * sum(x_i)
+std  = sqrt((1/N) * sum((x_i - mean)^2))
+clipping_high = count(x_i >= white_level - margin) / N
+```
+
+`mean/std` 的单位都是 RAW code value；这里使用总体标准差表达直觉，具体库函数的自由度参数必须随报告记录。`margin` 必须按有效位深声明，不能把一个 14-bit 数据上的固定码值无条件搬到 10-bit Sensor。直方图 `bins` 越多，码值分布更细但单 bin 样本更少；ROI 越大，统计更稳定但越容易混入不同语义区域。
+
+### 参数选择、耦合和失败现象
+
+| 参数 | 当前默认/单位 | 增大时 | 减小时 | 与什么耦合 | 选择与失败检查 |
+|---|---:|---|---|---|---|
+| `roi_size` | 256 pixel | 统计方差更稳、语义更易混合 | 更局部、也更受噪声/纹理影响 | 分辨率、目标物尺寸 | 默认适合快速审计；框跨越明暗边界时应缩小 |
+| `stride` | 128 pixel | 搜索更快但可能漏掉最佳区域 | 定位更细但计算量增加 | `roi_size` | 通常不应大于 ROI 尺寸；保存带框预览核验 |
+| histogram `bins` | 由脚本参数决定 | 分辨率提高、曲线更抖 | 趋势更稳、细节被合并 | white-black 有效跨度 | 跨 Sensor 比较前统一为归一化横轴 |
+| black/white override | 默认 `null`，RAW code value | 错误上调 black 会夸大欠曝 | 错误下调 white 会夸大饱和 | CFA 通道、bit depth | 常规读取 metadata；只在故障注入时覆盖并留记录 |
+
+### 故障注入、调试和取舍
+
+| 现象 | 第一检查点 | 原因验证 | 不要先做什么 |
+|---|---|---|---|
+| R/B 位置对调 | `raw_pattern + color_desc` | 打印 4×4 位置标签并对照 metadata | 先调 AWB gain 掩盖 CFA 错误 |
+| ROI 框与内容错位 | visible area、orientation | 同一角点在 sensor/display 坐标间往返 | 手工移动框直到“看起来对” |
+| `std` 很大就判断噪声高 | ROI 纹理 | 换平坦 ROI 或按亮度分桶 | 用全图 std 当 read noise |
+| 高光占比异常 | white level、有效位深 | 分 Bayer 通道统计并看 histogram 尾部 | 用 Tone Mapping 恢复已经饱和的信息 |
+
+取舍要写入结论：大 ROI 提升统计稳定性但降低局部解释力；更多 histogram bins 提高分辨率但降低单 bin 稳定性；自动 ROI 提高批处理一致性，但不如人工语义 ROI 可靠。遇到冲突时，先保证坐标与数据域正确，再讨论参数优化。
+
+### 证据等级与本周连接
+
+| 内容 | 证据等级 | 能证明 | 不能证明 |
+|---|---|---|---|
+| T01–T14 DNG metadata/统计 | `verified_public` | 脚本能读取公开真实 DNG 并建立输入合同 | 自有手机 Sensor 的噪声/动态范围 |
+| 自动 ROI、自然图暗部 std/DR | `verified_proxy` | 同一协议下的诊断趋势 | 实验室 read noise、shot noise、厂商 DR |
+| dark frame、PTC、标准灰阶 | `not_run` | 当前无证据 | 不能在报告中补写为真实标定 |
+
+Week1 输出的 CFA、范围、方向和 ROI 合同交给 Week2；任一字段错误都会在 BLC/DPC/LSC 中成为系统性错误，而不是后端“调色”可以可靠修复的问题。
+
+### 动手练习与验收
+
+1. 代码练习：对 T01 打印 4×4 CFA 标签，证明 `raw_pattern` 与 `color_desc` 的联合解释。
+2. 参数实验：固定 T01，比较 `roi_size=128/256/512`，解释 mean/std 为什么变化。
+3. 故障注入：交换 R/B 标签但不改像素，预测 Week3 的显示现象。
+4. 闭卷复述：从 DNG 到 Week2 输入，用一分钟说清 shape、dtype、范围、线性状态和坐标系。
+
+- [ ] 能从零执行两条最小命令并找到 JSON/图片产物
+- [ ] 能解释公式中 `x_i`、`N`、`margin` 的含义和单位
+- [ ] 能指出一个代理指标与真实实验室指标的差别
+- [ ] 能在未知字段处写 `unknown`，而不是依画面猜测
+- [ ] 能预测一个参数变化，并用固定输入验证预测
+
+## 本周面试闭环
+
+完整参考答案见[Week 1：RAW 与 Sensor 面试题](../interview/week1_raw_sensor_questions.md)。回答时应使用“结论 → metadata/物理原因 → 本项目检查 → 证据边界”的结构。
+
+1. **概念题：** RAW 与 sRGB 的数据域差异是什么，为什么不能直接互换？
+2. **原理题：** `raw_pattern` 为什么必须结合 `color_desc` 才能解释？
+3. **参数题：** black level、white level、dtype 最大值和 histogram bins 分别控制什么？
+4. **调试题：** Histogram 出现高端堆积时，为什么还必须回到 ROI 和单通道检查？
+5. **系统题：** 如何为陌生 DNG 建立输入合同，并把未知信息和证据边界传给后续团队？

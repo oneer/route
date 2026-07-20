@@ -26,6 +26,8 @@ add_library(cpp_isp_core
     src/tone_lut.cpp
     src/local_tone_mapping.cpp
     src/hdr_merge.cpp
+    src/camera_calibration.cpp
+    src/image_fusion.cpp
     src/pipeline.cpp
     src/metrics.cpp
 )
@@ -63,6 +65,16 @@ add_executable(run_hdr_merge tools/run_hdr_merge.cpp)
 target_link_libraries(run_hdr_merge PRIVATE cpp_isp_core)
 cpp_isp_apply_compiler_options(run_hdr_merge)
 cpp_isp_enable_sanitizers(run_hdr_merge)
+
+add_executable(run_camera_calibration tools/run_camera_calibration.cpp)
+target_link_libraries(run_camera_calibration PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(run_camera_calibration)
+cpp_isp_enable_sanitizers(run_camera_calibration)
+
+add_executable(run_image_fusion tools/run_image_fusion.cpp)
+target_link_libraries(run_image_fusion PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(run_image_fusion)
+cpp_isp_enable_sanitizers(run_image_fusion)
 
 add_executable(run_pipeline tools/run_pipeline.cpp)
 target_link_libraries(run_pipeline PRIVATE cpp_isp_core)
@@ -117,7 +129,7 @@ cpp_isp_enable_sanitizers(test_smoke)
 cpp_isp_apply_compiler_options(bench_smoke)
 cpp_isp_enable_sanitizers(bench_smoke)
 
-foreach(test_name IN ITEMS test_cpf32 test_image test_border test_denoise_basic test_tone_mapping test_fixed_point test_tone_lut test_local_tone_mapping test_hdr_merge)
+foreach(test_name IN ITEMS test_cpf32 test_image test_border test_denoise_basic test_tone_mapping test_fixed_point test_tone_lut test_local_tone_mapping test_hdr_merge test_camera_calibration test_image_fusion)
     # 大多数单元测试结构一致，用循环注册，减少 CMake 重复样板。
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE cpp_isp_core)
@@ -159,6 +171,11 @@ add_executable(bench_tone_lut benchmarks/bench_tone_lut.cpp)
 target_link_libraries(bench_tone_lut PRIVATE cpp_isp_core)
 cpp_isp_apply_compiler_options(bench_tone_lut)
 cpp_isp_enable_sanitizers(bench_tone_lut)
+
+add_executable(bench_image_fusion benchmarks/bench_image_fusion.cpp)
+target_link_libraries(bench_image_fusion PRIVATE cpp_isp_core)
+cpp_isp_apply_compiler_options(bench_image_fusion)
+cpp_isp_enable_sanitizers(bench_image_fusion)
 
 add_executable(bench_local_tone_mapping benchmarks/bench_local_tone_mapping.cpp)
 target_link_libraries(bench_local_tone_mapping PRIVATE cpp_isp_core)

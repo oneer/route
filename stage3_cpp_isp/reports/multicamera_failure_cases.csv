@@ -1,0 +1,4 @@
+failure_case,injection,metric,value,diagnosis,boundary
+near_parallax,one correspondence displaced by 6/-4 px,max_reprojection_error_px,5.439356078793656,single homography cannot explain depth-dependent displacement,synthetic diagnostic
+motion_overlap,local overlap patch changed,seam_delta,0.00476190447807312,moving content creates a visible seam/ghost risk,synthetic diagnostic
+low_texture,four collinear correspondences,homography_available,0,geometry is degenerate and must be rejected,synthetic diagnostic

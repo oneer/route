@@ -113,3 +113,59 @@ Week 10 已补 held-out test 和工程汇总；Week 11 已完成 ONNX 对齐；W
 6. RAW pack 为什么通常是 4 通道？
 7. error map 和 failure crop 分别能定位什么问题？
 8. 这个项目如何讲成完整 AI-ISP restoration baseline？
+
+## 11. 阶段证据与表达参数表
+
+| 关键词 | 项目中的含义 | 面试表达要求 |
+|---|---|---|
+| baseline | noisy input、传统方法或冻结 DnCNN | 必须说明数据、split、metric 和 checkpoint |
+| leaderboard | 同一协议下候选结果排序 | 历史不同 loss/steps 的表只能称观察表 |
+| best checkpoint | 按预先声明 validation 规则选出的权重 | test 后不能回头更换 |
+| model cost | params、checkpoint、activation、latency、memory | 这些量互相关联但不能互相替代 |
+| evidence boundary | public RGB、pseudo RAW、synthetic low-light 等范围 | 不能改写成 Sensor RAW、量产或移动端结果 |
+| project pitch | 问题—方法—证据—权衡—边界 | 先讲可复现闭环，不堆模型名 |
+
+## 12. Week 9 面试五问
+
+1. 你如何用三分钟讲清 Stage 2，而不是逐周念脚本？
+2. 当前“最好模型”必须加哪些协议限定？
+3. DnCNN、UNet、NAFNet-lite 的结构差异如何连接到实际失败现象？
+4. 为什么 pseudo RAW 和 synthetic low-light 对学习有价值，但不能包装成真实 Camera 结果？
+5. 如果给你两周继续项目，你会依据哪条 failure evidence 选择下一实验？
+
+## 13. 阶段总结生成流程
+
+```text
+dataset/split audit
+  -> frozen configs/runs
+  -> validation 与 held-out test 分开
+  -> quality + cost + failure evidence
+  -> 只汇总同协议数字
+  -> 写项目结论、边界和下一实验
+```
+
+## 14. 从零项目流程图与交付合同
+
+```text
+公开/合成数据
+  -> paired identity + scene split audit（Week 2）
+  -> tensor contract + noisy baseline（Week 0-2）
+  -> model/loss/patch 单变量训练（Week 3/5）
+  -> metric + triplet + error/crop（Week 4/8）
+  -> pseudo RAW / synthetic low-light 边界实验（Week 6/7）
+  -> validation 选设计（Week 9）
+  -> freeze + held-out test（Week 10）
+  -> ONNX/Python/C++ CPU alignment（Week 11/12）
+```
+
+阶段交付应至少包含 config、data manifest/split、git commit、seed、checkpoint 规则、
+`metrics.csv`、代表图、failure card、冻结 tensor contract 和证据边界。缺少其中任何一项，
+别人都难以判断结果是算法收益、数据泄漏还是预处理差异。
+
+三分钟表达使用“问题—选择—证据—失败—取舍—边界”：先说为什么建立 paired sRGB
+恢复闭环，再说为何 DnCNN 是当前冻结 baseline；用具体协议结果和 failure case 支撑；随后
+承认 tiny/synthetic/pseudo/CPU smoke 的范围，最后给出多 seed、真实 RAW 与端侧验证计划。
+不要逐周念模型名。
+
+项目级学习验收：在空目录按文档复跑最小链路；不看报告画出全部输入输出；挑一条结论
+定位到 config/run/CSV/图像；回答一个失败如何驱动下一实验；明确哪些数字不能放进同一榜单。

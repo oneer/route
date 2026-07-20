@@ -1,0 +1,15 @@
+sample_id,input_path,scene_group,source_kind,split,status
+T01_a0006-IMG_2787,data/raw/T01_a0006-IMG_2787.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T02_a0008-WP_CRW_3959,data/raw/T02_a0008-WP_CRW_3959.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T03_a0010-jmac_MG_4807,data/raw/T03_a0010-jmac_MG_4807.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T04_a0012-kme_143,data/raw/T04_a0012-kme_143.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T05_a0014-WP_CRW_6320,data/raw/T05_a0014-WP_CRW_6320.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T06_a0018-kme_234,data/raw/T06_a0018-kme_234.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T07_a0020-jmac_MG_6225,data/raw/T07_a0020-jmac_MG_6225.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T08_a0022-IMG_2380,data/raw/T08_a0022-IMG_2380.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T09_a0023-07-06-02-at-15h06m48-s_MG_1489,data/raw/T09_a0023-07-06-02-at-15h06m48-s_MG_1489.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T10_a0026-kme_391,data/raw/T10_a0026-kme_391.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T11_a0033-KE_-2590,data/raw/T11_a0033-KE_-2590.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T12_a0034-LSYD4O2202,data/raw/T12_a0034-LSYD4O2202.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T13_a0035-dgw_048,data/raw/T13_a0035-dgw_048.dng,unlabeled_public_reference,public_dataset,evaluation,available
+T14_a0040-_DSC5693,data/raw/T14_a0040-_DSC5693.dng,unlabeled_public_reference,public_dataset,evaluation,available

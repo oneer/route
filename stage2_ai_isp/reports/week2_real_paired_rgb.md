@@ -950,3 +950,46 @@ input baseline 是否合理？
 ```
 
 但这些可以放到后续画质分析周，不必阻塞 Week 2 进入 Week 3。
+
+## 18. 数据合同与关键参数验收表
+
+| 关键词/参数 | 定义 | 为什么需要 | 失败信号 |
+|---|---|---|---|
+| paired RGB | 同一场景、空间对齐的 noisy/clean sRGB | 监督 loss 假设同一坐标对应同一内容 | 边缘双影会被模型当成“应学习的修复” |
+| source-scene split | 按原始场景划分 train/val/test | 防止相邻 crop 或同场景泄漏 | validation 异常高、换场景明显下降 |
+| `patch_size=128` | 从配对图同步裁剪的尺寸 | 为训练提供局部样本并控制显存 | noisy/clean crop 坐标不一致会破坏监督 |
+| normalization `[0,1]` | uint8 RGB 除以 255 后的模型数值域 | 决定 loss、噪声和阈值的量纲 | 漏除 255 会造成巨大误差或饱和 |
+| noisy baseline | 未经模型的 input-vs-GT 指标 | 判断模型是否真正改善输入 | 只报 output 指标无法判断增益 |
+| augmentation | 对 noisy/clean 同步翻转/旋转 | 增加样本多样性且保持配对 | 只变换一侧会制造标签错位 |
+
+## 19. Week 2 面试五问
+
+1. paired 数据为什么必须空间对齐，亚像素错位会怎样影响 loss？
+2. 为什么 split 应按 source scene，而不是随机打散 crop？
+3. 怎样验证 Dataset loader 对 noisy/clean 使用了同一 crop 和 augmentation？
+4. SIDD sRGB GT 可以证明什么，为什么不能称为 Sensor RAW ground truth？
+5. 如果 validation 指标远高于预期，你怎样排查泄漏、重复文件和错误 pair？
+
+## 20. 本周边界
+
+当前 paired 数据是公开 SIDD 的 ISP 后 sRGB crop。它能验证配对读取、split 和 RGB restoration 训练接口，不能证明 Bayer RAW 噪声建模、官方完整 SIDD benchmark、自采 Camera 泛化或产品 GT 质量。
+
+## 21. 教程闭环卡：数据正确性先于模型精度
+
+Week 1 交付的是可运行训练接口；Week 2 把输入替换成 SIDD tiny 的公开 paired sRGB，
+并向 Week 3 交付经过配对、shape 和 split 审计的数据合同。完整读取路径是：
+
+```text
+manifest/目录 -> 按 identity 匹配 noisy-clean -> 同步读取
+-> 同一坐标 crop/同一 augmentation -> uint8 HWC RGB
+-> float32 CHW [0,1] -> Dataset 返回 -> DataLoader 组成 batch
+```
+
+若 noisy 为 `x`、clean 为 `y`，监督学习假设 `x[p]` 与 `y[p]` 是同一场景位置。配准偏差
+会把真实边缘变成 loss，模型可能学出模糊。随机按 crop 划分又会使同一 source scene
+同时进入 train/validation，产生虚高估计。因此“文件数量相等”只是第一关，还必须检查
+identity、尺寸、内容对齐和 scene 隔离。
+
+故障实验：只对 noisy 做水平翻转，观察小样本 overfit 和边缘 error map；修复为同步变换后
+回归。权衡是 tiny subset 复现快但覆盖窄，完整数据覆盖强却带来存储/训练成本。当前证据为
+`verified_public` 的 tiny sRGB 子集，不是 SIDD 官方全量协议。

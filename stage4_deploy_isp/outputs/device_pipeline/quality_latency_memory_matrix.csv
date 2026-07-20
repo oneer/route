@@ -1,0 +1,6 @@
+backend,device,precision,quality_psnr,quality_drop_db,infer_p50_ms,infer_p90_ms,e2e_p50_ms,e2e_p90_ms,peak_ram_mib,peak_vram_mib,h2d_count,d2h_count,device_tensor_bound,device_preprocess_bound,status,boundary
+ONNX Runtime Python CPU,CPU,FP32,32.9838669609468,0.0,67.15105002513155,84.33206003392117,,,,,0,0,false,false,verified_partial,Quality and inference latency verified; RAM peak not measured.
+trt_fp32,RTX 4060 Ti,FP32,32.982465655056956,0.0014013058898427744,7.605199993122369,9.163570031523706,,,,,,,false,false,verified_partial,Historical quality and ORT session latency verified; memory/copy count unmeasured.
+trt_fp16,RTX 4060 Ti,FP16,32.9820002541821,0.0018667067647015756,7.038649986498058,8.966979966498913,,,,,,,false,false,verified_partial,Historical quality and ORT session latency verified; memory/copy count unmeasured.
+ORT CUDA IOBinding,RTX 4060 Ti,FP32,32.98396312801765,0.0,3.296099981525913,3.753929989761673,10.47709998965729,11.0468199767638,614.609375,,1,1,true,false,verified_partial,ORT input/output are device OrtValues; preprocess remains CPU NumPy + one H2D; no custom CUDA preprocess pointer binding or Nsight validation.
+GPU direct custom preprocess,RTX 4060 Ti,FP16,,,,,,,,,,,false,false,not_run,"CUDA 12.6 cannot compile the custom kernel with installed VS 2026; no direct preprocess pointer, Nsight timeline, or measured row."

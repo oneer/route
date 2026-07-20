@@ -242,3 +242,100 @@ range weight 都会接近 0，输出更接近 identity。这不是算法失效�
 3. 每个像素、每个通道都遍历一个二维邻域。
 4. 前者测近似误差，后者测同一算法的实现一致性。
 5. NLM 还在 search window 内比较 patch。
+
+## 12. 关键词、参数与面试答案
+
+| 关键词/参数 | 量纲/作用 | 调大后的趋势 | 验证方式 |
+|---|---|---|---|
+| `sigma_spatial` | 空间距离尺度，单位 pixel | 更远像素参与，计算邻域/平滑范围增大 | 固定 range 参数看边缘和噪声 |
+| `sigma_range` | 像素差异尺度，单位与输入范围一致 | 跨强度差异的权重增大，更接近普通 Gaussian | `[0,1]` 与 `[0,255]` 不能复用同值 |
+| radius | 实际枚举邻域半径，单位 pixel | 运算量约随面积增长 | 质量/latency 双表并覆盖 tail |
+| range LUT bins | `exp` 权重的离散表大小 | 误差通常下降、cache/表成本增加 | direct-vs-LUT max error + 速度 |
+| NLM search/patch | 搜索范围 / 相似度 patch 尺寸 | 更可能找到重复结构，也显著增加复杂度 | 合成重复纹理和无重复纹理对照 |
+| filter strength `h` | NLM 相似度衰减尺度 | 更强平均、纹理损失风险更高 | noise/texture/edge 联合评价 |
+
+面试题“bilateral 为什么保边”的回答必须落到双权重：空间近不够，颜色/亮度差也要小；跨边缘像素因 range weight 很低而被抑制。LUT 优化后还必须重新对齐，因为速度收益可能来自改变了函数近似。
+
+## 13. 本周数据流
+
+```text
+noisy tensor -> direct bilateral reference
+-> C++ direct / range-LUT bilateral -> alignment + benchmark
+-> small NLM Python concept comparison -> quality/cost decision
+```
+
+## 14. 可复现的算法学习闭环
+
+### 14.1 前后依赖、输入输出数据契约与 ownership
+
+Week 2 提供同一 noisy realization 和 Gaussian baseline；本周只新增“是否允许邻居参与
+平均”的 range 判据。输入/输出均为同 shape 的 planar `float32`，主 synthetic 实验
+在 `[0,1]`，border 由调用参数明确指定。C++ 接口接收 non-owning input/output view，
+调用者持有 storage；当前文档不承诺任意 in-place alias 正确。
+
+Week 3 的 C++ 主线是 bilateral direct/LUT。NLM 只在 Python `48×48` crop 上用于理解
+patch similarity；SIDD bridge 是已处理 sRGB paired data。三者证据不能混写成“C++ 已
+实现真实 RAW NLM”。
+
+### 14.2 正式参数、对照和运行路径
+
+主实验固定 seed `20260616`，噪声为 `shot_scale=260, read_sigma=0.01`。对照组为：
+
+| Case | 参数 | 回答的问题 |
+|---|---|---|
+| Gaussian | `r=2, sigma=1.1` | 不看强度差时会损失多少边缘 |
+| bilateral weak | `r=2, sigma_s=1.5, sigma_r=0.06` | 较严格 range 判据的去噪/保边平衡 |
+| bilateral strong | `r=3, sigma_s=2.2, sigma_r=0.12` | 更大邻域和 range tolerance 的代价 |
+| LUT bilateral | weak 参数，`bins=512` | 查表近似相对 direct 的误差 |
+| NLM concept | patch `r=1`、search `r=3`、`h=0.08` | patch 相似度和成本的直观关系 |
+
+从仓库根目录运行：
+
+```powershell
+python .\stage3_cpp_isp\python_ref\run_week3_bilateral_nlm.py
+ctest --test-dir .\stage3_cpp_isp\out\build\verify --output-on-failure
+```
+
+有合法 SIDD Tiny 数据时，再单独运行 `run_week3_sidd_real_data.py`，并把结果标为
+`verified_public` 的 sRGB bridge；没有数据时不得把未运行结果写成实测。
+
+### 14.3 代码导航、对齐和性能边界
+
+```text
+denoise_ref.py                  # 直白 Python direct/LUT/NLM reference
+run_week3_bilateral_nlm.py     # 冻结数据、参数、指标和图
+include/cpp_isp/denoise.hpp    # C++ API/参数合同
+src/bilateral_denoise.cpp      # direct 与 range LUT hot loop
+tests/test_bilateral_denoise.cpp
+benchmarks/bench_bilateral.cpp # microbenchmark，不是整条 ISP latency
+```
+
+Python-C++ 对齐必须冻结数据范围、border、LUT index 的 round/clamp 和累加顺序。direct
+对 LUT 测“近似误差”，Python LUT 对 C++ LUT 测“实现误差”，不能用后者证明前者无损。
+本周 benchmark 是 scalar 单模块证据，不包含文件 I/O、显示、SIMD、ARM、功耗或整条
+Camera pipeline。
+
+### 14.4 Failure、权衡与面试五问
+
+质量权衡是 noise suppression 与 edge/texture preservation；计算权衡是 direct `exp`
+与 LUT 量化/访存；NLM 的更大 search/patch 又引入数量级更高的比较成本。若 PSNR 上升
+但 edge gradient 和纹理 crop 下降，应表述为“平均误差改善、过平滑风险增加”。
+
+1. **概念：bilateral 的两个域是什么？** 空间域决定距离，range 域决定强度相似性，
+   两者相乘后才得到邻居权重。
+2. **原理：为何强边缘不会被完全保证保留？** 噪声、sigma、窗口和颜色距离都会改变
+   range weight；大 `sigma_range` 仍会跨边缘平均。
+3. **参数：LUT bins 越大越好吗？** 通常降低输入量化误差，但增加表大小；最终收益取决
+   cache、索引成本与 direct 函数代价，要做质量/速度消融。
+4. **调试：中心区域都错，边缘并不特殊，先查什么？** 查 range 量纲、sigma、LUT round/
+   clamp 和 numerator/denominator；border mismatch 通常先表现为边缘环带。
+5. **系统：为什么本方案还不能称为 Qualcomm 实时 denoise？** 只有 scalar 单帧教学
+   kernel，没有 NEON/HVX、TNR、真实 RAW tuning、端侧 latency/功耗和产品集成证据。
+
+证据为 synthetic direct/LUT 与部分公开 sRGB bridge；学习验收要求学习者能：
+
+- [ ] 手算一个三点 bilateral 输出并解释每个权重；
+- [ ] 在固定输入上 sweep `sigma_range`，同时记录 PSNR、edge 和 latency；
+- [ ] 分开报告 direct-vs-LUT 与 Python-vs-C++；
+- [ ] 注入 range 量纲、border 和 tail 三类错误并定位；
+- [ ] 明确 NLM、SIDD、RAW 和 C++ 实现各自的证据边界。

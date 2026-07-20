@@ -40,7 +40,7 @@ RAW-like/synthetic/smoke test 写成真实 RAW、真实低光和量产部署。
 | synthetic low-light 链路可训练 | low-light config/script | UNet 300-step run | Week 7 CSV | triplet、diagnostics | 合成退化，不是真实采集 |
 | failure ROI 可自动定位 | crop/taxonomy scripts | 读取已有 vis | crop/taxonomy CSV | crop sheet | 原因必须人工验证 |
 | ONNX/Python/C++ ORT 数值对齐 | export/validate/C++ runner | DnCNN checkpoint | `deployment_evidence.json` | float tensor comparison | CPU smoke test，不是量产部署 |
-| 单元测试通过 | `tests/` | 不适用 | unittest 输出 | 当前基线 16 tests | 测试数可增加；不替代大规模训练复现 |
+| 单元测试通过 | `tests/` | 不适用 | unittest 输出 | 当前基线 21 tests | 测试数可增加；不替代大规模训练复现 |
 
 ## 4. 不能混用的结果
 
@@ -130,3 +130,37 @@ manifest、配置、git commit、seed 和设备信息。
 1. 运行 `fair_compare_*` 的 3-seed 对比并单独发布结果；
 2. 建立 6～10 个带人工语义标签和验证实验的 failure case 卡片；
 3. 用真实 RAW 数据补一个最小 SID/RAW denoise overfit 与 domain-gap 对照。
+
+## 9. 逐周教程验收索引
+
+下表验收的是“周报能否支持学习”，不是重新声明实验已运行。事实仍以配置、run、CSV、
+JSON、图像和测试为准。
+
+| 周次 | 知识主问题 | 核心合同/证据 | 学习者必须独立证明 |
+|---|---|---|---|
+| 0 | 参数如何由 loss 更新 | batch→forward→loss→backward→step | 手写训练循环并解释 train/eval |
+| 1 | 最小 RGB 去噪如何闭环 | toy/synthetic RGB，训练产物 | residual 符号、baseline、patch 消融 |
+| 2 | paired RGB 如何可信读取 | SIDD tiny sRGB 与 split audit | 同步 crop、配对、scene leakage 检查 |
+| 3 | 模型/loss/patch 如何公平比较 | 历史 validation runs | 单变量表、多 seed 计划、克制结论 |
+| 4 | 指标为何不能替代画质 | PSNR/SSIM/triplet/error map | 固定 metric 实现和显示尺度 |
+| 5 | NAFNet-lite block 学到了什么 | tiny split 的缩小复现 | shape 手算、width/cost 消融 |
+| 6 | RGB 如何连接 RAW-like 接口 | pseudo RGGB 4-channel run | 明确 ISP 不可逆与真实 RAW 缺口 |
+| 7 | 低光为何是联合恢复 | synthetic low-light run | exposure/noise 单变量与暗区诊断 |
+| 8 | 高误差怎样转成根因实验 | 自动 ROI + 人工 taxonomy | 现象与原因分离、回归 case |
+| 9 | 如何形成项目级证据链 | 跨周总结与 leaderboard | 三分钟讲述、事实/边界/下一步 |
+| 10 | 何时以及怎样冻结设计 | held-out test + frozen contract | 防止 test 回流、记录 hash/版本 |
+| 11 | 导出为何必须数值对齐 | ONNX checker + Python ORT | 同 float tensor、动态 shape、误差阈值 |
+| 12 | C++ smoke 如何正确测量 | x64 CPU ORT output/latency | buffer 合同、p50/p95、e2e 边界 |
+
+## 10. 教程完整性的最终判据
+
+学习者只看本阶段周报，应能从零走完：
+
+```text
+环境/tests -> toy overfit -> paired/split audit -> baseline -> frozen training
+-> validation 选 checkpoint -> 图像/failure 分析 -> design freeze
+-> held-out test -> ONNX export/alignment -> C++ CPU alignment/latency
+```
+
+每一步都必须回答“为什么在这里做、参数改变会怎样、正常产物在哪里、失败先查什么、
+证据能外推到哪里”。若只能复述命令或最终 PSNR，本阶段尚未学完。

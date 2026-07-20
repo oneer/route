@@ -144,3 +144,104 @@ stride。
 3. Separable Gaussian 为什么比直接二维卷积便宜？
 4. Constant、impulse、step edge 各暴露什么问题？
 5. PSNR 提升但 edge gradient 明显下降，应怎样解释？
+
+## 12. 关键词、参数与面试答案
+
+| 关键词/参数 | 定义 | 调大后的趋势 | 验证重点 |
+|---|---|---|---|
+| shot noise coefficient | variance 中随信号增长的项 | 亮区随机波动更强 | 按亮度分桶看 variance/mean |
+| read noise sigma | 近似与信号无关的底噪 | 暗区噪声更明显 | dark/zero patch 的 std |
+| kernel radius/size | 滤波邻域半径/尺寸 | 去噪更强、计算更高、边缘更易糊 | impulse、step edge、奇数尺寸 |
+| Gaussian sigma | 空间权重衰减尺度，单位 pixel | 权重更平缓、有效邻域更大 | kernel sum=1、对称性和边缘梯度 |
+| separable filter | 2D kernel 拆成横向+纵向 1D | 从近似 `O(k²)` 降到 `O(2k)` | 与 direct 2D 对齐并统一 border |
+| PSNR/edge gradient | 整体误差 / 局部边缘保持 proxy | 需要联合看，不是单指标最大化 | 固定噪声 realization 和 ROI |
+
+面试回答“PSNR 上升但边缘下降”时，结论应是模型改善了平均误差但存在过平滑风险；需要查看纹理/斜边 crop 和局部指标，再决定是否减小滤波强度，而不是直接宣布质量更好。
+
+## 13. 本周数据流
+
+```text
+clean synthetic/RAW-like tensor -> shot/read noise injection
+-> noisy baseline -> box/Gaussian C++ -> Python/C++ alignment
+-> PSNR + edge/visual result
+```
+
+## 14. 从噪声假设到可复现实验
+
+### 14.1 前后依赖与输入输出数据契约
+
+Week 1 提供 planar `ImageView`、stride 和 border 语义；本周把它们用于第一个邻域
+算子。输出仍是与输入同 shape/channel 的 linear `float32`，实验脚本会 clip 到
+`[0,1]`。C++ API 使用 caller-owned output view：函数不会替调用者管理输出寿命，
+也不应假设输入与输出任意重叠时仍正确。
+
+本周所谓 RAW-like 是 linear 单通道或独立通道张量，不是带真实 black level、CFA、
+ISO metadata 的 Bayer 文件。它会成为 Week 3 bilateral 的 noisy baseline，但不能外推
+成完整 RAW ISP 降噪结果。
+
+### 14.2 噪声公式、符号和数值假设
+
+脚本实际生成方式为：
+
+```text
+lambda = max(clean * shot_scale, 0)
+shot   = Poisson(lambda) / shot_scale
+noisy  = clip(shot + Normal(0, read_sigma), 0, 1)
+```
+
+在未 clipping 的理想条件下，`Var(shot)≈clean/shot_scale`，总方差近似
+`clean/shot_scale + read_sigma²`。所以 `shot_scale` 越大，本脚本模拟的 shot noise 越
+小；它不是 ISO 本身。正式主实验固定 seed `20260615`，Poisson-Gaussian 使用
+`shot_scale=300`、`read_sigma=0.008`，box 为 `radius=1`，Gaussian 为
+`radius=2, sigma=1.1`。固定 seed 是为了公平比较滤波器，不代表真实噪声只有一种 realization。
+
+### 14.3 参数选择和对照设计
+
+| 参数 | 单位/范围 | 增大趋势 | 本周怎样验证 |
+|---|---|---|---|
+| `shot_scale` | 模拟 photon scale，正数 | shot variance 下降 | 固定 read noise，按亮度 patch 测 std |
+| `read_sigma` | `[0,1]` 线性幅值 | 暗部底噪上升 | zero/dark patch 的 std |
+| `radius` | pixel，非负整数 | 邻域与成本增大、过平滑风险上升 | impulse、step edge、奇数尺寸 |
+| Gaussian `sigma` | pixel，正数 | 空间权重更平坦 | kernel 曲线、PSNR 与 edge gradient |
+| seed | PRNG 状态 | 不代表强弱，只固定样本 | 同参数复跑应得到同一 synthetic 输入 |
+
+公平实验一次只改变滤波器或其强度，保持 clean scene、noise realization、border、ROI
+和指标不变。若每个算法重新采样噪声，PSNR 差异可能来自输入而非算法。
+
+### 14.4 从零执行、代码导航和排错
+
+```powershell
+python .\stage3_cpp_isp\python_ref\run_week2_noise_denoise.py
+ctest --test-dir .\stage3_cpp_isp\out\build\verify --output-on-failure
+```
+
+阅读顺序：`noise_model_ref.py` 先确认噪声与 pad 方式，
+`run_week2_noise_denoise.py` 再确认 seed/参数/指标，随后读 `denoise.hpp` 和
+`denoise_basic.cpp`，最后用 `test_denoise_basic.cpp` 检查 constant、impulse 和 kernel
+不变量。正常产物是 Week 2 曲线、对比图和 metrics CSV。
+
+排错时按现象定位：全图有固定亮度偏差先查 kernel sum；只在四周错先查 border；
+横竖响应不一致先查 separable 两遍顺序与临时 buffer stride；结果更干净但纹理消失，
+这是参数 trade-off，不是数值对齐 bug。
+
+### 14.5 五类面试题、证据和验收
+
+1. **概念：shot/read noise 如何区分？** 前者方差随信号增长，后者在简化模型中近似
+   常量；可用不同亮度平场拟合 `variance=a*signal+b`。
+2. **原理：separable Gaussian 为什么从 `k²` 变成约 `2k`？** 二维核可写成横纵两个
+   一维核，每像素做两次长度 `k` 的遍历。
+3. **参数：sigma 增大为何不等于窗口成本必然增加？** 枚举成本由 radius 决定；sigma
+   改权重。若为了覆盖更大 sigma 同时增大 radius，成本才随之上升。
+4. **调试：constant 图变暗先查什么？** 核归一化、border 与 clip；再逐项比较横向
+   中间量，而不是先调噪声参数。
+5. **系统：为什么空间滤波不能解决视频噪声稳定性？** 它没有跨帧信息，不能利用时域
+   冗余，也没有运动补偿；本阶段没有实现 TNR。
+
+证据等级为 `verified_synthetic`。它证明简化噪声模型、基础滤波与部分 C++ 单元测试
+可复现，不证明真实传感器噪声标定、Bayer 通道耦合或手机实时性。
+
+- [ ] 能从 Poisson 方差推导 `clean/shot_scale`；
+- [ ] 能复现固定 seed baseline 并找到 CSV/图；
+- [ ] 能预测 radius、sigma、read noise 改变后的指标趋势；
+- [ ] 能用 constant/impulse/edge 分别定位三类错误；
+- [ ] 能说明为什么 Week 3 要在此 baseline 上引入 range weight。

@@ -1,0 +1,17 @@
+contract_version: "1.0"
+manifest: camera_system_capstone/data/manifests/multicamera_manifest.csv
+algorithm_owner: stage3_cpp_isp
+scope: static_calibration_alignment_color_match_and_fusion
+hardware_sync_claim: false
+thresholds:
+  max_mean_reprojection_error_px: 1.0
+  max_overlap_alignment_error_px: 2.0
+  max_overlap_color_delta: 0.03
+required_metrics:
+  - reprojection_error_px
+  - overlap_alignment_error_px
+  - overlap_color_delta
+  - seam_gradient_delta
+  - runtime_ms
+  - peak_memory_mib
+

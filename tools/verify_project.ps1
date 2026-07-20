@@ -37,6 +37,9 @@ try {
     python -m unittest discover -s stage4_deploy_isp/tests -v
     Assert-LastExitCode "Stage 4 contract tests"
 
+    python -m unittest discover -s camera_system_capstone/tests -v
+    Assert-LastExitCode "Camera Systems capstone tests"
+
     if ($CudaPython) {
         if (-not (Test-Path -LiteralPath $CudaPython)) {
             throw "CUDA Python executable does not exist: $CudaPython"

@@ -1,0 +1,7 @@
+{
+  "status": "pass",
+  "errors": [],
+  "warnings": [
+    "multicamera_manifest.csv has no captured pair; evaluation remains not_run"
+  ]
+}

@@ -988,3 +988,40 @@ patch64 的 PSNR 略低，但 SSIM 基本持平。这说明小 patch 可以作�
 | 下一步判断 | DnCNN residual 是当前最稳 baseline，NAFNet-lite 保留为现代结构对照 |
 
 下一步不建议继续盲目堆新模型。更合理的路线是进入 Week 4，把这些结果转成统一评估、error map、triplet 和 failure case 分析。
+
+## 17. 实验变量与参数验收表
+
+| 变量 | 当前代表配置 | 影响 | 公平比较要求 |
+|---|---|---|---|
+| training steps | DnCNN 长训 2000 steps | 决定优化预算，不等同于收敛保证 | 比模型时尽量一致并报告 validation 轨迹 |
+| learning rate | `1e-3` | 控制更新幅度 | 改结构后同 LR 不一定同等合适，但不能暗中分别调优 |
+| batch size | DnCNN 128 patch 为 4，64 patch 为 8 | 影响梯度噪声、显存和每步像素数 | 比 patch 时说明为何同步调整 batch |
+| model capacity | DnCNN features/depth、UNet channels、NAFNet width | 影响质量、参数、激活和吞吐 | 质量表同时报告成本，不能只按模型名比较 |
+| checkpoint rule | validation 最优或最后一步 | 决定被评价的模型状态 | 先声明规则，不能看 test 后换 checkpoint |
+| seed | 当前多数 run 为 42 | 控制初始化和 crop 采样 | 单 seed 只作基线；模型排名需要多 seed |
+
+## 18. Week 3 面试五问
+
+1. 为什么历史 DnCNN/UNet/NAFNet 数字不能无条件视为公平模型排行榜？
+2. patch 64 配 batch 8、patch 128 配 batch 4 时，哪些预算变了、哪些近似保持？
+3. validation curve 先升后降说明什么，如何选择 checkpoint？
+4. UNet SSIM 较高而 PSNR 较低时，你会看哪些局部证据？
+5. 如果新模型短训输了，怎样区分结构问题、优化不足和数据/实现错误？
+
+## 19. 教程闭环卡：把“跑模型”变成可证伪实验
+
+本周从 Week 2 接收固定 paired/split 合同，输出候选 checkpoint、训练轨迹和 Week 4 可复评
+的图像。任何对比先写假设，例如“更大 patch 的上下文能降低结构误差”，再定义唯一自变量、
+固定量与判据。若同时改 loss、steps、width 和 batch，只能称历史观察，不能归因于架构。
+
+结果阅读固定为四层：① output 是否超过 noisy baseline；② validation 曲线是否稳定且
+checkpoint 选择规则一致；③ PSNR/SSIM 是否给出相同方向；④ crop/error map 是否暴露
+平滑、残余噪声或颜色误差。单 seed 的 `0.1 dB` 差异不自动代表稳定优势；正式排名至少
+补多 seed 的 mean/std 或置信区间。
+
+失败时按“数据配对/range → 小样本 overfit → residual 与 loss → optimizer/LR → 容量”
+排查。模型复杂度的工程权衡不只参数量，还包括 activation、训练稳定性和 latency。本周已有结果
+是 `verified_public` tiny split 上的历史实验；由于预算未完全统一，结论必须绑定具体配置。
+
+独立验收：为一个对比填写 hypothesis/control/variable/metric/threshold；从 `metrics.csv`
+指出 best 与 last；选一张指标冲突图解释；设计三 seed 复验而不偷看 test。

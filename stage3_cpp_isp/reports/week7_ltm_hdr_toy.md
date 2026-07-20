@@ -339,3 +339,88 @@ tensor。
 3. shape 相同为什么不等于 frame 已对齐？
 4. box base 与 bilateral base 的质量/性能取舍？
 5. 为什么 `detail_strength=1` 不保证无损恢复？
+
+## 17. LTM/HDR 参数与面试答案
+
+| 关键词/参数 | 定义 | 调节方向/风险 | 验证方式 |
+|---|---|---|---|
+| base radius/sigma | 分离低频 illumination 的空间尺度 | 越大 base 越平，halo/局部对比变化更明显 | step edge、halo ROI、box-vs-bilateral |
+| compression strength | 对 base 动态范围的压缩强度 | 越强暗部更亮/高光更压，但易显得平 | 暗/中/亮 ROI 和局部梯度 |
+| detail strength | 重建时 detail 层增益 | 过高放大噪声/halo，过低过平滑 | 纹理与噪声 ROI 联合看 |
+| exposure ratio | long/short 的相对曝光尺度 | 错误会造成亮度不一致或融合偏置 | 单像素手算与未饱和区域一致性 |
+| saturation weight | 高光饱和时降低 long 权重 | 保护 short 的高光信息 | 高光 patch 与去掉权重的故障实验 |
+| alignment | 两帧同一坐标对应同一场景点 | shape 相同不代表已配准 | 人为位移/运动制造 ghost |
+
+面试回答“为什么 short 保高光、long 保暗部”：short 不易饱和但暗部 SNR 差，long 暗部信号足但高光易 clip；融合权重应按可靠性变化。本周只验证已对齐 toy，不包含运动配准和去鬼影。
+
+## 18. 从局部算子到 HDR 链路的学习闭环
+
+### 18.1 前后依赖、张量合同与 ownership
+
+Local TM 复用 Week 5 float curve；HDR merge 产出的 radiance 先保持 linear 且可大于
+1，再交给 Global/Local TM。把 merge 输出提前 clamp 到 `[0,1]` 会永久丢掉刚恢复的
+高光范围。short/long、base 和 output 都由调用者提供或由上层 `ImageBuffer` 持有，
+算法 view 不接管生命周期。
+
+| Tensor | shape/layout | range/语义 | 首要不变量 |
+|---|---|---|---|
+| short/long | 相同 planar float | 已对齐 exposure image `[0,1]` | 同坐标必须对应同一场景点 |
+| merged | 同 shape planar float | relative linear radiance，可 `>1` | 未饱和静态区域应恢复一致 radiance |
+| base | 单通道 planar float | 低频 luminance estimate | 正值、无 NaN，常量输入仍常量 |
+| LTM output | 同输入 channel | bounded `[0,1]` | 单调趋势和有限性 |
+
+shape 一致只证明数组可逐像素运算，不证明曝光、response、白平衡或几何已对齐。
+
+### 18.2 参数选择、耦合和从零复现
+
+主实验使用 99th percentile exposure；LTM box 为 `r=5, sigma_s=3.0,
+sigma_r=0.25, detail=0.75`，bilateral base 为 `r=3, sigma_s=2.4,
+sigma_r=0.35, detail=0.75`；HDR exposure 为 `0.18/0.72`，阈值为
+`saturation=0.92, underexposure=0.04`。
+
+```powershell
+python .\stage3_cpp_isp\python_ref\run_week7_ltm_hdr_toy.py
+ctest --test-dir .\stage3_cpp_isp\out\build\verify --output-on-failure
+.\stage3_cpp_isp\out\build\verify\bench_local_tone_mapping.exe
+```
+
+阅读路径：先在 `hdr_merge_ref.py` 和主脚本手算 radiance/weight，再对照
+`hdr_merge.hpp/.cpp`；随后从 `local_tone_mapping.hpp/.cpp` 跟踪
+`Y -> base -> detail -> mapped_base -> RGB`，最后用测试、alignment、ROI 和 halo 图分别
+验证不变量、实现一致性与视觉风险。
+
+### 18.3 Failure tree 与质量—性能—内存权衡
+
+```text
+双边/重影 -> 先看 short/long registration，不先调 tone
+高光 radiance 偏低 -> 查 long saturation 与 short exposure scale
+暗部噪声显著 -> 查 short underexposure weight、long reliability 与 detail strength
+亮暗边缘有 rim -> 导出 base/detail，比较 box 与 bilateral
+输出 NaN/闪白 -> 查 exposure>0、weight sum、epsilon、base≈0
+```
+
+更大的 base radius 能分离更低频 illumination，却按 naive window 平方增加成本，并可能
+扩大 halo 影响带；bilateral base 保边但需要昂贵双权重；降低 detail strength 可抑制
+halo/噪声，也牺牲局部纹理。当前实现每次创建中间 buffer，报告没有峰值内存和 buffer
+pool 证据；legacy latency 也不代表 steady-state Camera pipeline。
+
+### 18.4 面试五问、证据和验收
+
+1. **概念：HDR merge 和 LTM 的分工？** merge 从多曝光估计更宽 linear radiance；LTM
+   把它压到显示范围，两者不能互相替代。
+2. **原理：halo 怎样从 base 泄漏形成？** base 跨边缘平均使 `Y/base` 两侧异常，detail
+   重建把异常变成亮/暗 rim。
+3. **参数：detail strength 增大为何既增强纹理也放大噪声？** noise 也存在于高频 detail，
+   指数重建不会区分真实纹理和噪声。
+4. **调试：shape 相同却出现 ghost，先查什么？** 几何/运动 alignment 与时间同步；tone
+   参数无法修复双像。
+5. **系统：怎样走向产品 HDR？** 增加 response/曝光标定、噪声感知权重、运动估计与
+   去鬼影、时序稳定、快速 edge-aware base、内存/端侧 profiling；本周均未完成。
+
+本周 LTM/HDR 为 `verified_synthetic`，实现对齐不等于真实动态场景验证。
+
+- [ ] 能手算未饱和与 long 饱和两个 merge 像素；
+- [ ] 能解释每个阈值、epsilon 和 detail 参数的量纲；
+- [ ] 能导出 base/detail/weight 并用第一异常 tensor 定位；
+- [ ] 能在报告中同时给 halo、clip、latency 和适用边界；
+- [ ] 能明确说出 perfect alignment、无 ghost removal、非实时三项限制。

@@ -269,3 +269,96 @@ time_per_megapixel = time_ms / megapixels
    traffic，不要直接写成 cache miss。
 
 完成标准：把性能结论写成“实验条件 + 数字 + correctness 证据 + 适用边界”。
+
+## 12. 性能参数与面试答案
+
+| 关键词/参数 | 含义 | 为什么影响性能 | 需要同时验证 |
+|---|---|---|---|
+| tile width/height | 每个任务处理的空间块尺寸 | 影响任务数、局部性、调度和 tail | halo、奇数尺寸和完整输出覆盖 |
+| halo | tile 为计算邻域而额外读取的边界 | 太小会产生接缝，太大会重复计算 | tile 与 untiled max error |
+| thread count | 并行 worker 数 | 受物理核、任务粒度、带宽和创建开销限制 | 1/2/4/8 的实际曲线，不假设线性 |
+| warm-up/iterations | 预热与正式重复次数 | 控制冷启动和统计稳定性 | 报 median/p50/p90 与系统信息 |
+| speedup | baseline latency / optimized latency | 只有相同工作与正确性时有意义 | 同输入、同输出、同计时范围 |
+| allocation scope | buffer 分配是否在计时区间 | 分配可能主导短算子 | algorithm-only 与 e2e 分开 |
+
+面试被问“8 线程为何更慢”时，先列可验证假设：任务过小、线程创建、调度、内存带宽或 false sharing；再用线程复用、硬件计数器和不同尺寸实验区分，不能无证据归因于 cache miss。
+
+## 13. 性能实验流程
+
+```text
+锁定 scalar/LUT correctness baseline
+  -> 预测瓶颈
+  -> 一次只改 tile 或 thread strategy
+  -> 重跑 alignment/CTest
+  -> 相同 Release 输入测 p50/p90
+  -> 用质量 + speedup + scope 决定是否保留
+```
+
+## 14. 从算法正确到性能结论的完整教程
+
+### 14.1 前后依赖、输入输出数据契约与内存合同
+
+Week 3 冻结 bilateral LUT 的数值语义，本周只改变遍历与调度，输出必须继续与单线程
+LUT baseline 对齐。输入/输出是 caller-owned planar `float32` view；每个 worker 写互不
+重叠的 output rectangle，并从同一个只读完整 input 取 halo。当前 tile 没有独立
+scratch，也没有 tile-local allocation，所以“tiled”只表示遍历/任务划分，不代表数据
+已经搬进连续 cache buffer。
+
+### 14.2 复现顺序与代码导航
+
+```powershell
+ctest --test-dir .\stage3_cpp_isp\out\build\verify --output-on-failure
+.\stage3_cpp_isp\out\build\verify\bench_denoise.exe --full
+python .\stage3_cpp_isp\python_ref\run_week4_denoise_performance.py
+```
+
+运行前记录 CPU、逻辑/物理核、操作系统、编译器、Release flags 和电源状态。先读
+`bilateral_denoise.cpp` 的共享 rectangle kernel，再读 `bench_denoise.cpp`，确认计时
+区域、尺寸和线程数，最后读分析脚本。若本机 executable 位于不同 build 目录，应以
+实际 CMake 输出为准并在报告中记录，不应复制已有机器的绝对时间。
+
+正式 harness 使用 `warmup_runs=1` 和重复样本的 median；它降低偶发抖动，但没有给出
+完整分布。招聘级性能报告还应保存各次样本并给 p50/p90/p99，同时区分：
+
+```text
+algorithm-only = 已准备输入/输出，只计 kernel 调用
+end-to-end      = allocation + conversion + kernel + synchronization/I/O（按定义）
+```
+
+本周 CSV 只能在相同 scope、输入、参数、编译配置下横向比较。
+
+### 14.3 结果怎样读，怎样避免错误归因
+
+`speedup=T1/TN`，`efficiency=speedup/N`。效率低于 1 只说明没有线性加速，不能仅凭
+latency 判定 cache miss、带宽或调度谁是根因。需要分别做 thread reuse、固定频率、
+tile sweep、硬件计数器或 memory roofline 才能缩小原因。
+
+本周 4K 8-thread 约 6.03× 是指定 MinGW/CPU/参数上的 `verified_synthetic` 结果；4K
+仍约 2.51 s，远离实时预算。它不支持“已完成 4K30”、ARM/NEON 或移动 SoC 结论。
+多线程只覆盖 bilateral LUT 的 row/tile wrapper，不代表 Stage 3 所有模块均已并行。
+
+### 14.4 Failure matrix、五类面试题与验收
+
+| 现象 | 首查 | 用什么实验区分 |
+|---|---|---|
+| tile 接缝 | halo/read source/tile tail | tiled 与 untiled error map，odd shape |
+| 8 线程小图变慢 | 创建/任务粒度 | 复用线程、扩大图像、扫 thread count |
+| 同参数复跑波动大 | 系统负载/频率/样本过少 | 保存原始样本、固定电源、报告分位数 |
+| 加速但 max error 变大 | 调度越界/race/算法被改 | 先跑 CTest/alignment，再接受性能数字 |
+| 4K 未接近 1080P 的约 4 倍 | cache/频率/固定开销候选 | 用每 MP 时间和多个尺寸建模，避免直接定因 |
+
+1. **概念：latency、throughput、speedup 有何区别？** 单次时间、单位时间处理量、相对
+   baseline 比值；多帧并发时三者不能混用。
+2. **原理：为何 radius 从 2 到 4 邻域约 3.24×？** 采样数由 25 变 81；实际时间还受
+   固定成本和访存影响。
+3. **参数：tile 越小会怎样？** 任务/边界管理增多，潜在 locality 改善；最优值必须实测。
+4. **调试：加线程后偶发数值错误先查什么？** 输出区域重叠、共享可写状态、任务尾部和
+   生命周期，而不是放宽 tolerance。
+5. **系统：离 4K30 还有多少预算？** 4K30 约 33.3 ms/frame；本周 2513 ms 不能称实时，
+   下一步需要算法近似、SIMD、线程复用和端侧 profiling，而非只增加线程。
+
+- [ ] 在同一机器从 correctness baseline 重跑 full benchmark；
+- [ ] 计算 speedup、efficiency、ms/MP 并保留实验条件；
+- [ ] 用 odd shape 证明 tile tail/halo 正确；
+- [ ] 解释 algorithm-only 与 end-to-end 的差别；
+- [ ] 用证据语言区分“测得”“推断”“尚未验证”。

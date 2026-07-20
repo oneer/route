@@ -672,3 +672,40 @@ NAFNet-lite 的结构假设是什么？
 ```
 
 这才是 Week 4 到 Week 5 的正确衔接。
+
+## 12. 指标参数与解释验收表
+
+| 关键词/参数 | 口径 | 容易犯的错 | 正确验证 |
+|---|---|---|---|
+| data range | 当前 float RGB 为 `[0,1]` | PSNR 公式错误使用 255 | 指标实现显式传入 range |
+| PSNR | 由 MSE 推导的 dB 指标 | 跨不同预处理/范围比较 | 同 split、同 crop、同 range |
+| SSIM window | 局部 Gaussian window 的大小、sigma 与边界策略 | 把历史近似 SSIM 和标准实现混表 | 固定实现版本并保存协议 |
+| LPIPS | 预训练特征空间的感知距离 | 认为它天然适合所有 Camera 任务 | 记录 backbone、输入归一化和 domain |
+| error map scale | 为显示误差而设的放大范围 | 每张图自动拉伸导致无法横比 | 固定色条或同时报告真实数值 |
+| top-error ROI | 按局部误差选出的 crop | 直接把高误差命名为某种 artifact | 人工看图并用单变量实验验证原因 |
+
+## 13. Week 4 面试五问
+
+1. Loss、metric 和主观 IQ 三者为什么不能相互替代？
+2. PSNR 高、纹理变糊是否可能同时发生，为什么？
+3. SSIM 的 window 与实现版本为什么会改变数值？
+4. error map 为什么要固定显示尺度，并保留原始数值？
+5. 怎样设计一张公平的质量表，避免 split、checkpoint 和指标协议混用？
+
+## 14. 教程闭环卡：公式、显示与结论必须同口径
+
+若输入范围为 `[0,1]`，`MSE=mean((y_hat-y)^2)`，
+`PSNR=10log10(1/MSE)`；若峰值取255却没有同步改变 MSE 量纲，数值会错误。SSIM 比较
+局部亮度、对比度和结构，但 window、边界与库版本都会影响结果。LPIPS 依赖预训练特征，
+可补充感知相似度，却不是 Camera IQ 的无条件真值。
+
+评估流程应冻结：同一 test list → 同一 float output → per-image metric → mean/分布/最差样本
+→ triplet → 固定尺度 error map → top-error crop。error map 若每张图单独拉伸，适合定位但
+不适合跨图比较；报告需同时保留原始误差值和色条范围。
+
+典型指标权衡是 PSNR 提升而细纹理变软。此时不要选自己喜欢的指标，应检查纹理 ROI、边缘或
+主观盲评，再说明 trade-off。证据等级仍是 `verified_public` tiny sRGB；历史 validation
+与新版 held-out test 的 SSIM 实现不可拼榜。
+
+独立验收：手算一个两像素 MSE/PSNR；故意使用错误 peak value；用固定/自适应色条各画一
+张 error map 并解释差别；为一个最差样本写“现象—数值—假设—验证实验”。

@@ -173,6 +173,102 @@ Week4 可以进入 CCM / Gamma / Tone。推荐顺序是：
 
 ```text
 CCM：把相机 RGB 映射到更接近标准 sRGB 的颜色空间
-Gamma：把线性光信号变成人眼更自然的显示亮度
 Tone Mapping：压缩高光和整体动态范围
+Gamma/OETF：把线性光信号编码到显示域
 ```
+
+## 关键词与参数验收表
+
+| 关键词/参数 | 定义 | 参数方向/失败现象 | 验证方式 |
+|---|---|---|---|
+| Demosaic | 从单通道 CFA 估计每像素 RGB | 插值跨越强边缘会产生 zipper、false color 或 moiré | 检查采样值保持、斜边和细纹理 crop |
+| bilinear baseline | 对同色已知采样做线性插值 | 简单稳定但不感知边缘方向 | 与 OpenCV baseline 用相同 crop 比较 |
+| Gray World | 假设全图平均反射近似中性 | 单色主导场景会把真实颜色拉向灰色 | 看中性 ROI，而不只看全图 R/G、B/G |
+| `low/high_percentile=5/95` | AWB 统计时排除极暗/极亮像素的百分位 | 过滤过强会丢样本，过弱会受 clipping/黑位影响 | sweep 后比较 gain、DeltaE proxy 和 clipping |
+| `max_gain=8` | AWB 通道增益上限 | 太高放大噪声和高光 clip；太低可能校不回色温 | 检查暗部噪声、每通道高光和 gain 饱和 |
+| neutral ROI | 人工或规则选取的近中性区域 | ROI 不真正中性时会产生系统偏色 | 保存 ROI 坐标、预览和选择理由 |
+
+## 从输入到结论：可复现教程
+
+### 数据契约、公式符号和算法流程
+
+| 边界 | Demosaic 输入/输出 | AWB 输入/输出 |
+|---|---|---|
+| shape | `(H,W)` Bayer → `(H,W,3)` RGB | `(H,W,3)` → `(H,W,3)` |
+| dtype/range | `uint16/float32` RAW code → `float32` RAW-code RGB | `float32` 线性 RGB，gain 后按有效上限处理 |
+| 颜色域 | Sensor CFA / camera primaries | Linear Camera RGB；还不是标准 sRGB |
+| 必要 metadata | Bayer pattern、有效 white level | 有效像素筛选范围、gain 上限；中性 ROI 如有 |
+
+对颜色 `C∈{R,G,B}`，`M_C(p)` 表示位置 `p` 是否真实采到该颜色，`K` 是归一化邻域核：
+
+```text
+C_hat(p) = ((X * M_C) convolve K)(p) / ((M_C convolve K)(p) + eps)
+```
+
+分母只计算有效同色样本的权重；`eps` 仅防止边界处分母为零。真实采样点应恢复为 `X(p)`，不能被插值值覆盖。Bilinear 假设局部颜色变化平滑，因此在跨边缘与周期纹理处最容易失败。
+
+Gray World 在过滤后的像素集合 `S` 上计算 `mu_C=(1/|S|)sum_{p∈S}C(p)`，再用 `g_R=mu_G/mu_R`、`g_G=1`、`g_B=mu_G/mu_B`。假设是 `S` 中平均反射率近中性且光源近似全局一致；这两个条件不成立时，即使均值被拉平也可能更偏色。
+
+```text
+BLC/DPC/LSC Bayer
+  -> 建立 R/G/B sample masks
+  -> 对缺失颜色卷积插值并保留真实采样
+  -> 过滤过暗/近饱和像素
+  -> 估计并限制 AWB gains
+  -> 在线性 RGB 应用 gains，统计 clipping
+  -> 仅为显示生成 preview
+```
+
+### 参数、耦合与失败方向
+
+| 参数/选择 | 默认/单位 | 增大或切换后的影响 | 耦合 | 失败现象/选择理由 |
+|---|---:|---|---|---|
+| interpolation kernel | 3×3 bilinear | 更大核更平滑，也更可能跨边缘 | CFA、border policy | baseline 易手算；斜边 blur/zipper 时需 edge-aware 对照 |
+| `low_percentile` | 5% | 排除更多暗部，减少黑位/噪声影响，也减少样本 | BLC、场景曝光 | 太高会让统计只剩中高亮区域 |
+| `high_percentile` | 95% | 数值越高会纳入更多高光 | white level、clipping | 太高受彩色高光/饱和污染，太低丢失有效中性样本 |
+| `max_gain` | 8× | 上限增大可校更极端色温，但放大噪声/clip | low/high 筛选、Sensor 响应 | gain 经常触顶表示估计或数据合同可能错误 |
+| AWB domain | RGB-domain baseline | RAW 域应用可少一次通道图，但要精确映射 R/Gr/Gb/B | Demosaic、clip 顺序 | 两条路径比较时必须冻结 estimation 和归一化 |
+
+### 代码导航、结果判读和 failure case
+
+```text
+scripts/08_apply_demosaic.py -> soft_isp/demosaic.py -> demosaic JSON/preview/compare
+scripts/09_apply_awb.py      -> soft_isp/awb.py       -> gains/ratio JSON/compare
+scripts/16_close_mastery_gaps.py -> OpenCV/White Patch/Gray ROI 对照
+tests/test_dpc_demosaic.py + tests/test_iq_awb.py
+```
+
+| 现象 | 首查 | 用什么隔离 | 修复的 trade-off |
+|---|---|---|---|
+| 整图紫/绿且规则交错 | CFA pattern/offset | 关闭 AWB，检查真实采样点和 4×4 小图 | 先修数据合同；调 gain 只会掩盖问题 |
+| 斜边拉链/文字彩边 | Demosaic crop | 固定 AWB/CCM，比较 bilinear 与 edge-aware | 边缘感知降低伪影，但复杂度和误判风险上升 |
+| AWB 后中性物仍偏色 | ROI 是否真中性、gain 映射 | 保存筛选 mask 和 ROI 通道比 | 更严格灰点筛选提高纯度但降低覆盖率 |
+| 夜景高光失去颜色 | gain 后 per-channel clipping | 暂停 Tone/CCM，查线性 RGB 高端比例 | 限 gain 保高光，但可能残留色偏 |
+| 全图均值变中性但主体更差 | Gray World 假设 | 对大面积单色/混合光样张做失败对照 | 分区/语义 AWB 更稳，但系统复杂度提高 |
+
+### 证据边界、跨周连接和学习验收
+
+| 内容 | 证据等级 | 能证明 | 不能证明 |
+|---|---|---|---|
+| 公开 DNG 的 bilinear/Gray World 输出 | `verified_public` | 单帧学习链路与失败现象可复现 | 产品级 demosaic/AWB 或手机时序稳定性 |
+| OpenCV edge-aware、White Patch、Gray ROI | `verified_public` baseline | 同一公开数据下不同假设的趋势 | AHD/Malvar 已实现；标准光源颜色准确度 |
+| rawpy 对比 | `verified_proxy` | 更接近/远离所选成熟渲染参考 | 真实颜色 ground truth |
+| ColorChecker、中性灰、多光源序列 | `not_run` | 当前无标准证据 | 不能宣称 AWB/颜色准确度达标 |
+
+Week3 把 Week2 的线性 Bayer 转成线性 Camera RGB，并将结果交给 Week4 的 CCM/Tone/OETF。这里必须把“插值结构错误”和“白点/颜色错误”分开，否则 Week4 矩阵会错误地补偿上游问题。
+
+- [ ] 能在 8×8 数组上证明真实采样值保持
+- [ ] 能指出 bilinear 的平滑假设及一个失败 crop
+- [ ] 能手算 Gray World gains，并解释过滤集合 `S`
+- [ ] 能预测 `high_percentile`/`max_gain` 改变后的 clip 与噪声方向
+- [ ] 能用 no-AWB/identity-gain 隔离 CFA、Demosaic 和 AWB 问题
+
+## 本周面试闭环
+
+完整参考答案见[Week 3：Demosaic/AWB 面试题](../interview/week3_demosaic_awb_questions.md)。
+
+1. **概念题：** Demosaic 与 AWB 分别解决什么问题，为什么不能互相替代？
+2. **原理题：** bilinear、edge-aware 和 AHD 的核心差异是什么，本项目实际验证了哪一种？
+3. **参数题：** `low/high_percentile` 与 `max_gain` 怎样共同影响样本纯度、噪声和 clipping？
+4. **调试题：** 如何区分 CFA pattern 错误、Demosaic 假彩和 AWB 偏色？
+5. **系统题：** Gray World 在混合光视频中为什么不稳定，量产方案还需哪些空间/时序信息？

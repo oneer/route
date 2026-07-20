@@ -510,6 +510,27 @@ validate assets
 
 总工期约 7～8周。若时间只有一个月，只完成 Sprint 0、1、2，不要同时展开 GPU 深化和新型 Sensor 专题。
 
+### 9.1 本次仓库执行状态（2026-07-16）
+
+本轮实现没有新增“阶段五”。算法、测试和阶段报告均回填到 Stage 1～4；`camera_system_capstone` 只负责 manifest 校验、运行顺序、跨阶段汇总和 Job Evidence Matrix。
+
+| 归属 | 已执行并验证 | 当前证据级别 | 仍未完成的边界 |
+|---|---|---|---|
+| Stage 1 | 14 个公开 DNG 的 manifest IQ audit；AWB、bilateral、tone/highlight 三组受控 sweep；失败设置记录 | `verified_proxy` | 自采 RAW、ColorChecker、平场和标准斜边仍为 `not_run` |
+| Stage 2 | 10 个冻结公开 SIDD sRGB 样本、30 条同输入 traditional/ML 结果、17 条失败聚合；DnCNN 相对 bilateral 平均 PSNR +4.043 dB | `verified_public_rgb` | 自采 Camera 场景、Sensor RAW AI-ISP、完整 FP16 画质集仍为 `not_run` |
+| Stage 3 | C++17 标定/逆映射 warp/颜色匹配/feather fusion；OpenCV/NumPy 对齐；近景视差、运动接缝和退化几何诊断；14/14 CTest | `verified_synthetic` / `verified_learning` | 实拍标定双摄、畸变模型、硬件同步仍为 `not_run` |
+| Stage 4 | ORT CUDA I/O Binding 的 device input/output；1 H2D、0 intermediate D2H、1 final D2H；推理 p50/p90 3.296/3.754 ms，e2e p50/p90 10.477/11.047 ms，峰值 RAM 614.61 MiB | `verified_partial` | 自定义 CUDA preprocess 直接指针绑定、Nsight、每进程 VRAM、Snapdragon/NPU 和移动功耗仍为 `not_run` |
+| Capstone | 一键刷新 CPU-safe 阶段输出、资产/哈希校验、5 条岗位证据、主报告及 IQ/多摄/系统/失败四份分报告 | 汇总层 | 不持有或复制 Stage 1～4 算法 |
+
+统一复现命令：
+
+```powershell
+python camera_system_capstone/scripts/06_run_capstone.py --cpu-only
+powershell -ExecutionPolicy Bypass -File tools/verify_project.ps1 -SkipCpp
+```
+
+上表中的公开数据和合成验证不能改写成自采或量产经验；只有补齐对应硬件与拍摄协议后，才能提升证据级别。
+
 ## 十、硬件与软件建议
 
 ### 10.1 第一阶段必需
@@ -587,3 +608,103 @@ validate assets
 这条路线完成后，`route` 的核心叙事应从“我学习了四阶段 ISP/AI-ISP 技术”转变为：
 
 > 我建立了一套从真实 Camera 数据、IQ 评价和多摄算法，到 C++/GPU 系统优化的可复现验证系统；能够用量化证据定位画质与性能问题，并明确个人项目与量产 Snapdragon Camera 系统之间仍需重新验证的边界。
+
+## 十四、2026-07-19 面试就绪审计与二次补强
+
+### 14.1 结论：可以面试，但要选对表述层级
+
+完成四阶段教程化和 Capstone 后，仓库已经足够支撑以下面试环节：
+
+- 用一条完整链路讲清 RAW/ISP、RGB restoration、C++ 重写、模型部署和系统 profiling；
+- 对项目中的公式、参数、数据合同、失败案例、性能边界进行深挖；
+- 用公开/合成/代理/部分实测证据回答“为什么这样做、结果说明什么、哪里还不能下结论”；
+- 针对多摄、传统/ML 权衡、GPU copy bottleneck 做白板设计和故障定位。
+
+它**不能单独证明**候选人具有量产 Snapdragon Camera、OEM 客户支持、Sensor bring-up、高通内部 Camera framework 或多年商业项目经验。更准确的定位是：
+
+> 已达到“可以参加并支撑项目型技术面试”的作品集水平；尚未达到“无需培养即可承担量产平台 owner”的证据水平。
+
+旧版 `75%～80%` 是升级前的项目覆盖估计，不等于录用概率。当前也不再给出虚假的单一百分比，因为学历、工作年限、实际职责、英文沟通和岗位级别无法由仓库推断。后续按“已验证、概念可答、必须实测、经历不可补造”四层判断。
+
+目标岗位的公开职位页截至 2026-07-19 已不能稳定返回完整 JD，因此本审计以仓库保存的 Job ID 3083325 能力映射为基线；投递前应重新核对当时有效职位描述，避免把旧关键词当成新职位的硬要求。
+
+### 14.2 能力—证据—差距矩阵
+
+| 能力域 | 当前能拿出的证据 | 面试就绪度 | 主要差距 |
+|---|---|---|---|
+| RAW/传统 ISP | DNG metadata、BLC/DPC/LSC/Demosaic/AWB/CCM/Tone、模块测试与 first-divergence | 已验证/可深挖 | 无自采 Sensor RAW、dark/flat/ColorChecker/标准斜边 |
+| IQ 与 tuning | manifest、ROI、PSNR/SSIM/DeltaE proxy、MTF/SNR/DR proxy、参数 sweep 和拒绝方案 | 可用于方法论面试 | 标准实验室 IQ、主观 panel、跨 CCT/ISO/曝光覆盖不足 |
+| ML Camera feature | SIDD paired sRGB、DnCNN/UNet/NAFNet-lite、failure taxonomy、FP16/INT8 | 已验证公开 RGB | 非 Sensor RAW AI-ISP；无视频时序、肤色/人脸、真实 Camera scene fallback |
+| 多摄 | C++ homography/warp/color/fusion、Python/OpenCV 对齐、失败诊断、1080P benchmark | 合成学习证据 | 无真实内外参/畸变、同步帧、rolling shutter、视差/depth、EIS |
+| C++ 系统能力 | C++17、CMake/CTest、golden、layout/stride/ownership、tile/thread benchmark | 可深挖 | 无 ARM64/NEON/HVX、实时 allocator/buffer pool、Linux perf/trace 证据 |
+| GPU/部署 | ONNX/ORT C++、TensorRT FP16、INT8、I/O Binding、copy/latency/RAM 矩阵 | 桌面部署证据较强 | custom preprocess 直绑未完成；无 Nsight、可信 VRAM peak、长跑功耗 |
+| Qualcomm 平台 | QAIRT/QNN/HTP/HVX/Adreno/CAMX 概念和真机验收设计 | 只能做架构回答 | 无 SDK/SoC/ADB 真机、graph partition、HTP profile、Camera 接入 |
+| 3A 与时序 | Gray World/ROI AWB、曝光/直方图基础可迁移 | 概念补强后可答基础题 | AE/AF state machine、stats delay、flicker/oscillation、PDAF/CAF 未实现 |
+| HDR/新 Sensor | Toy HDR、曝光融合和 failure 思路 | 只够基础设计题 | Staggered HDR、Quad Bayer/remosaic、motion/ghost、row timing 未验证 |
+| PPA/实时系统 | p50/p90、copy count、模型大小、RAM、质量权衡 | performance 可答 | 移动功耗/温度/带宽、端到端 deadline、芯片 area 均无实测 |
+| 产品/客户闭环 | 可复现命令、RCA、failure card、证据矩阵 | 可模拟问题处理流程 | 商业化、客户沟通、版本交付和量产责任属于经历缺口，不能用文档冒充 |
+
+### 14.3 二次补强落点
+
+本轮不新增算法代码，先把面试知识和证据边界补回最相关报告：
+
+| 补强主题 | 落点 | 面试目标 |
+|---|---|---|
+| 3A 时序、Staggered HDR、Quad Bayer、TNR/MFNR | Stage 1 Week 6 | 能解释离线 ISP 与连续 Camera 控制的差别 |
+| ML feature 场景准入、fallback、时序与发布门槛 | Stage 2 Week 10 | 把“模型分数”升级为“可上线 Camera feature 决策” |
+| 多摄实拍差距、实时 C++、ARM SIMD 与 buffer pool | Stage 3 Week 8 | 能画系统图并明确 synthetic 到 production 的升级路径 |
+| CAMX/CHI/QNN/HTP、buffer/fence、真机验收 | Stage 4 Week 5 | 能回答高通端侧执行链而不冒充平台经验 |
+| deadline、queue/backpressure、power/thermal/PPA | Stage 4 Week 6 | 能从单 kernel 进入实时 Camera 系统分析 |
+
+### 14.4 仍需真正执行的优先级
+
+报告知识补齐后，证据缺口不会自动消失。按岗位收益排序：
+
+1. **P0：自采 Camera IQ。** 同设备冻结 exposure/ISO/CCT/scene，补 dark、flat、ColorChecker、slanted-edge 和连续序列；这是从 proxy 到真实 IQ 的最大跃迁。
+2. **P0：真实静态双摄。** 完成内外参、畸变、重投影误差、重叠颜色、接缝和近景视差；若无硬件同步，必须继续写静态/软件对齐。
+3. **P1：连续帧与 3A/TNR 思维。** 即使不实现完整算法，也应保存 stats→decision→metadata→frame 的时序图和一个振荡/迟滞实验。
+4. **P1：Android/Snapdragon 验证。** 用实际 QAIRT/QNN/AI Hub 能力完成 raw tensor 对齐、backend partition、CPU/GPU/HTP profile、冷/热/长跑内存与功耗。
+5. **P1：ARM C++ 性能。** 在 arm64 设备建立 scalar baseline，再做 NEON/线程/allocator 消融；HVX 只有获得相应工具链并实际运行后才能升级证据。
+6. **P2：GPU direct pipeline。** 把 custom preprocess device pointer/stream 直接交给 runtime，用 timeline 证明无隐式 staging。
+
+### 14.5 面试回答协议
+
+每个项目问题使用同一套六步结构，避免只背概念或只报数字：
+
+```text
+Claim：我实际完成了什么
+Evidence：数据、命令、指标和环境是什么
+Mechanism：为什么会得到该结果
+Trade-off：质量、速度、内存、功耗或复杂度如何交换
+Boundary：哪些没有验证，不能外推什么
+Next experiment：如果给设备/时间，下一步如何证伪或升级证据
+```
+
+例如“是否会高通 NPU 部署”的合格回答不是简单说会或不会，而是：当前在桌面 ORT/TensorRT 建立了 tensor correctness 和 copy 计数；公开知识层面理解 QAIRT/QNN backend/graph/tensor/profile 流程；没有 Snapdragon HTP 实测，因此不能声称平台经验；若获得设备，会先 CPU correctness，再检查 HTP partition/fallback，最后测 cold/warm/thermal、内存和功耗。
+
+### 14.6 必须闭卷回答的十二题
+
+1. black level、white level、linearization、WB gain 和 CCM 的顺序错了会出现什么现象？
+2. 为什么自然图 ROI 的 SNR/MTF 只能是 proxy？标准 dark/flat/slanted-edge 怎样补证？
+3. AE/AWB 的统计延迟为什么可能造成振荡，迟滞和滤波怎样取舍？
+4. Staggered HDR 的运动、饱和、read noise 和行时序如何影响融合权重？
+5. ML 去噪怎样建立 scene gate、artifact reject、fallback 和 regression set？
+6. 多摄 homography 在近景为什么失效？完整内外参、畸变、深度和同步分别解决什么？
+7. 30 fps 的 `33.3 ms` 为什么不是每个节点都可使用的独立预算？
+8. C++ tensor 的 stride、alignment、ownership、lifetime 错误怎样在第一发散点定位？
+9. SIMD/多线程提速后，怎样证明数值、边界、尾延迟和内存仍满足合同？
+10. CUDA kernel 很快但 e2e 不快，怎样用字节量、copy 和同步位置解释？
+11. QNN/HTP 选择成功为什么不等于整图都在目标单元执行？怎样验证 fallback？
+12. 哪些桌面结论可迁移到 Snapdragon，哪些 correctness/performance/power 必须重测？
+
+### 14.7 最终就绪条件
+
+投递前至少做到：
+
+- [ ] 能在 10 分钟内从 Stage 1 讲到 Capstone，不依赖逐字读报告；
+- [ ] 每个数字都能指出 manifest、命令、环境、计时/指标边界；
+- [ ] 对四个最差案例完成 symptom→hypothesis→experiment→regression；
+- [ ] 能白板画出 RAW ISP、双摄、ML feature 和 host/device 四张数据流；
+- [ ] 能明确说出 public/synthetic/proxy/partial/not_run 的区别；
+- [ ] 不把 CAMX/CHI/QNN/HTP 概念学习写成高通内部或真机经验；
+- [ ] 重新核对当前有效 JD，并把简历关键词映射到已验证证据，而不是映射到计划项。

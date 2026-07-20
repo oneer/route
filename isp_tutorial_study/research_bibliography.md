@@ -67,3 +67,34 @@
 - `stage1_soft_isp/`：传统 ISP pipeline 的学习和实验对照。
 - `stage2_ai_isp/`：AI 图像恢复、denoise baseline、训练循环和评估指标对照。
 - `study-roadmap/`：阶段化学习路线对照。
+
+## 按章节映射的一手入口
+
+以下映射优先选择标准、官方文档、作者论文和项目主页。推荐资料列表中的书名或论文名应回链到本表，避免只有名称没有 URL。
+
+| 章节 | 主题 | 推荐一手入口 |
+|---|---|---|
+| 1–3 | 传感器、RAW、接口 | [EMVA 1288](https://www.emva.org/standards-technology/emva-1288/)、[MIPI CSI-2](https://www.mipi.org/specifications/csi-2)、[libcamera](https://libcamera.org/) |
+| 4–7 | RAW 前端、LSC、DPC、Demosaic | [Raspberry Pi Camera Algorithm and Tuning Guide](https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf)、[Vitis Vision](https://docs.amd.com/r/en-US/Vitis_Libraries/vision/) |
+| 8–9 | 降噪/NLM | [NLM 原始论文](https://ieeexplore.ieee.org/document/1467423)、[IPOL NLM](https://www.ipol.im/pub/art/2011/bcm_nlm/)、[BM3D](https://pubmed.ncbi.nlm.nih.gov/17688213/) |
+| 10、16 | 色彩与 3A | [CIE](https://cie.co.at/)、[ICC sRGB](https://www.color.org/chardata/rgb/srgb.pdf)、[colour-science](https://www.colour-science.org/) |
+| 11–13、33 | 硬件、存储、后端 | [Vitis Vision](https://docs.amd.com/r/en-US/Vitis_Libraries/vision/)、[OpenROAD](https://theopenroadproject.org/)、[IEEE 1801/UPF](https://standards.ieee.org/standard/1801-2018.html) |
+| 14–15 | HDR 与计算摄影 | [Debevec HDR](https://www.pauldebevec.com/Research/HDR/)、[Exposure Fusion](https://doi.org/10.1111/j.1467-8659.2007.01071.x)、[HDRNet](https://arxiv.org/abs/1707.02880) |
+| 17–19 | 移动平台 | [Qualcomm Snapdragon](https://www.qualcomm.com/snapdragon/overview)、[MediaTek Dimensity](https://www.mediatek.com/products/smartphones/dimensity)、[Apple Newsroom](https://www.apple.com/newsroom/) |
+| 20–22 | 车载 ISP | [TI Jacinto Imaging](https://www.ti.com/lit/an/spracx9/spracx9.pdf)、[NVIDIA DRIVE](https://developer.nvidia.com/drive)、[ISO 26262 概览](https://www.iso.org/standard/68383.html) |
+| 23–24 | 专业相机与 IQ | [ISO 12233](https://www.iso.org/standard/88626.html)、[LibRaw](https://www.libraw.org/)、[rawpy](https://github.com/letmaik/rawpy) |
+| 25 | 消费电子与相机栈 | [Android Camera HAL](https://source.android.com/docs/core/camera)、[libcamera](https://libcamera.org/)、[HDRNet](https://arxiv.org/abs/1707.02880) |
+| 26 | 安防与低照 | [Learning to See in the Dark](https://arxiv.org/abs/1805.01934)、[ONVIF](https://www.onvif.org/)、[FastDVDnet](https://arxiv.org/abs/1907.01361) |
+| 27、31 | 视频与 Codec | [ITU-R BT.2100](https://www.itu.int/rec/R-REC-BT.2100/)、[FFmpeg](https://ffmpeg.org/documentation.html)、[AOM AV1](https://aomedia.org/av1/) |
+| 28–29 | AI-ISP | [DeepISP](https://arxiv.org/abs/1801.06724)、[Replacing Mobile ISP](https://arxiv.org/abs/2002.05509)、[SIDD](https://www.eecs.yorku.ca/~kamel/sidd/) |
+| 30 | GPU/异构 | [NVIDIA VPI](https://docs.nvidia.com/vpi/)、[CUDA Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/)、[Halide](https://halide-lang.org/) |
+| 32 | 验证与 IQ | [Accellera UVM](https://accellera.org/downloads/standards/uvm)、[Imatest documentation](https://www.imatest.com/docs/)、[scikit-image metrics](https://scikit-image.org/docs/stable/api/skimage.metrics.html) |
+| 34 | 系统集成 | [Linux V4L2](https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/v4l2.html)、[Android Camera](https://source.android.com/docs/core/camera)、[GStreamer](https://gstreamer.freedesktop.org/documentation/) |
+| 35 | 新型传感器与趋势 | [Event-based Vision Survey](https://arxiv.org/abs/1904.08405)、[Quanta Image Sensor](https://ieeexplore.ieee.org/document/7809005)、[来源分级规范](SOURCE_POLICY.md) |
+
+## 引用维护规则
+
+- 产业章节的关键数字必须在句子附近给出来源，不只在章末列资料名。
+- 论文结论不能直接写成某量产产品的内部实现。
+- 链接失效时优先更新到同一机构的新页面；找不到时标为 `[待核实]`，不要悄悄换成低质量二手来源。
+- 每条来源记录发布日期或版本；动态产品页另记访问日期。

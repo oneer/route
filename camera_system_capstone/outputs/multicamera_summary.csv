@@ -1,0 +1,2 @@
+pair_id,reprojection_error_px,overlap_alignment_error_px,overlap_color_delta,seam_gradient_delta,runtime_ms,peak_memory_mib,status,boundary
+no_available_pair,,,,,,,not_run,No multicamera captures exist yet; static calibration/fusion and hardware sync are not claimed.

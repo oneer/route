@@ -1,0 +1,7 @@
+key,value
+mean_color_delta_before,0.06669195741415024
+mean_color_delta_after,1.0353687684983015e-07
+max_cpp_python_abs_error,2.384185791015625e-07
+mean_cpp_python_abs_error,6.768338304633896e-08
+threshold,1e-06
+passed,1.0

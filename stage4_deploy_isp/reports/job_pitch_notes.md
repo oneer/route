@@ -10,7 +10,7 @@ GPU 侧用 TensorRT 10.8 在 RTX 4060 Ti 重建 FP32/FP16 engine。FP16 的 `trt
 
 量化使用 ORT CPU QDQ，而不是把它说成 TensorRT INT8。我把 20 张数据拆成 10 张 calibration 和 10 张独立 evaluation，平均 PSNR drop `0.0833 dB`、最差 `0.2403 dB`，并生成 error map/crop。
 
-最后我拆分了 CUDA normalize：kernel 只有 `0.0091 ms`，但 pageable H2D+D2H 后 GPU stage 是 `3.798 ms`，慢于 CPU normalize `2.498 ms`。所以当前不声称 CUDA 端到端加速；下一步应消除 D2H，把 device tensor 直接交给 GPU inference。
+最后我拆分了 CUDA normalize：kernel 只有 `0.0091 ms`，但 pageable H2D+D2H 后 GPU stage 是 `3.798 ms`，慢于 CPU normalize `2.498 ms`。随后用 ORT CUDA I/O Binding 把推理输入/输出绑定为 device OrtValue，实现 `1 H2D / 0 intermediate D2H / 1 final D2H`；推理 p50/p90 为 `3.296/3.754 ms`，host-to-final-host e2e 为 `10.477/11.047 ms`。当前 preprocess 仍在 CPU，所以不声称完整 GPU direct pipeline。
 
 ## 常见追问
 
@@ -32,7 +32,7 @@ float 差异经过 clamp 和 uint8 round 后可能消失，造成“完全一致
 
 **为什么 CUDA kernel 快但整体更慢？**
 
-当前前处理需要 pageable H2D 和 D2H；copy 成本远大于 kernel。局部 kernel 时间不能替代 pipeline 时间。
+独立 CUDA normalize 的 pageable copy 成本远大于 kernel。当前 I/O Binding 已消除推理中间 D2H，但仍有 CPU preprocess 后的一次 H2D 和最终一次 D2H；局部 kernel 时间不能替代 pipeline 时间。
 
 **移动端完成了吗？**
 

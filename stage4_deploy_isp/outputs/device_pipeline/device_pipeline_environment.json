@@ -1,0 +1,15 @@
+{
+  "onnxruntime": "1.21.1",
+  "available_providers": [
+    "TensorrtExecutionProvider",
+    "CUDAExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "active_providers": [
+    "CUDAExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "python": "3.11.15",
+  "pid": 7676,
+  "memory_sampling": "Windows PeakWorkingSet + nvidia-smi per-process samples; not continuous profiler peaks"
+}

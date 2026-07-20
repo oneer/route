@@ -11,6 +11,17 @@ Python reference → C++ implementation → alignment test → benchmark → rep
 a production realtime ISP library. Start with
 [`reports/stage3_tutorial_audit.md`](reports/stage3_tutorial_audit.md) for the
 verified learning order, data contracts, evidence matrix, and known gaps.
+The shared report rubric is
+[`../study-roadmap/四阶段周报告教程化要求大纲.md`](../study-roadmap/四阶段周报告教程化要求大纲.md);
+every Week 0–8 main report now includes parameter semantics and interview answers.
+
+## Qualcomm Interview Track
+
+- [Job ID 3083325 readiness and gap audit](../study-roadmap/高通3083325-Camera-ISP-Algorithm-System-Engineer定向提升报告.md#十四2026-07-19-面试就绪审计与二次补强)
+- [Week 8: real multi-camera, realtime C++, ARM/SIMD and buffer-system gap module](reports/week8_pipeline_integration.md#13-高通岗位补强多摄实时-c-与生产边界)
+- [Cross-stage Camera Systems capstone](../camera_system_capstone/reports/qualcomm_3083325_capstone_report.md)
+
+These sections make the synthetic/golden work interviewable; they do not upgrade it to captured synchronized multi-camera, ARM64/NEON/HVX, or production realtime evidence.
 
 ## Project Structure
 
@@ -187,6 +198,32 @@ Each week follows a consistent engineering loop:
 4. **Benchmark** — Release build, one warmup, repeated median latency; record device, parameters, threads, and measured scope.
 5. **Report** — Document algorithm choices, performance findings, and engineering tradeoffs.
 
+Recommended report reading order:
+
+1. [`Week 0`](reports/week0_project_setup.md): freeze file, metric, build, and evidence contracts.
+2. [`Week 1`](reports/week1_image_layout.md): understand layout, stride, border, and ownership before algorithms.
+3. [`Week 2`](reports/week2_raw_noise_and_basic_denoise.md): build the synthetic noise/basic-filter baseline.
+4. [`Week 3`](reports/week3_bilateral_nlm_denoise.md): add edge-aware denoise and separate approximation from implementation error.
+5. [`Week 4`](reports/week4_denoise_performance.md): optimize traversal/scheduling while keeping the Week 3 golden fixed.
+6. [`Week 5`](reports/week5_global_tone_mapping.md): move from linear scene values to bounded display values.
+7. [`Week 6`](reports/week6_tone_lut_fixed.md): trade float curve cost for measured LUT quantization error.
+8. [`Week 7`](reports/week7_ltm_hdr_toy.md): connect aligned HDR radiance and local tone mapping without overstating motion support.
+9. [`Week 8`](reports/week8_pipeline_integration.md): reproduce and debug the full pipeline by first divergence.
+
+Each main report now ends with a self-contained learning closure: upstream/downstream role,
+shape/layout/range/ownership contract, formula assumptions, reproducible commands, parameter
+effects, Python-C++ alignment, failure diagnosis, quality-performance-memory trade-offs,
+evidence level, five interview question types, and an executable study checklist. Historical
+latencies remain labeled as legacy where the current harness has not rerun them.
+
+### Evidence boundary
+
+- Most Week 0–8 results are synthetic/golden correctness evidence.
+- The SIDD bridge is limited public paired **sRGB** evidence, not real Bayer RAW validation.
+- Threaded execution covers bilateral LUT row/tile wrappers, not every Stage 3 module.
+- The library has no implemented SIMD/AVX/NEON/HVX path, no TNR, and no production camera buffer scheduler.
+- 1080P/4K desktop measurements do not establish realtime mobile latency, memory, power, or Snapdragon readiness.
+
 ## Build & Test
 
 Local toolchain: Qt CMake + Ninja + MinGW32 g++.
@@ -286,3 +323,19 @@ python .\stage3_cpp_isp\python_ref\run_week8_pipeline_summary.py
 ## License
 
 This project is part of a personal learning portfolio. All original code is available for reference and educational use.
+
+## Multicamera fusion backfill
+
+The core library now includes already-aligned overlap color-gain estimation,
+allocation-free gain application into caller-owned buffers, feather blending,
+and overlap/seam quality metrics. `test_image_fusion` is registered with CTest,
+and `bench_image_fusion` reports p50/p90 for 1080P and 4K.
+
+It also includes a dependency-free planar homography least-squares solver,
+reprojection metrics, caller-owned bilinear perspective warp, and
+`run_camera_calibration`. Run `python_ref/run_multicamera_reference.py`, then
+the C++ tool, then the Python command with `--cpp-output` to verify the matrix
+against OpenCV. `run_image_fusion` exposes the tracked CPF32 fusion path.
+
+This is the fusion core, not a completed stereo calibration claim: no synchronized
+camera pair, reprojection dataset, or hardware synchronization result is tracked.

@@ -250,3 +250,91 @@ Week1 的目标就是为这些追问建立代码和语言基础。
 3. 对长度大于 1 的数组，本项目 reflect-101 映射到 1，replicate 映射到 0。
 4. 真实 buffer 可能有 padding、ROI、奇数尺寸和不同 channel stride。
 5. planar4 表达 Bayer-like `R/Gr/Gb/B` 采样面，不是带 alpha 的显示 RGB。
+
+## 11. 关键词、参数与面试答案
+
+| 关键词/参数 | 地址/语义 | 为什么存在 | 典型错误 |
+|---|---|---|---|
+| width/height/channels | 有效图像形状 | 决定合法坐标和处理量 | 混淆 width/height 导致转置或越界 |
+| `row_stride` | 同通道相邻行起点的元素间隔 | 支持行 padding/对齐 | 错当 width 会读入 padding 或错行 |
+| `channel_stride` | 相邻 planar 通道起点间隔 | 支持独立通道面与 padding | 错当 `width*height` 会跨通道错位 |
+| interleaved/planar | HWC 像素交错 / CHW 通道连续 | 不同库和 kernel 偏好不同布局 | 只看 shape 不检查内存顺序 |
+| reflect-101 | 边界外索引镜像且不重复端点 | 减少边缘突变 | 与 symmetric 混用导致整圈对齐误差 |
+| ownership/view | Buffer 持有内存，View 只描述访问 | 避免复制并支持 caller-owned memory | view 生命周期超过 owner 产生悬空引用 |
+
+面试追问“planar 是否一定更快”时，应回答：取决于算子访问模式、SIMD/cache、转换成本和后端；布局是合同，不是脱离 workload 的性能结论。
+
+## 12. 数据流、结果与边界
+
+```text
+CPF32 contiguous HWC -> 显式转换 -> planar ImageBuffer/View
+-> stride/border 访问 -> 算法 -> 显式转换回 CPF32
+```
+
+本周结果是地址手算、stride/padding、planar4 和 reflect-101 的测试通过。它证明内存访问合同，不证明 planar 在所有硬件上更快，也不包含 aligned allocator、SIMD 或零拷贝 ROI 的性能结论。
+
+## 13. 从接口到实验的学习闭环
+
+### 13.1 输入输出和 ownership 契约
+
+| 对象 | layout / dtype | ownership | 生命周期与别名风险 |
+|---|---|---|---|
+| CPF32 payload | contiguous HWC / `float32` | `TensorF32` 持有读入数据 | 文件不保存 stride，读入后才可转换 |
+| `ImageBuffer<float>` | planar，可带 row/channel stride | owning | buffer 销毁后，由它生成的 view 立即失效 |
+| `ImageView<const float>` | 只读 planar view | non-owning | 调用者保证底层内存在整个算法调用期间有效 |
+| `ImageView<float>` | 可写 planar view | non-owning | 输出必须容量足够；当前接口不承诺任意 in-place alias 安全 |
+
+shape 只回答“有多少元素”，layout 和 stride 才回答“元素在哪里”。任何跨 Python/C++
+问题都按 `shape -> dtype -> range -> layout -> stride -> border` 的顺序核对。
+
+### 13.2 代码导航和复现
+
+```text
+python_ref/visualize_week1_layout.py
+  -> 画出 stride/planar4/border 语义
+include/cpp_isp/image.hpp
+  -> ImageBuffer 分配与 ImageView 地址合同
+src/border.cpp
+  -> 越界索引映射
+tests/test_image.cpp + tests/test_border.cpp
+  -> odd shape、padding、1x1 与边界不变量
+```
+
+从仓库根目录运行：
+
+```powershell
+python .\stage3_cpp_isp\python_ref\visualize_week1_layout.py
+ctest --test-dir .\stage3_cpp_isp\out\build\verify --output-on-failure
+```
+
+先查看三张示意图，再手算一个带 padding 的地址，最后让测试验证。Python 图只解释
+语义，CTest 才验证 C++；两者不能互相替代。
+
+### 13.3 正确性、性能/安全权衡和 Python-C++ 边界
+
+- planar 对单通道扫描友好，但 RGB 逐像素处理可能增加多 plane 访问；没有 benchmark
+  不能宣布它一定更快。
+- view 避免复制，但把生命周期和 alias 责任交给调用者；安全性与性能存在取舍。
+- padding/alignment 可能帮助后续 SIMD，也增加有效宽度与实际行跨度不一致的风险。
+- Python reference 必须显式模拟 reflect-101；NumPy 的不同 pad mode 名称不能只凭字面
+  判断等价。
+- 本周没有 SIMD、aligned allocator、真实 Camera buffer 或吞吐结果，证据仅为
+  `verified_synthetic` 的内存合同测试。
+
+### 13.4 面试五问与学习验收
+
+1. **概念：Buffer 和 View 的核心区别？** 前者拥有内存，后者只携带地址与访问合同。
+2. **原理：为什么 offset 要包含两个 stride？** 行和通道起点都可能带 padding，
+   `width*height` 只对紧密存储成立。
+3. **参数：tile 宽高是否越大越好？** 不一定；要联合 halo 重复、cache、任务粒度和 tail
+   测量，Week 4 才给出实测。
+4. **调试：误差只在四边一圈意味着什么？** 优先检查 border 定义和半径；若呈错行，
+   再查 row stride。
+5. **系统：怎样把 caller-owned Camera buffer 接入？** 用只读/可写 view 描述地址、shape、
+   stride 和 layout，并让 owner 覆盖调用生命周期；必要时显式转换，而不是强转指针。
+
+- [ ] 能在纸上计算带 padding 的三通道 offset；
+- [ ] 能解释 HWC 文件为何不能直接作为 planar view；
+- [ ] 能画出 Buffer→View 的 ownership 关系；
+- [ ] 能通过 error map 区分 border mismatch 与 stride bug；
+- [ ] 能说明本周合同如何被 Week 2 的邻域滤波复用。
