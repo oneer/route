@@ -102,15 +102,23 @@ def aggregate_by_scene_method(rows: list[dict[str, str | float]]) -> list[dict[s
     result: list[dict[str, str | float | int]] = []
     for (scene_group, method), items in sorted(groups.items()):
         failures = sum(item["failure_type"] != "acceptable" for item in items)
+        statistics: dict[str, float] = {}
+        for field in NUMERIC_FIELDS:
+            values = np.asarray([float(item[field]) for item in items], dtype=np.float64)
+            statistics[f"mean_{field}"] = float(np.mean(values))
+            if values.size == 1 or np.all(values == values[0]):
+                dispersion = 0.0
+            elif np.all(np.isfinite(values)):
+                dispersion = float(np.std(values))
+            else:
+                dispersion = float("inf")
+            statistics[f"std_{field}"] = dispersion
         result.append(
             {
                 "scene_group": scene_group,
                 "method": method,
                 "sample_count": len(items),
-                **{
-                    f"mean_{field}": float(np.mean([float(item[field]) for item in items]))
-                    for field in NUMERIC_FIELDS
-                },
+                **statistics,
                 "failure_count": failures,
                 "failure_rate": failures / len(items),
             }

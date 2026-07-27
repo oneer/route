@@ -2,11 +2,11 @@
 
 Frozen evaluation split: 10 public SIDD paired sRGB crops (`val` pair_00011..pair_00020). Source scenes are disjoint from training according to the tracked dataset audit.
 
-| Method | Samples | PSNR | PSNR gain | SSIM | Texture retention | Color bias | Failures |
+| Method | Samples | PSNR | PSNR gain mean ± std | SSIM | Texture retention | Color bias | Failures |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| dncnn_ort_fp32 | 10 | 32.968 | 6.788 | 0.7202 | 1.271 | 0.00363 | 5 |
-| no_denoise | 10 | 26.180 | 0.000 | 0.4414 | 3.430 | 0.00590 | 10 |
-| stage1_bilateral | 10 | 28.926 | 2.745 | 0.5722 | 2.170 | 0.00571 | 7 |
+| dncnn_ort_fp32 | 10 | 32.968 | 6.788 ± 0.568 | 0.7202 | 1.271 | 0.00363 | 5 |
+| no_denoise | 10 | 26.180 | 0.000 ± 0.000 | 0.4414 | 3.430 | 0.00590 | 10 |
+| stage1_bilateral | 10 | 28.926 | 2.745 ± 1.485 | 0.5722 | 2.170 | 0.00571 | 7 |
 
 ## Grouping
 

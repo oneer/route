@@ -31,7 +31,7 @@ jobs:
             -r stage2_ai_isp/requirements.txt \
             -r stage2_ai_isp/deployment/requirements.txt \
             -r stage4_deploy_isp/requirements.txt
-          python tools/check_environment.py --constraints requirements/constraints-cpu.txt
+          python tools/check_environment.py --constraints requirements/constraints-cpu.txt --smoke-import torch
           python -m pip check
       - name: Run Stage 1 tests
         working-directory: stage1_soft_isp
@@ -62,3 +62,12 @@ jobs:
       - name: Test Stage 3
         working-directory: stage3_cpp_isp
         run: ctest --preset verify
+      - name: Configure Stage 4 contracts
+        working-directory: stage4_deploy_isp
+        run: cmake --preset contract-verify
+      - name: Build Stage 4 contracts
+        working-directory: stage4_deploy_isp
+        run: cmake --build --preset contract-verify
+      - name: Test Stage 4 contracts
+        working-directory: stage4_deploy_isp
+        run: ctest --preset contract-verify

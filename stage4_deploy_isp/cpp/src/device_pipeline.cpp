@@ -34,6 +34,10 @@ void validate_device_pipeline_contract(const DevicePipelineContract& contract) {
         contract.inference_output.location != MemoryLocation::cuda_device) {
         throw std::invalid_argument("direct pipeline tensors must remain on the CUDA device");
     }
+    if (contract.h2d_count < 0 || contract.intermediate_d2h_count < 0 ||
+        contract.final_d2h_count < 0) {
+        throw std::invalid_argument("pipeline copy counts must be non-negative");
+    }
     if (contract.h2d_count != 1 || contract.intermediate_d2h_count != 0 ||
         contract.final_d2h_count > 1) {
         throw std::invalid_argument("direct pipeline copy count contract is not satisfied");

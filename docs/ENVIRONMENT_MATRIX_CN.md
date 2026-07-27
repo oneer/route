@@ -8,7 +8,7 @@
 | Stage 1 | `stage1_soft_isp/requirements.txt` | 传统 ISP 与单元测试 |
 | Stage 2 | `stage2_ai_isp/requirements.txt` | PyTorch CPU/GPU 训练；当前仍需生成 lock |
 | Stage 3 | CMake >= 3.20、C++17、Ninja | 使用 `CMakePresets.json` 的 `verify` preset |
-| Stage 4 CPU | PyTorch、ONNX、ONNX Runtime | 合同测试只要求 PyYAML，不要求 GPU |
+| Stage 4 CPU | PyTorch、ONNX、ONNX Runtime | Python 合同测试只要求 PyYAML；C++ 设备合同使用 `contract-verify` preset，不要求 ORT SDK 或 GPU |
 | Stage 4 GPU | Python 3.11、ORT GPU 1.21.1、CUDA/cuDNN/TensorRT | `requirements/constraints-ort-gpu-win-py311.txt` 是 runtime profile，不包含 PyTorch |
 
 ## 当前观测环境

@@ -7,6 +7,18 @@
   },
   "configurePresets": [
     {
+      "name": "contract-verify",
+      "displayName": "Portable Stage 4 contract verification",
+      "description": "Build and test the device-pipeline contract without requiring an ONNX Runtime SDK",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/contract-verify",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "STAGE4_BUILD_ORT": "OFF",
+        "STAGE4_BUILD_CUDA_PREPROCESS": "OFF"
+      }
+    },
+    {
       "name": "ort-verify",
       "displayName": "Stage 4 ORT CPU runner",
       "description": "使用 Ninja 以 Release 模式构建 Stage 4 CPU ONNX Runtime 验证程序",
@@ -22,8 +34,21 @@
   ],
   "buildPresets": [
     {
+      "name": "contract-verify",
+      "configurePreset": "contract-verify"
+    },
+    {
       "name": "ort-verify",
       "configurePreset": "ort-verify"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "contract-verify",
+      "configurePreset": "contract-verify",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

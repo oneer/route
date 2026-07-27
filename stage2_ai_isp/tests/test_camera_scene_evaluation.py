@@ -54,6 +54,21 @@ class CameraSceneEvaluationTests(unittest.TestCase):
         summary = aggregate_by_scene_method(rows)
         self.assertEqual(len(summary), 2)
         self.assertTrue(all(row["sample_count"] == 1 for row in summary))
+        self.assertTrue(all(row["std_psnr_gain"] == 0.0 for row in summary))
+
+    def test_aggregation_reports_dispersion_not_only_the_mean(self) -> None:
+        output = 0.75 * self.reference + 0.25 * self.noisy
+        metrics = evaluate_scene_candidate(self.noisy, output, self.reference)
+        weaker = dict(metrics)
+        weaker["psnr_gain"] = float(metrics["psnr_gain"]) - 2.0
+        summary = aggregate_by_scene_method(
+            [
+                {"scene_group": "texture", "method": "ml_fp32", **metrics},
+                {"scene_group": "texture", "method": "ml_fp32", **weaker},
+            ]
+        )
+        self.assertEqual(summary[0]["sample_count"], 2)
+        self.assertAlmostEqual(summary[0]["std_psnr_gain"], 1.0)
 
 
 if __name__ == "__main__":

@@ -22,6 +22,18 @@ int main() {
         if (!rejected) {
             throw std::runtime_error("intermediate D2H must be rejected");
         }
+
+        rejected = false;
+        try {
+            auto invalid = valid;
+            invalid.final_d2h_count = -1;
+            stage4::validate_device_pipeline_contract(invalid);
+        } catch (const std::invalid_argument&) {
+            rejected = true;
+        }
+        if (!rejected) {
+            throw std::runtime_error("negative copy counts must be rejected");
+        }
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

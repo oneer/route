@@ -27,9 +27,15 @@ METRIC_FIELDS = [
 ]
 SUMMARY_FIELDS = [
     "scene_group", "method", "sample_count",
-    "mean_input_psnr", "mean_output_psnr", "mean_psnr_gain", "mean_output_ssim",
-    "mean_noise_rmse_reduction", "mean_texture_retention", "mean_edge_loss",
-    "mean_color_bias", "failure_count", "failure_rate",
+    "mean_input_psnr", "std_input_psnr",
+    "mean_output_psnr", "std_output_psnr",
+    "mean_psnr_gain", "std_psnr_gain",
+    "mean_output_ssim", "std_output_ssim",
+    "mean_noise_rmse_reduction", "std_noise_rmse_reduction",
+    "mean_texture_retention", "std_texture_retention",
+    "mean_edge_loss", "std_edge_loss",
+    "mean_color_bias", "std_color_bias",
+    "failure_count", "failure_rate",
 ]
 
 
@@ -56,12 +62,14 @@ def _method_rollup(rows: list[dict]) -> list[dict[str, float | int | str]]:
     result = []
     for method in methods:
         items = [row for row in rows if row["method"] == method]
+        psnr_gains = np.asarray([float(row["psnr_gain"]) for row in items], dtype=np.float64)
         result.append(
             {
                 "method": method,
                 "sample_count": len(items),
                 "psnr": float(np.mean([float(row["output_psnr"]) for row in items])),
-                "psnr_gain": float(np.mean([float(row["psnr_gain"]) for row in items])),
+                "psnr_gain": float(np.mean(psnr_gains)),
+                "psnr_gain_std": float(np.std(psnr_gains)),
                 "ssim": float(np.mean([float(row["output_ssim"]) for row in items])),
                 "texture": float(np.mean([float(row["texture_retention"]) for row in items])),
                 "color_bias": float(np.mean([float(row["color_bias"]) for row in items])),
@@ -76,12 +84,13 @@ def _write_reports(rows: list[dict], summary: list[dict], report_root: Path) -> 
     lines = [
         "# Camera-scene ML evaluation", "",
         "Frozen evaluation split: 10 public SIDD paired sRGB crops (`val` pair_00011..pair_00020). Source scenes are disjoint from training according to the tracked dataset audit.",
-        "", "| Method | Samples | PSNR | PSNR gain | SSIM | Texture retention | Color bias | Failures |",
+        "", "| Method | Samples | PSNR | PSNR gain mean ± std | SSIM | Texture retention | Color bias | Failures |",
         "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for item in rollup:
         lines.append(
-            f"| {item['method']} | {item['sample_count']} | {item['psnr']:.3f} | {item['psnr_gain']:.3f} | "
+            f"| {item['method']} | {item['sample_count']} | {item['psnr']:.3f} | "
+            f"{item['psnr_gain']:.3f} ± {item['psnr_gain_std']:.3f} | "
             f"{item['ssim']:.4f} | {item['texture']:.3f} | {item['color_bias']:.5f} | {item['failures']} |"
         )
     lines.extend([

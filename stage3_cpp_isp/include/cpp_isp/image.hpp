@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
@@ -44,7 +45,10 @@ public:
         if (row_stride < width) {
             throw std::invalid_argument("row_stride must be >= width");
         }
-        if (channel_stride < static_cast<std::uint32_t>(row_stride * height)) {
+        const auto minimum_channel_stride =
+            static_cast<std::uint64_t>(row_stride) * static_cast<std::uint64_t>(height);
+        if (minimum_channel_stride > std::numeric_limits<std::uint32_t>::max() ||
+            static_cast<std::uint64_t>(channel_stride) < minimum_channel_stride) {
             throw std::invalid_argument("channel_stride is too small");
         }
     }
@@ -98,15 +102,24 @@ public:
         : width_(width),
           height_(height),
           channels_(channels),
-          row_stride_(row_stride == 0 ? width : row_stride),
-          channel_stride_(row_stride_ * height) {
+          row_stride_(row_stride == 0 ? width : row_stride) {
         if (width == 0 || height == 0 || channels == 0) {
             throw std::invalid_argument("invalid ImageBuffer shape");
         }
         if (row_stride_ < width) {
             throw std::invalid_argument("row_stride must be >= width");
         }
-        data_.resize(static_cast<std::size_t>(channel_stride_) * channels_);
+        const auto channel_stride =
+            static_cast<std::uint64_t>(row_stride_) * static_cast<std::uint64_t>(height_);
+        if (channel_stride > std::numeric_limits<std::uint32_t>::max()) {
+            throw std::overflow_error("channel_stride exceeds uint32 range");
+        }
+        channel_stride_ = static_cast<std::uint32_t>(channel_stride);
+        const auto element_count = channel_stride * static_cast<std::uint64_t>(channels_);
+        if (element_count > static_cast<std::uint64_t>(data_.max_size())) {
+            throw std::length_error("ImageBuffer storage exceeds vector max_size");
+        }
+        data_.resize(static_cast<std::size_t>(element_count));
     }
 
     ImageView<T> view() {

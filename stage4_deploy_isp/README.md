@@ -93,6 +93,14 @@ python -m unittest discover -s stage4_deploy_isp/tests -v
 
 该测试检查 tensor contract、模型卡、跟踪模型 hash、manifest 数量、路径可移植性和 INT8 校准/评价 split 隔离。
 
+设备内存与拷贝计数的 C++ 合同不依赖 ONNX Runtime SDK，可单独构建验证：
+
+```powershell
+cmake --preset contract-verify
+cmake --build --preset contract-verify
+ctest --preset contract-verify
+```
+
 ### Stage 3 C++ → Stage 4 C++ ORT 串联
 
 先在已加载 MSVC 环境且可找到 Ninja 的终端构建 Stage 4 runner：

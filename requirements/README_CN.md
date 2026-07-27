@@ -10,7 +10,7 @@ python -m pip install -c requirements/constraints-cpu.txt `
   -r stage2_ai_isp/requirements.txt `
   -r stage2_ai_isp/deployment/requirements.txt `
   -r stage4_deploy_isp/requirements.txt
-python tools/check_environment.py --constraints requirements/constraints-cpu.txt
+python tools/check_environment.py --constraints requirements/constraints-cpu.txt --smoke-import torch
 python -m pip check
 ```
 
@@ -24,7 +24,7 @@ CI 使用 Python 3.12。当前本机 CPU 环境为 Python 3.14.4，因此 hosted
 conda create -n stage4-cuda python=3.11 pip -y
 conda activate stage4-cuda
 python -m pip install -r requirements/ort-gpu-win-py311.txt
-python tools/check_environment.py --constraints requirements/constraints-ort-gpu-win-py311.txt
+python tools/check_environment.py --constraints requirements/constraints-ort-gpu-win-py311.txt --smoke-import onnxruntime
 python -m pip check
 ```
 

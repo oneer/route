@@ -10,6 +10,25 @@ import math
 import numpy as np
 
 
+def _finite_array(value: np.ndarray, name: str) -> np.ndarray:
+    data = np.asarray(value, dtype=np.float32)
+    if data.size == 0:
+        raise ValueError(f"{name} must not be empty")
+    if not np.all(np.isfinite(data)):
+        raise ValueError(f"{name} must contain only finite values")
+    return data
+
+
+def _validate_levels(black_level: float, white_level: float) -> tuple[float, float]:
+    black = float(black_level)
+    white = float(white_level)
+    if not math.isfinite(black) or not math.isfinite(white):
+        raise ValueError("black_level and white_level must be finite")
+    if white <= black:
+        raise ValueError("white_level must be greater than black_level")
+    return black, white
+
+
 def exposure_statistics(
     raw: np.ndarray,
     black_level: float,
@@ -17,14 +36,11 @@ def exposure_statistics(
     margin: float = 16.0,
 ) -> dict[str, float]:
     """Return code-value and normalized exposure statistics."""
-    data = np.asarray(raw, dtype=np.float32)
-    if data.size == 0:
-        raise ValueError("raw must not be empty")
-    usable_range = float(white_level) - float(black_level)
-    if usable_range <= 0.0:
-        raise ValueError("white_level must be greater than black_level")
-    normalized = np.clip((data - float(black_level)) / usable_range, 0.0, 1.0)
-    clipping = clipping_fractions(data, black_level, white_level, margin)
+    data = _finite_array(raw, "raw")
+    black, white = _validate_levels(black_level, white_level)
+    usable_range = white - black
+    normalized = np.clip((data - black) / usable_range, 0.0, 1.0)
+    clipping = clipping_fractions(data, black, white, margin)
     return {
         "mean_code_value": float(np.mean(data)),
         "p01_code_value": float(np.percentile(data, 1.0)),
@@ -44,12 +60,12 @@ def strongest_edge_roi(
     stride: int | None = None,
 ) -> tuple[int, int, int, int]:
     """Select the fixed-size tile with the largest mean gradient magnitude."""
-    data = np.asarray(gray, dtype=np.float32)
+    data = _finite_array(gray, "gray")
     if data.ndim != 2:
         raise ValueError("gray must be a 2D image")
     if roi_size < 4 or roi_size > min(data.shape):
         raise ValueError("roi_size must fit the image and be at least 4")
-    step = stride or roi_size
+    step = roi_size if stride is None else stride
     if step <= 0:
         raise ValueError("stride must be positive")
     gx = np.zeros_like(data)
@@ -77,13 +93,17 @@ def strongest_edge_roi(
 # 中文注释：估计 RAW 中接近黑电平和白电平的像素比例。
 def clipping_fractions(raw: np.ndarray, black_level: float, white_level: float, margin: float = 16.0) -> dict[str, float]:
     """Return near-black and near-white fractions for a RAW image."""
-    data = np.asarray(raw, dtype=np.float32)
+    data = _finite_array(raw, "raw")
+    black, white = _validate_levels(black_level, white_level)
+    margin = float(margin)
+    if not math.isfinite(margin) or margin < 0.0:
+        raise ValueError("margin must be a finite non-negative value")
+    if 2.0 * margin > white - black:
+        raise ValueError("margin is too large for the usable code-value range")
     total = float(data.size)
-    if total == 0:
-        raise ValueError("raw must not be empty")
     return {
-        "near_black_fraction": float(np.count_nonzero(data <= black_level + margin) / total),
-        "near_white_fraction": float(np.count_nonzero(data >= white_level - margin) / total),
+        "near_black_fraction": float(np.count_nonzero(data <= black + margin) / total),
+        "near_white_fraction": float(np.count_nonzero(data >= white - margin) / total),
     }
 
 
@@ -95,8 +115,11 @@ def roi_snr_db(roi: np.ndarray, black_level: float) -> dict[str, float]:
     It is not a sensor-lab SNR result because a natural-image ROI mixes texture
     with noise unless it comes from a true flat-field frame.
     """
-    data = np.asarray(roi, dtype=np.float32)
-    signal = max(float(np.mean(data) - black_level), 0.0)
+    data = _finite_array(roi, "roi")
+    black = float(black_level)
+    if not math.isfinite(black):
+        raise ValueError("black_level must be finite")
+    signal = max(float(np.mean(data) - black), 0.0)
     noise = max(float(np.std(data)), 1e-6)
     return {
         "signal_mean": signal,
@@ -108,8 +131,11 @@ def roi_snr_db(roi: np.ndarray, black_level: float) -> dict[str, float]:
 # 中文注释：用黑白电平和噪声估计近似动态范围。
 def approximate_dynamic_range_db(white_level: float, black_level: float, noise_floor: float) -> float:
     """Estimate dynamic range from usable signal and a chosen noise floor."""
-    usable_signal = max(float(white_level) - float(black_level), 1e-6)
-    floor = max(float(noise_floor), 1e-6)
+    black, white = _validate_levels(black_level, white_level)
+    floor = float(noise_floor)
+    if not math.isfinite(floor) or floor <= 0.0:
+        raise ValueError("noise_floor must be a finite positive value")
+    usable_signal = white - black
     return float(20.0 * math.log10(usable_signal / floor))
 
 
@@ -122,10 +148,15 @@ def edge_mtf50_proxy(gray: np.ndarray, roi: tuple[int, int, int, int]) -> dict[s
     drops below 50%. It is meant to rank comparable crops, not replace a
     slanted-edge chart measurement.
     """
-    x, y, w, h = roi
-    crop = np.asarray(gray[y : y + h, x : x + w], dtype=np.float32)
-    if crop.size == 0:
-        raise ValueError("roi is outside image bounds")
+    data = _finite_array(gray, "gray")
+    if data.ndim != 2:
+        raise ValueError("gray must be a 2D image")
+    if len(roi) != 4 or not all(isinstance(value, (int, np.integer)) for value in roi):
+        raise ValueError("roi must contain four integer values")
+    x, y, w, h = (int(value) for value in roi)
+    if x < 0 or y < 0 or w <= 0 or h <= 0 or x + w > data.shape[1] or y + h > data.shape[0]:
+        raise ValueError("roi must be fully inside the image")
+    crop = data[y : y + h, x : x + w]
 
     gx = np.diff(crop, axis=1)
     gy = np.diff(crop, axis=0)

@@ -1,6 +1,8 @@
 #include "cpp_isp/image.hpp"
 
+#include <cstdint>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 // ImageBuffer/ImageView 测试覆盖 stride padding、planar 多通道索引和 at() 越界检查。
@@ -53,6 +55,32 @@ void test_bounds_checked_access() {
     require(threw, "at() should throw for out-of-range access");
 }
 
+void test_stride_height_overflow_is_rejected_before_allocation() {
+    bool buffer_threw = false;
+    try {
+        cpp_isp::ImageBuffer<float> image(
+            1, 2, 1, std::numeric_limits<std::uint32_t>::max());
+    } catch (const std::overflow_error&) {
+        buffer_threw = true;
+    }
+    require(buffer_threw, "ImageBuffer should reject channel_stride overflow");
+
+    float storage = 0.0F;
+    bool view_threw = false;
+    try {
+        cpp_isp::ImageView<float> view(
+            &storage,
+            1,
+            2,
+            1,
+            std::numeric_limits<std::uint32_t>::max(),
+            std::numeric_limits<std::uint32_t>::max());
+    } catch (const std::invalid_argument&) {
+        view_threw = true;
+    }
+    require(view_threw, "ImageView should reject wrapped minimum channel_stride");
+}
+
 }  // namespace
 
 int main() {
@@ -60,6 +88,7 @@ int main() {
         test_stride_greater_than_width();
         test_planar4_indexing();
         test_bounds_checked_access();
+        test_stride_height_overflow_is_rejected_before_allocation();
         std::cout << "test_image passed\n";
         return 0;
     } catch (const std::exception& error) {

@@ -9,4 +9,25 @@ metrics 子包 — 图像质量评估指标。
 """
 # 中文说明：图像质量评估指标代码，主要用于批量计算 PSNR/SSIM。
 
-from ai_isp.metrics.psnr_ssim import batch_psnr, batch_ssim
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+
+__all__ = ["batch_psnr", "batch_ssim"]
+
+if TYPE_CHECKING:
+    from ai_isp.metrics.psnr_ssim import batch_psnr, batch_ssim
+
+
+def __getattr__(name: str) -> Any:
+    """Lazily import torch-backed metrics.
+
+    Pure NumPy/skimage evaluators such as ``camera_scene`` should remain usable
+    in lightweight analysis environments that do not load PyTorch.
+    """
+    if name in __all__:
+        from ai_isp.metrics.psnr_ssim import batch_psnr, batch_ssim
+
+        return {"batch_psnr": batch_psnr, "batch_ssim": batch_ssim}[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -2,6 +2,7 @@
 param(
     [switch]$SkipCpp,
     [string]$CMakeExe = "cmake",
+    [string]$PythonExe = "python",
     [string]$CudaPython = ""
 )
 
@@ -18,7 +19,7 @@ function Assert-LastExitCode {
 
 Push-Location (Join-Path $RepoRoot "stage1_soft_isp")
 try {
-    python -m unittest discover -s tests -v
+    & $PythonExe -m unittest discover -s tests -v
     Assert-LastExitCode "Stage 1 tests"
 }
 finally {
@@ -27,24 +28,24 @@ finally {
 
 Push-Location $RepoRoot
 try {
-    python tools/check_environment.py --constraints requirements/constraints-cpu.txt
+    & $PythonExe tools/check_environment.py --constraints requirements/constraints-cpu.txt --smoke-import torch
     Assert-LastExitCode "CPU environment constraints"
 
     $env:PYTHONPATH = Join-Path $RepoRoot "stage2_ai_isp"
-    python -m unittest discover -s stage2_ai_isp/tests -v
+    & $PythonExe -m unittest discover -s stage2_ai_isp/tests -v
     Assert-LastExitCode "Stage 2 tests"
 
-    python -m unittest discover -s stage4_deploy_isp/tests -v
+    & $PythonExe -m unittest discover -s stage4_deploy_isp/tests -v
     Assert-LastExitCode "Stage 4 contract tests"
 
-    python -m unittest discover -s camera_system_capstone/tests -v
+    & $PythonExe -m unittest discover -s camera_system_capstone/tests -v
     Assert-LastExitCode "Camera Systems capstone tests"
 
     if ($CudaPython) {
         if (-not (Test-Path -LiteralPath $CudaPython)) {
             throw "CUDA Python executable does not exist: $CudaPython"
         }
-        & $CudaPython tools/check_environment.py --constraints requirements/constraints-ort-gpu-win-py311.txt
+        & $CudaPython tools/check_environment.py --constraints requirements/constraints-ort-gpu-win-py311.txt --smoke-import onnxruntime
         Assert-LastExitCode "ORT GPU environment constraints"
     }
 }
@@ -77,6 +78,19 @@ if (-not $SkipCpp) {
         }
         & $CTestExe --preset verify
         Assert-LastExitCode "Stage 3 tests"
+    }
+    finally {
+        Pop-Location
+    }
+
+    Push-Location (Join-Path $RepoRoot "stage4_deploy_isp")
+    try {
+        & $CMakeExe --preset contract-verify
+        Assert-LastExitCode "Stage 4 contract configure"
+        & $CMakeExe --build --preset contract-verify
+        Assert-LastExitCode "Stage 4 contract build"
+        & $CTestExe --preset contract-verify
+        Assert-LastExitCode "Stage 4 contract tests"
     }
     finally {
         Pop-Location

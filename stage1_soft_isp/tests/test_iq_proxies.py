@@ -12,6 +12,7 @@ from soft_isp.iq_metrics import (
     clipping_fractions,
     edge_mtf50_proxy,
     roi_snr_db,
+    strongest_edge_roi,
 )
 
 
@@ -46,6 +47,27 @@ class IqProxyTests(unittest.TestCase):
         sharp_proxy = edge_mtf50_proxy(sharp, roi)["mtf50_proxy_cyc_per_px"]
         blurred_proxy = edge_mtf50_proxy(blurred, roi)["mtf50_proxy_cyc_per_px"]
         self.assertGreater(sharp_proxy, blurred_proxy)
+
+    def test_invalid_inputs_are_rejected_instead_of_publishing_nan(self) -> None:
+        with self.assertRaises(ValueError):
+            roi_snr_db(np.array([], dtype=np.float32), black_level=0.0)
+        with self.assertRaises(ValueError):
+            roi_snr_db(np.array([[np.nan]], dtype=np.float32), black_level=0.0)
+        with self.assertRaises(ValueError):
+            clipping_fractions(np.ones((2, 2)), black_level=0.0, white_level=1.0, margin=-0.1)
+        with self.assertRaises(ValueError):
+            approximate_dynamic_range_db(white_level=1.0, black_level=1.0, noise_floor=0.1)
+        with self.assertRaises(ValueError):
+            approximate_dynamic_range_db(white_level=1.0, black_level=0.0, noise_floor=0.0)
+
+    def test_roi_contract_rejects_invalid_stride_and_bounds(self) -> None:
+        image = np.zeros((16, 16), dtype=np.float32)
+        with self.assertRaises(ValueError):
+            strongest_edge_roi(image, roi_size=8, stride=0)
+        with self.assertRaises(ValueError):
+            edge_mtf50_proxy(image, (-1, 0, 8, 8))
+        with self.assertRaises(ValueError):
+            edge_mtf50_proxy(image, (12, 12, 8, 8))
 
 
 if __name__ == "__main__":

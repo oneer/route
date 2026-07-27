@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import re
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -38,6 +39,13 @@ def read_constraints(path: Path) -> dict[str, tuple[str, str]]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--constraints", type=Path, required=True)
+    parser.add_argument(
+        "--smoke-import",
+        action="append",
+        default=[],
+        metavar="MODULE",
+        help="Import a runtime-critical module after checking distribution versions; may be repeated.",
+    )
     args = parser.parse_args()
 
     mismatches: list[str] = []
@@ -49,6 +57,12 @@ def main() -> None:
             continue
         if actual != expected:
             mismatches.append(f"{package}: installed {actual}, expected {expected}")
+
+    for module in args.smoke_import:
+        try:
+            importlib.import_module(module)
+        except Exception as error:
+            mismatches.append(f"{module}: import failed: {type(error).__name__}: {error}")
 
     if mismatches:
         raise SystemExit("Environment mismatch:\n- " + "\n- ".join(mismatches))
